@@ -27,57 +27,60 @@ namespace Login.Areas.Identity.Pages.Account
         }
 
         [BindProperty]
-        public InputModel Input { get; set; }
+        public InputModel Input { get; set; } = new();
 
-        public IList<AuthenticationScheme> ExternalLogins { get; set; }
+        public IList<AuthenticationScheme> ExternalLogins { get; set; } = new List<AuthenticationScheme>();
 
-        public string ReturnUrl { get; set; }
+        public string ReturnUrl { get; set; } = "/";
 
         [TempData]
-        public string ErrorMessage { get; set; }
+        public string ErrorMessage { get; set; } = "";
 
         public class InputModel
         {
             [Required]
             [EmailAddress]
-            public string Email { get; set; }
+            public string Email { get; set; } = "";
 
             [Required]
             [DataType(DataType.Password)]
-            public string Password { get; set; }
+            public string Password { get; set; } = "";
 
             [Display(Name = "Remember me?")]
             public bool RememberMe { get; set; }
         }
 
-        public async Task OnGetAsync(string returnUrl = null)
+        public async Task OnGetAsync(string? returnUrl = null)
         {
             if (!string.IsNullOrEmpty(ErrorMessage))
-            {
                 ModelState.AddModelError(string.Empty, ErrorMessage);
-            }
 
             returnUrl ??= Url.Content("~/");
 
-            // Limpia cookie externa (Google/Microsoft login, etc.)
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-
             ReturnUrl = returnUrl;
         }
 
-        public async Task<IActionResult> OnPostAsync(string returnUrl = null)
+        public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
         {
             returnUrl ??= Url.Content("~/");
+            ReturnUrl = returnUrl;
 
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
             if (!ModelState.IsValid)
                 return Page();
 
-            // ✅ Login por EMAIL (correcto)
-            var user = await _userManager.FindByEmailAsync(Input.Email);
+            // ✅ Buscar usuario por email
+            var user = await _userManager.FindByEmailAsync(Input.Email.Trim());
+            if (user == null)
+            {
+                // (fallback por si alguien escribe username)
+                user = await _userManager.FindByNameAsync(Input.Email.Trim());
+            }
+
             if (user == null)
             {
                 ModelState.AddModelError(string.Empty, "Credenciales inválidas.");
@@ -86,7 +89,7 @@ namespace Login.Areas.Identity.Pages.Account
 
             // ⚠️ PasswordSignInAsync usa UserName, no Email
             var result = await _signInManager.PasswordSignInAsync(
-                user.UserName,
+                user.UserName!,
                 Input.Password,
                 Input.RememberMe,
                 lockoutOnFailure: false);
@@ -96,13 +99,20 @@ namespace Login.Areas.Identity.Pages.Account
                 _logger.LogInformation("User logged in.");
 
                 // ✅ Redirección por rol
-                if (await _userManager.IsInRoleAsync(user, "Admin"))
-                    // return LocalRedirect("/Admin");
+                if (await _userManager.IsInRoleAsync(user, "SuperAdmin"))
+                    return LocalRedirect("/SuperAdmin/Clientes");
 
-                    return RedirectToAction("Index", "Home");
+                if (await _userManager.IsInRoleAsync(user, "Gestor"))
+                    // ✅ Interfaz principal del gestor: ver órdenes y asignar pilotos
+                    return LocalRedirect("/Supervisor/Ordenes");
 
+                if (await _userManager.IsInRoleAsync(user, "Cliente"))
+                    return LocalRedirect("/Tienda/Ordenes");
 
-                // Usuario normal
+                if (await _userManager.IsInRoleAsync(user, "Piloto"))
+                    return LocalRedirect("/Piloto/Index");
+
+                // fallback normal (si no tiene rol de los nuestros)
                 return LocalRedirect(returnUrl);
             }
 

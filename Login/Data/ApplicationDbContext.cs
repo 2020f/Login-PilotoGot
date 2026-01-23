@@ -22,6 +22,12 @@ namespace Login.Data
         public DbSet<OrdenEntrega> OrdenesEntrega => Set<OrdenEntrega>();
         public DbSet<CodigoEntrega> CodigosEntrega => Set<CodigoEntrega>();
         public DbSet<HistorialOrden> HistorialOrdenes => Set<HistorialOrden>();
+        public DbSet<UsuarioTienda> UsuariosTienda { get; set; } = null!;
+        public DbSet<UserContext> UserContexts { get; set; } = null!;
+        public DbSet<UsuarioClienteApp> UsuariosClienteApp { get; set; } = null!;
+
+
+
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -72,6 +78,36 @@ namespace Login.Data
                 .WithMany(c => c.Pilotos)
                 .HasForeignKey(p => p.ClienteAppId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<UsuarioTienda>()
+                 .HasIndex(x => new { x.IdentityUserId, x.TiendaId })
+                 .IsUnique();
+
+            builder.Entity<UsuarioTienda>()
+                .HasOne(x => x.Tienda)
+                .WithMany() // si quieres colección en Tienda, luego lo cambiamos
+                .HasForeignKey(x => x.TiendaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<UserContext>()
+                .HasIndex(x => x.IdentityUserId)
+                .IsUnique();
+
+
+
+            builder.Entity<UsuarioClienteApp>()
+               .HasIndex(x => new { x.IdentityUserId, x.ClienteAppId })
+                .IsUnique();
+
+            builder.Entity<UsuarioClienteApp>()
+                .HasOne(x => x.ClienteApp)
+                .WithMany()
+                .HasForeignKey(x => x.ClienteAppId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+
+
         }
     }
 }

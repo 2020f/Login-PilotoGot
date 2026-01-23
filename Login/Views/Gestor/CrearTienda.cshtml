@@ -1,0 +1,39 @@
+﻿@model Login.ViewModels.Gestor.TiendaCreateVm
+
+<h2>Crear Tienda</h2>
+
+@if (ViewBag.Error != null)
+{
+    <div style="color:red">@ViewBag.Error</div>
+}
+
+<form asp-action="CrearTienda" method="post">
+    @Html.AntiForgeryToken()
+
+    <div>
+        <label asp-for="Nombre"></label><br />
+        <input asp-for="Nombre" />
+        <span asp-validation-for="Nombre" style="color:red"></span>
+    </div>
+
+    <div>
+        <label asp-for="Direccion"></label><br />
+        <input asp-for="Direccion" />
+        <span asp-validation-for="Direccion" style="color:red"></span>
+    </div>
+
+    <div>
+        <label asp-for="Telefono"></label><br />
+        <input asp-for="Telefono" />
+        <span asp-validation-for="Telefono" style="color:red"></span>
+    </div>
+
+    <br />
+    <button type="submit">Guardar</button>
+</form>
+
+<p><a href="/Gestor/ListarTiendas">Volver</a></p>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

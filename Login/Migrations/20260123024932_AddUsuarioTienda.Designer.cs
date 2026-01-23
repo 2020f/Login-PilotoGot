@@ -4,6 +4,7 @@ using Login.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Login.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260123024932_AddUsuarioTienda")]
+    partial class AddUsuarioTienda
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,9 +38,6 @@ namespace Login.Migrations
 
                     b.Property<int>("Estado")
                         .HasColumnType("int");
-
-                    b.Property<string>("GestorIdentityUserId")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("NombreComercial")
                         .IsRequired()
@@ -305,62 +305,6 @@ namespace Login.Migrations
                     b.HasIndex("ClienteAppId");
 
                     b.ToTable("Tiendas");
-                });
-
-            modelBuilder.Entity("Login.Domain.Entities.UserContext", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("IdentityUserId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int?>("TiendaActivaId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IdentityUserId")
-                        .IsUnique();
-
-                    b.ToTable("UserContexts");
-                });
-
-            modelBuilder.Entity("Login.Domain.Entities.UsuarioClienteApp", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("Activo")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("ClienteAppId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("EsPrincipal")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("IdentityUserId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ClienteAppId");
-
-                    b.HasIndex("IdentityUserId", "ClienteAppId")
-                        .IsUnique();
-
-                    b.ToTable("UsuariosClienteApp");
                 });
 
             modelBuilder.Entity("Login.Domain.Entities.UsuarioFinal", b =>
@@ -720,17 +664,6 @@ namespace Login.Migrations
                         .WithMany("Tiendas")
                         .HasForeignKey("ClienteAppId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ClienteApp");
-                });
-
-            modelBuilder.Entity("Login.Domain.Entities.UsuarioClienteApp", b =>
-                {
-                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
-                        .WithMany()
-                        .HasForeignKey("ClienteAppId")
-                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("ClienteApp");

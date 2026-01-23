@@ -1,0 +1,114 @@
+﻿@model Login.ViewModels.Supervisor.OrdenesIndexVm
+@{
+    ViewData["Title"] = "Órdenes (Supervisor)";
+}
+
+<h2>Órdenes</h2>
+
+
+<div class="d-flex gap-2 mb-3">
+    <a class="btn btn-success"
+       asp-controller="Supervisor"
+       asp-action="Tiendas">
+        + Crear / Ver Tiendas
+    </a>
+
+    <a class="btn btn-outline-secondary"
+       asp-controller="Supervisor"
+       asp-action="Pilotos">
+        Pilotos
+    </a>
+</div>
+
+
+
+
+
+
+@if (!string.IsNullOrWhiteSpace(Model.Ok))
+{
+    <div class="alert alert-success">@Model.Ok</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger">@Model.Error</div>
+}
+
+<form method="get" asp-action="Ordenes" class="row g-2 mb-3">
+    <div class="col-md-3">
+        <label class="form-label">Tienda</label>
+        <select class="form-select" name="tiendaId" asp-items="Model.Tiendas">
+            <option value="">Todas</option>
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Piloto</label>
+        <select class="form-select" name="pilotoId" asp-items="Model.Pilotos">
+            <option value="">Todos</option>
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Estado</label>
+        <select class="form-select" name="estado" asp-items="Model.Estados"></select>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">A (Número)</label>
+        <input class="form-control" name="numeroOrdenA" value="@Model.NumeroOrdenA" />
+    </div>
+
+    <div class="col-12">
+        <button class="btn btn-primary">Filtrar</button>
+        <a class="btn btn-secondary" asp-action="Ordenes">Limpiar</a>
+    </div>
+</form>
+
+<table class="table table-sm table-striped align-middle">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>A</th>
+            <th>Tienda</th>
+            <th>Estado</th>
+            <th>Piloto</th>
+            <th>Creada</th>
+            <th>Asignar</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var o in Model.Ordenes)
+        {
+            <tr>
+                <td>@o.OrdenId</td>
+                <td>@o.NumeroOrdenA</td>
+                <td>@o.TiendaNombre</td>
+                <td>@o.Estado</td>
+                <td>@(o.PilotoNombre ?? "-")</td>
+                <td>@o.CreatedAt.ToLocalTime().ToString("g")</td>
+                <td style="min-width: 320px;">
+                    @if (!string.IsNullOrWhiteSpace(o.CodigoB))
+                    {
+                        <form method="post" asp-action="AsignarPiloto" class="d-flex gap-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="CodigoB" value="@o.CodigoB" />
+                            <select class="form-select form-select-sm" name="PilotoId" required>
+                                <option value="">-- piloto --</option>
+                                @foreach (var p in Model.Pilotos)
+                                {
+                                    <option value="@p.Value">@p.Text</option>
+                                }
+                            </select>
+                            <button class="btn btn-sm btn-success">Asignar</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Sin código B</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

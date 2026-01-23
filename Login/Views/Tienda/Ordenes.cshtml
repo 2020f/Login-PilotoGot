@@ -1,0 +1,43 @@
+﻿@model Login.ViewModels.Tienda.OrdenesTiendaVm
+@{
+    ViewData["Title"] = "Órdenes de Tienda";
+}
+
+@if (ViewBag.Ok != null)
+{
+     <div class="alert alert-success">@ViewBag.Ok</div>
+}
+@if (ViewBag.Error != null)
+{
+     <div class="alert alert-danger">@ViewBag.Error</div>
+}
+
+
+
+<h2>Órdenes de Tienda</h2>
+<a class="btn btn-outline-dark mb-3" asp-action="SeleccionarTienda">Cambiar tienda</a>
+<a class="btn btn-secondary mb-3" asp-action="UsuariosFinales">Usuarios finales</a>
+<a class="btn btn-primary mb-3" asp-action="CrearOrden">Crear orden</a>
+
+
+<table class="table table-sm table-striped align-middle">
+    <thead>
+        <tr>
+            <th>A</th>
+            <th>Usuario Final</th>
+            <th>Estado</th>
+            <th>Creada</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var o in Model.Ordenes)
+        {
+            <tr>
+                <td>@o.NumeroOrdenA</td>
+                <td>@o.UsuarioFinal</td>
+                <td>@o.Estado</td>
+                <td>@o.CreatedAt.ToLocalTime().ToString("g")</td>
+            </tr>
+        }
+    </tbody>
+</table>

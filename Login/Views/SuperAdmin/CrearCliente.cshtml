@@ -1,0 +1,26 @@
+﻿@model Login.ViewModels.SuperAdmin.ClienteAppCreateVm
+
+<h2>Crear ClienteApp</h2>
+
+<form method="post">
+    <div>
+        <label>Nombre comercial</label><br />
+        <input asp-for="NombreComercial" />
+    </div>
+
+    <div>
+        <label>Plan</label><br />
+        <select asp-for="PlanId">
+            <option value="">-- seleccionar plan --</option>
+            @foreach (var p in ViewBag.Planes)
+            {
+                <option value="@p.Id">@p.Nombre</option>
+            }
+        </select>
+    </div>
+
+    <br />
+    <button type="submit">Crear Cliente</button>
+</form>
+
+<p><a href="/SuperAdmin/Clientes">Volver</a></p>

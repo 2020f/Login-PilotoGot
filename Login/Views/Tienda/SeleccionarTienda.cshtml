@@ -1,0 +1,30 @@
+﻿@model Login.ViewModels.Tienda.SeleccionarTiendaVm
+@{
+    ViewData["Title"] = "Seleccionar Tienda";
+}
+
+<h2>Seleccionar Tienda</h2>
+
+@if (!string.IsNullOrWhiteSpace(Model.Ok))
+{
+    <div class="alert alert-success">@Model.Ok</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger">@Model.Error</div>
+}
+
+<form method="post" asp-action="SeleccionarTienda" class="row g-2">
+    @Html.AntiForgeryToken()
+
+    <div class="col-md-6">
+        <label class="form-label">Tienda</label>
+        <select class="form-select" name="tiendaId" required asp-items="Model.Tiendas">
+            <option value="">-- Seleccione --</option>
+        </select>
+    </div>
+
+    <div class="col-12">
+        <button class="btn btn-primary">Entrar</button>
+    </div>
+</form>

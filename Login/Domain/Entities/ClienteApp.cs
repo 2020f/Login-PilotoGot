@@ -18,6 +18,9 @@ namespace Login.Domain.Entities
         // ✅ Contador para generar A secuencial por tenant
         public int OrdenSeq { get; set; } = 0;
 
+        public string? GestorIdentityUserId { get; set; }
+
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<Tienda> Tiendas { get; set; } = new List<Tienda>();

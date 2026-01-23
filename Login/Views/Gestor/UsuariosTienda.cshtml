@@ -1,0 +1,37 @@
+﻿@model Login.ViewModels.Gestor.UsuariosTiendaIndexVm
+@{
+    ViewData["Title"] = "Asignaciones Usuario-Tienda";
+}
+
+<h2>Asignaciones Usuario ↔ Tienda</h2>
+
+@if (!string.IsNullOrWhiteSpace(Model.Ok))
+{
+    <div class="alert alert-success">@Model.Ok</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger">@Model.Error</div>
+}
+
+<a class="btn btn-primary mb-3" asp-action="AsignarTiendaUsuario">Nueva asignación</a>
+
+<table class="table table-sm table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Email Usuario</th>
+            <th>Tienda</th>
+            <th>Activo</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var a in Model.Asignaciones)
+        {
+            <tr>
+                <td>@a.EmailUsuario</td>
+                <td>@a.TiendaNombre</td>
+                <td>@(a.Activo ? "Sí" : "No")</td>
+            </tr>
+        }
+    </tbody>
+</table>

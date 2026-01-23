@@ -1,0 +1,53 @@
+﻿@model Login.ViewModels.SuperAdmin.ClientesIndexVm
+
+<h2>ClientesApp (Tenants)</h2>
+
+<!-- ✅ Menú rápido SuperAdmin -->
+<div style="margin-bottom:15px;">
+    <a href="/SuperAdmin/Planes" style="margin-right:10px;">📦 Planes</a>
+    <a href="/SuperAdmin/Clientes" style="margin-right:10px;">🏢 ClientesApp</a>
+    <a href="/SuperAdmin/CrearCliente">➕ Crear ClienteApp</a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Ok))
+{
+        <div style="color: green">@Model.Ok</div>
+}
+@if (!string.IsNullOrEmpty(Model.Error))
+{
+        <div style="color: red">@Model.Error</div>
+}
+
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Nombre</th>
+        <th>Plan</th>
+        <th>Estado</th>
+        <th>Gestor</th>
+        <th>Tiendas</th>
+        <th>Pilotos</th>
+        <th>Acción</th>
+    </tr>
+
+    @foreach (var c in Model.Clientes)
+    {
+        <tr>
+            <td>@c.NombreComercial</td>
+            <td>@c.PlanNombre</td>
+            <td>@c.Estado</td>
+            <td>@(c.GestorEmail ?? "—")</td>
+            <td>@c.TiendasCount</td>
+            <td>@c.PilotosCount</td>
+            <td>
+                @if (string.IsNullOrWhiteSpace(c.GestorEmail))
+                {
+                        <a href="/SuperAdmin/CrearGestor?clienteAppId=@c.Id">Crear Gestor</a>
+                }
+                else
+                {
+                        <span>✔</span>
+                }
+            </td>
+        </tr>
+    }
+</table>

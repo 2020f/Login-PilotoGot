@@ -1,0 +1,35 @@
+﻿@model List<Login.Domain.Entities.Tienda>
+
+<h2>Mis Tiendas</h2>
+
+@if (ViewBag.Ok != null)
+{
+    <div style="color:green">@ViewBag.Ok</div>
+}
+@if (ViewBag.Error != null)
+{
+    <div style="color:red">@ViewBag.Error</div>
+}
+
+<p>
+    <a href="/Gestor/CrearTienda">➕ Crear Tienda</a>
+</p>
+
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Nombre</th>
+        <th>Dirección</th>
+        <th>Teléfono</th>
+        <th>Activo</th>
+    </tr>
+
+    @foreach (var t in Model)
+    {
+        <tr>
+            <td>@t.Nombre</td>
+            <td>@t.Direccion</td>
+            <td>@t.Telefono</td>
+            <td>@t.Activo</td>
+        </tr>
+    }
+</table>

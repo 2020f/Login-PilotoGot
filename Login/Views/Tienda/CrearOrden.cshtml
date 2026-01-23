@@ -1,0 +1,46 @@
+﻿@model Login.ViewModels.Tienda.CrearOrdenVm
+@{
+    ViewData["Title"] = "Crear Orden";
+}
+
+<h2>Crear Orden</h2>
+
+@if (!string.IsNullOrWhiteSpace(Model.Ok))
+{
+    <div class="alert alert-success">@Model.Ok</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger">@Model.Error</div>
+}
+
+<form method="post" asp-action="CrearOrdenPost" class="row g-2">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" asp-for="ClienteAppId" />
+    <input type="hidden" asp-for="TiendaId" />
+
+    <div class="col-md-6">
+        <label class="form-label">Usuario Final</label>
+        <select class="form-select" asp-for="UsuarioFinalId" asp-items="Model.UsuariosFinales">
+            <option value="">-- Seleccione --</option>
+        </select>
+        <span class="text-danger" asp-validation-for="UsuarioFinalId"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Nota (opcional)</label>
+        <input class="form-control" asp-for="NotaPedido" />
+        <span class="text-danger" asp-validation-for="NotaPedido"></span>
+    </div>
+
+    <div class="col-12 mt-2">
+        <button class="btn btn-success">Crear Orden</button>
+        <a class="btn btn-secondary" asp-action="Ordenes" asp-route-tiendaId="@Model.TiendaId">Ver órdenes</a>
+        <a class="btn btn-outline-primary" asp-action="UsuariosFinales" asp-route-tiendaId="@Model.TiendaId">Usuarios Finales</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,48 @@
+﻿@model Login.ViewModels.SuperAdmin.PlanesIndexVm
+
+<h2>Planes</h2>
+
+<div style="margin-bottom:15px;">
+    <a href="/SuperAdmin/Planes" style="margin-right:10px;">📦 Planes</a>
+    <a href="/SuperAdmin/Clientes" style="margin-right:10px;">🏢 ClientesApp</a>
+    <a href="/SuperAdmin/CrearPlan">➕ Crear Plan</a>
+</div>
+
+
+
+@if (!string.IsNullOrEmpty(Model.Ok))
+{
+        <div style="color:green">@Model.Ok</div>
+}
+@if (!string.IsNullOrEmpty(Model.Error))
+{
+        <div style="color:red">@Model.Error</div>
+}
+
+<p>
+    <a asp-action="CrearPlan" asp-controller="SuperAdmin">Crear nuevo plan</a>
+</p>
+
+<table border="1" cellpadding="5">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Max Tiendas</th>
+            <th>Max Pilotos</th>
+            <th>Max Órdenes/mes</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in Model.Planes)
+        {
+            <tr>
+                <td>@p.Nombre</td>
+                <td>@p.PrecioMensual</td>
+                <td>@p.MaxTiendas</td>
+                <td>@p.MaxPilotos</td>
+                <td>@p.MaxOrdenesPorMes</td>
+            </tr>
+        }
+    </tbody>
+</table>

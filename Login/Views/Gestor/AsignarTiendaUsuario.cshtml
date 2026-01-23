@@ -1,0 +1,42 @@
+﻿@model Login.ViewModels.Gestor.AsignarTiendaUsuarioVm
+@{
+    ViewData["Title"] = "Asignar Tienda a Usuario";
+}
+
+<h2>Asignar Tienda a Usuario (Cliente)</h2>
+
+@if (!string.IsNullOrWhiteSpace(Model.Ok))
+{
+    <div class="alert alert-success">@Model.Ok</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger">@Model.Error</div>
+}
+
+<form method="post" asp-action="AsignarTiendaUsuario" class="row g-2">
+    @Html.AntiForgeryToken()
+
+    <div class="col-md-6">
+        <label class="form-label">Email del usuario (Cliente)</label>
+        <input class="form-control" asp-for="EmailUsuario" placeholder="cliente@correo.com" />
+        <span class="text-danger" asp-validation-for="EmailUsuario"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Tienda</label>
+        <select class="form-select" asp-for="TiendaId" asp-items="Model.Tiendas">
+            <option value="">-- Seleccione --</option>
+        </select>
+        <span class="text-danger" asp-validation-for="TiendaId"></span>
+    </div>
+
+    <div class="col-12 mt-2">
+        <button class="btn btn-success">Asignar</button>
+        <a class="btn btn-secondary" asp-action="UsuariosTienda">Ver asignaciones</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

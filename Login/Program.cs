@@ -1,32 +1,25 @@
+using Login.Application.Interfaces;
+using Login.Application.Services;
 using Login.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
-using Login.Data;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ===============================
-// 1️⃣ MVC + Razor Pages (OBLIGATORIO PARA IDENTITY)
-// ===============================
+// 1) MVC + Razor Pages
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-// ===============================
-// 2️⃣ DbContext + SQL Server
-// ===============================
+// 2) DbContext + SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ===============================
-// 3️⃣ Identity (USUARIOS + ROLES)
-// ===============================
+// 3) Identity (usuarios + roles)
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
-
-    options.SignIn.RequireConfirmedAccount = true;
+    // DEV: para que no te bloquee el login por confirmación
+    options.SignIn.RequireConfirmedAccount = false;
 
     // Password (modo dev)
     options.Password.RequireDigit = false;
@@ -41,10 +34,8 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-// ===============================
-// 4️⃣ Cookies (LOGIN)
-// ===============================
-builder.Services.ConfigureApplicationCookie(options =>
+// 4) Cookies
+builder.Services.ConfigureApplicationCookie(options => 
 {
     options.LoginPath = "/Identity/Account/Login";
     options.LogoutPath = "/Identity/Account/Logout";
@@ -54,20 +45,14 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
-// ===============================
-// APP
-// ===============================
-
-
-builder.Services.AddSingleton<IEmailSender, EmailSender>();
-
-
+// 5) App services
+builder.Services.AddTransient<IEmailSender, EmailSender>(); // o Scoped
+builder.Services.AddScoped<IOrdenService, OrdenService>();
+builder.Services.AddScoped<IUserContextService, UserContextService>();
 
 var app = builder.Build();
 
-// ===============================
 // Middleware
-// ===============================
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -76,25 +61,20 @@ if (!app.Environment.IsDevelopment())
 app.UseStaticFiles();
 app.UseRouting();
 
-app.UseAuthentication(); // 🔐 LOGIN
-app.UseAuthorization();  // 🔐 PERMISOS
+app.UseAuthentication();
+app.UseAuthorization();
 
-// ===============================
-// RUTAS
-// ===============================
-app.MapRazorPages(); // 🔥 NECESARIO PARA /Identity/Account/Login
-
+// Rutas
+app.MapRazorPages();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-
+// Seed
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     await SeedData.SeedRolesAndAdminAsync(services);
 }
-
-
 
 app.Run();

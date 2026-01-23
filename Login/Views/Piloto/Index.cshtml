@@ -1,0 +1,73 @@
+﻿@model Login.ViewModels.Piloto.MisOrdenesIndexVm
+@{
+    ViewData["Title"] = "Piloto - Mis Órdenes";
+}
+
+<h2>Mis Órdenes</h2>
+
+@if (!string.IsNullOrWhiteSpace(Model.Ok))
+{
+    <div class="alert alert-success">@Model.Ok</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger">@Model.Error</div>
+}
+
+<table class="table table-sm table-striped align-middle">
+    <thead>
+        <tr>
+            <th>A</th>
+            <th>Estado</th>
+            <th>Creada</th>
+            <th>Destino</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var o in Model.Ordenes)
+        {
+            <tr>
+                <td>@o.NumeroOrdenA</td>
+                <td>@o.Estado</td>
+                <td>@o.CreatedAt.ToLocalTime().ToString("g")</td>
+
+                <td>
+                    @if (o.PuedeVerDestino)
+                    {
+                        <div><b>@o.NombreUsuarioFinal</b> (@o.TelefonoUsuarioFinal)</div>
+                        <div>@o.DireccionUbicacion</div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">🔒 Oculto hasta recolecta</span>
+                    }
+                </td>
+
+                <td style="min-width:360px;">
+                    @if (o.Estado == "Asignada")
+                    {
+                        <form method="post" asp-action="ConfirmarRecolecta" class="d-flex gap-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="CodigoB" value="@o.CodigoB" />
+                            <button class="btn btn-sm btn-warning">Confirmar Recolecta (B)</button>
+                        </form>
+                    }
+                    else if (o.Estado == "Recolectada")
+                    {
+                        <form method="post" asp-action="ConfirmarEntrega" class="d-flex gap-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="CodigoB" value="@o.CodigoB" />
+                            <input class="form-control form-control-sm" name="CodigoC" placeholder="Código C" required />
+                            <button class="btn btn-sm btn-success">Confirmar Entrega</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Sin acciones</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

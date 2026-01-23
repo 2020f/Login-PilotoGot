@@ -1,0 +1,41 @@
+﻿@model Login.ViewModels.Tienda.UsuariosFinalesIndexVm
+@{
+    ViewData["Title"] = "Usuarios Finales";
+}
+
+<h2>Usuarios Finales</h2>
+
+@if (!string.IsNullOrWhiteSpace(Model.Ok))
+{
+    <div class="alert alert-success">@Model.Ok</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger">@Model.Error</div>
+}
+
+<a class="btn btn-primary mb-3" asp-action="CrearUsuarioFinal" asp-route-tiendaId="@Model.TiendaId">Nuevo</a>
+
+<table class="table table-sm table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Dirección</th>
+            <th>Teléfono</th>
+            <th>Activo</th>
+            <th>Creado</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var u in Model.Usuarios)
+        {
+            <tr>
+                <td>@u.Nombre</td>
+                <td>@u.DireccionUbicacion</td>
+                <td>@u.Telefono</td>
+                <td>@(u.Activo ? "Sí" : "No")</td>
+                <td>@u.CreatedAt.ToLocalTime().ToString("g")</td>
+            </tr>
+        }
+    </tbody>
+</table>

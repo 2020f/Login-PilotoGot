@@ -1,0 +1,56 @@
+﻿@model Login.ViewModels.SuperAdmin.PlanCreateVm
+
+<h2>Crear Plan</h2>
+
+@if (!ViewData.ModelState.IsValid)
+{
+        <div style="color:red">
+        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+                    <div>@e.ErrorMessage</div>
+        }
+        </div>
+}
+
+<form asp-action="CrearPlan" asp-controller="SuperAdmin" method="post">
+    @Html.AntiForgeryToken()
+
+    <div>
+        <label asp-for="Nombre"></label><br />
+        <input asp-for="Nombre" />
+        <span asp-validation-for="Nombre" style="color:red"></span>
+    </div>
+
+    <div>
+        <label asp-for="PrecioMensual"></label><br />
+        <input asp-for="PrecioMensual" type="number" step="0.01" />
+        <span asp-validation-for="PrecioMensual" style="color:red"></span>
+    </div>
+
+    <div>
+        <label asp-for="MaxTiendas"></label><br />
+        <input asp-for="MaxTiendas" type="number" />
+        <span asp-validation-for="MaxTiendas" style="color:red"></span>
+    </div>
+
+    <div>
+        <label asp-for="MaxPilotos"></label><br />
+        <input asp-for="MaxPilotos" type="number" />
+        <span asp-validation-for="MaxPilotos" style="color:red"></span>
+    </div>
+
+    <div>
+        <label asp-for="MaxOrdenesPorMes"></label><br />
+        <input asp-for="MaxOrdenesPorMes" type="number" />
+        <span asp-validation-for="MaxOrdenesPorMes" style="color:red"></span>
+    </div>
+
+    <br />
+    <button type="submit">Guardar</button>
+</form>
+
+<p><a asp-action="Planes" asp-controller="SuperAdmin">Volver</a></p>
+
+@section Scripts {
+        <partial name="_ValidationScriptsPartial" />
+}
