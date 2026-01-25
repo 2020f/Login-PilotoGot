@@ -174,6 +174,180 @@ namespace Login.Controllers
         }
 
 
+
+
+
+
+
+
+
+        // ==========================
+        // PILOTOS (Gestor)
+        // ==========================
+        [HttpGet]
+        public async Task<IActionResult> Pilotos(string? ok = null, string? error = null)
+        {
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception ex) { return RedirectToAction(nameof(Ordenes), new { error = ex.Message }); }
+
+            ViewBag.Ok = ok;
+            ViewBag.Error = error;
+
+            var pilotos = await _db.Pilotos
+                .AsNoTracking()
+                .Where(p => p.ClienteAppId == clienteAppId)
+                .OrderByDescending(p => p.Id)
+                .ToListAsync();
+
+            return View(pilotos);
+        }
+
+        [HttpGet]
+        public IActionResult CrearPiloto()
+        {
+            return View(new Login.ViewModels.Supervisor.PilotoCreateVm());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CrearPiloto(Login.ViewModels.Supervisor.PilotoCreateVm input)
+        {
+            if (!ModelState.IsValid)
+                return View(input);
+
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception ex) { return RedirectToAction(nameof(Pilotos), new { error = ex.Message }); }
+
+            // ✅ cargar cliente + plan para límites
+            var cliente = await _db.ClientesApp
+                .Include(c => c.Plan)
+                .SingleAsync(c => c.Id == clienteAppId);
+
+            // ✅ límite por plan (MaxPilotos)
+            var totalPilotos = await _db.Pilotos.CountAsync(p => p.ClienteAppId == clienteAppId && p.Activo);
+            if (totalPilotos >= cliente.Plan.MaxPilotos)
+                return RedirectToAction(nameof(Pilotos), new { error = "Límite de pilotos alcanzado por tu plan." });
+
+            // ✅ validar email no usado
+            var email = input.EmailPiloto.Trim().ToLower();
+            var existing = await _userManager.FindByEmailAsync(email);
+            if (existing != null)
+            {
+                ModelState.AddModelError(nameof(input.EmailPiloto), "Ese email ya existe. Usa otro.");
+                return View(input);
+            }
+
+            // ✅ 1) crear IdentityUser del piloto
+            var user = new IdentityUser
+            {
+                UserName = email,
+                Email = email,
+                EmailConfirmed = true
+            };
+
+            var createRes = await _userManager.CreateAsync(user, input.PasswordPiloto);
+            if (!createRes.Succeeded)
+            {
+                foreach (var e in createRes.Errors)
+                    ModelState.AddModelError("", e.Description);
+
+                return View(input);
+            }
+
+            // ✅ 2) asignar rol Piloto
+            var roleRes = await _userManager.AddToRoleAsync(user, "Piloto");
+            if (!roleRes.Succeeded)
+            {
+                await _userManager.DeleteAsync(user);
+
+                foreach (var e in roleRes.Errors)
+                    ModelState.AddModelError("", e.Description);
+
+                return View(input);
+            }
+
+            // ✅ 3) crear Piloto en BD ligado al tenant + amarrado a IdentityUserId
+            var piloto = new Piloto
+            {
+                ClienteAppId = clienteAppId,
+                Nombre = input.Nombre.Trim(),
+                Telefono = input.Telefono.Trim(),
+                Estado = EstadoPiloto.Disponible,
+                IdentityUserId = user.Id,
+                Activo = true
+            };
+
+            _db.Pilotos.Add(piloto);
+            await _db.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Pilotos), new { ok = "Piloto creado y usuario generado ✅" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DesactivarPiloto(int id)
+        {
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception ex) { return RedirectToAction(nameof(Pilotos), new { error = ex.Message }); }
+
+            var piloto = await _db.Pilotos.SingleOrDefaultAsync(p => p.Id == id && p.ClienteAppId == clienteAppId);
+            if (piloto is null)
+                return RedirectToAction(nameof(Pilotos), new { error = "Piloto no encontrado." });
+
+            piloto.Activo = false;
+            piloto.Estado = EstadoPiloto.Inactivo;
+
+            await _db.SaveChangesAsync();
+            return RedirectToAction(nameof(Pilotos), new { ok = "Piloto desactivado ✅" });
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         // ==========================
         // ÓRDENES (Gestor)
         // ==========================

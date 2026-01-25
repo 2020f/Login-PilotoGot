@@ -10,6 +10,15 @@ namespace Login.Domain.Entities
         [Required, MaxLength(120)]
         public string NombreComercial { get; set; } = string.Empty;
 
+
+        [MaxLength(250)]
+        public string? Ubicacion { get; set; }
+
+        [MaxLength(30)]
+        public string? Telefono { get; set; }
+
+
+
         public int PlanId { get; set; }
         public Plan Plan { get; set; } = null!;
 

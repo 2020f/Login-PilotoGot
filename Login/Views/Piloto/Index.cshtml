@@ -1,9 +1,9 @@
 ﻿@model Login.ViewModels.Piloto.MisOrdenesIndexVm
 @{
-    ViewData["Title"] = "Piloto - Mis Órdenes";
+    ViewData["Title"] = "Piloto - Mi Orden";
 }
 
-<h2>Mis Órdenes</h2>
+<h2>Mi Orden</h2>
 
 @if (!string.IsNullOrWhiteSpace(Model.Ok))
 {
@@ -14,60 +14,78 @@
     <div class="alert alert-danger">@Model.Error</div>
 }
 
-<table class="table table-sm table-striped align-middle">
-    <thead>
-        <tr>
-            <th>A</th>
-            <th>Estado</th>
-            <th>Creada</th>
-            <th>Destino</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var o in Model.Ordenes)
-        {
-            <tr>
-                <td>@o.NumeroOrdenA</td>
-                <td>@o.Estado</td>
-                <td>@o.CreatedAt.ToLocalTime().ToString("g")</td>
+@if (Model.Ordenes.Count == 0)
+{
+    <div class="alert alert-info">
+        No tienes órdenes asignadas ahora mismo.
+    </div>
+}
+else
+{
+    var o = Model.Ordenes[0];
 
-                <td>
-                    @if (o.PuedeVerDestino)
-                    {
-                        <div><b>@o.NombreUsuarioFinal</b> (@o.TelefonoUsuarioFinal)</div>
-                        <div>@o.DireccionUbicacion</div>
-                    }
-                    else
-                    {
-                        <span class="text-muted">🔒 Oculto hasta recolecta</span>
-                    }
-                </td>
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h5 class="mb-1">Orden A: <span class="badge bg-dark">@o.NumeroOrdenA</span></h5>
+                    <div class="text-muted">Estado: <b>@o.Estado</b></div>
+                </div>
+                <div class="text-muted">@o.CreatedAt.ToLocalTime().ToString("g")</div>
+            </div>
 
-                <td style="min-width:360px;">
-                    @if (o.Estado == "Asignada")
-                    {
-                        <form method="post" asp-action="ConfirmarRecolecta" class="d-flex gap-2">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="CodigoB" value="@o.CodigoB" />
-                            <button class="btn btn-sm btn-warning">Confirmar Recolecta (B)</button>
-                        </form>
-                    }
-                    else if (o.Estado == "Recolectada")
-                    {
-                        <form method="post" asp-action="ConfirmarEntrega" class="d-flex gap-2">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="CodigoB" value="@o.CodigoB" />
-                            <input class="form-control form-control-sm" name="CodigoC" placeholder="Código C" required />
-                            <button class="btn btn-sm btn-success">Confirmar Entrega</button>
-                        </form>
-                    }
-                    else
-                    {
-                        <span class="text-muted">Sin acciones</span>
-                    }
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+            <hr />
+
+            @if (!o.PuedeVerDestinoFinal)
+            {
+                <div class="text-muted fw-bold mb-2">🔎 Buscando paquetes…</div>
+
+                <div class="mb-2">
+                    <div class="fw-bold">🏪 Ir a la tienda (Pickup)</div>
+                    <div><b>@o.TiendaNombre</b> (@o.TiendaTelefono)</div>
+                    <div>@o.TiendaDireccion</div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(o.NotaPedido))
+                {
+                    <div class="mb-3">
+                        <div class="fw-bold">📝 Nota del pedido</div>
+                        <div>@o.NotaPedido</div>
+                    </div>
+                }
+
+                <form method="post" asp-action="ConfirmarRecolecta" class="d-flex gap-2">
+                    @Html.AntiForgeryToken()
+                    <input class="form-control" name="CodigoB"
+                           placeholder="Escanea / pega Código B (QR de tienda)"
+                           required />
+                    <button class="btn btn-warning">Llegué a la tienda</button>
+                </form>
+            }
+            else
+            {
+                <div class="fw-bold mb-2">📍 Destino final (Delivery)</div>
+                <div><b>@o.UsuarioFinalNombre</b> (@o.UsuarioFinalTelefono)</div>
+                <div class="mb-3">@o.UsuarioFinalDireccion</div>
+
+                <div class="alert alert-secondary">
+                    Para cerrar entrega: escribe el <b>Código C</b> y vuelve a escanear/pegar el <b>Código B</b>.
+                </div>
+
+                <form method="post" asp-action="ConfirmarEntrega" class="d-flex gap-2 flex-wrap">
+                    @Html.AntiForgeryToken()
+
+                    <input class="form-control" name="CodigoB"
+                           placeholder="Escanea / pega Código B (QR)"
+                           required />
+
+                    <input class="form-control" name="CodigoC"
+                           placeholder="Código C (cliente final)"
+                           required />
+
+                    <button class="btn btn-success">Cerrar entrega</button>
+                </form>
+            }
+        </div>
+    </div>
+}

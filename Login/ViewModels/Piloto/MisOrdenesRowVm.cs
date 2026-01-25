@@ -9,11 +9,17 @@ namespace Login.ViewModels.Piloto
         public string Estado { get; set; } = "";
         public DateTime CreatedAt { get; set; }
 
-        public string CodigoB { get; set; } = "";
-        public bool PuedeVerDestino { get; set; }
+        public bool PuedeVerDestinoFinal { get; set; }
 
-        public string? NombreUsuarioFinal { get; set; }
-        public string? TelefonoUsuarioFinal { get; set; }
-        public string? DireccionUbicacion { get; set; }
+        // Antes del scan (Asignada): datos de tienda + nota
+        public string TiendaNombre { get; set; } = "";
+        public string TiendaDireccion { get; set; } = "";
+        public string TiendaTelefono { get; set; } = "";
+        public string? NotaPedido { get; set; }
+
+        // Después del scan (Recolectada): destino final
+        public string UsuarioFinalNombre { get; set; } = "";
+        public string UsuarioFinalDireccion { get; set; } = "";
+        public string UsuarioFinalTelefono { get; set; } = "";
     }
 }

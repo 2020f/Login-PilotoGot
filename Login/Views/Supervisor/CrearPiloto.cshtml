@@ -1,0 +1,46 @@
+﻿@model Login.ViewModels.Supervisor.PilotoCreateVm
+@{
+    ViewData["Title"] = "Crear Piloto";
+}
+
+<h2>Crear Piloto</h2>
+
+<div class="mb-3">
+    <a class="btn btn-secondary" asp-action="Pilotos">← Volver</a>
+</div>
+
+<form method="post" asp-action="CrearPiloto" class="row g-3">
+    @Html.AntiForgeryToken()
+
+    <div class="col-md-6">
+        <label class="form-label">Nombre</label>
+        <input class="form-control" asp-for="Nombre" />
+        <span class="text-danger" asp-validation-for="Nombre"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Teléfono</label>
+        <input class="form-control" asp-for="Telefono" />
+        <span class="text-danger" asp-validation-for="Telefono"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Email (login del piloto)</label>
+        <input class="form-control" asp-for="EmailPiloto" />
+        <span class="text-danger" asp-validation-for="EmailPiloto"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Password</label>
+        <input class="form-control" asp-for="PasswordPiloto" type="password" />
+        <span class="text-danger" asp-validation-for="PasswordPiloto"></span>
+    </div>
+
+    <div class="col-12">
+        <button class="btn btn-success">Crear</button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

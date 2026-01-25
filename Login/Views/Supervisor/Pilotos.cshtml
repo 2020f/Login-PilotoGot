@@ -1,0 +1,61 @@
+﻿@model List<Login.Domain.Entities.Piloto>
+@{
+    ViewData["Title"] = "Pilotos (Supervisor)";
+}
+
+<h2>Pilotos</h2>
+
+<div class="d-flex gap-2 mb-3">
+    <a class="btn btn-secondary" asp-action="Ordenes">← Volver a Órdenes</a>
+    <a class="btn btn-success" asp-action="CrearPiloto">+ Crear Piloto</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(ViewBag.Ok))
+{
+    <div class="alert alert-success">@ViewBag.Ok</div>
+}
+@if (!string.IsNullOrWhiteSpace(ViewBag.Error))
+{
+    <div class="alert alert-danger">@ViewBag.Error</div>
+}
+
+<table class="table table-sm table-striped align-middle">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Teléfono</th>
+            <th>Estado</th>
+            <th>Activo</th>
+            <th>Creado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in Model)
+        {
+            <tr>
+                <td>@p.Id</td>
+                <td>@p.Nombre</td>
+                <td>@p.Telefono</td>
+                <td>@p.Estado</td>
+                <td>@(p.Activo ? "Sí" : "No")</td>
+                <td>@p.CreatedAt.ToLocalTime().ToString("g")</td>
+                <td style="min-width:180px;">
+                    @if (p.Activo)
+                    {
+                        <form method="post" asp-action="DesactivarPiloto" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@p.Id" />
+                            <button class="btn btn-sm btn-danger">Desactivar</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <span class="text-muted">-</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
