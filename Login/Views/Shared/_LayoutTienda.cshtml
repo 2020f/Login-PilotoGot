@@ -1,0 +1,38 @@
+﻿@{
+    var title = ViewData["Title"] as string ?? "PilotGo - Tienda";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title</title>
+
+    <link rel="stylesheet" href="~/css/tienda.css" asp-append-version="true" />
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+    <div class="tp-shell">
+        <aside class="tp-sidebar" id="tpSidebar">
+            <partial name="_TiendaSidebar" />
+
+            <div class="tp-sidebar-footer">
+                <partial name="_TiendaUserBadge" />
+            </div>
+        </aside>
+
+        <main class="tp-main">
+            <header class="tp-topbar">
+                <partial name="_TiendaTopbar" />
+            </header>
+
+            <section class="tp-content">
+                @RenderBody()
+            </section>
+        </main>
+    </div>
+
+    <script src="~/js/tienda.js" asp-append-version="true"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

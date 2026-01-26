@@ -1,46 +1,81 @@
 ﻿@model Login.ViewModels.Tienda.CrearOrdenVm
 @{
-    ViewData["Title"] = "Crear Orden";
+    Layout = "_LayoutTienda";
+    ViewData["Title"] = "Nueva Orden";
+    ViewData["PageTitle"] = "Generar Nueva Orden";
 }
 
-<h2>Crear Orden</h2>
+<div class="tp-page">
 
-@if (!string.IsNullOrWhiteSpace(Model.Ok))
-{
-    <div class="alert alert-success">@Model.Ok</div>
-}
-@if (!string.IsNullOrWhiteSpace(Model.Error))
-{
-    <div class="alert alert-danger">@Model.Error</div>
-}
+    @if (!string.IsNullOrWhiteSpace(Model.Ok))
+    {
+        <div class="tp-alert tp-alert-ok">
+            <span class="tp-alert-icon">✅</span>
+            <div>@Model.Ok</div>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="tp-alert tp-alert-bad">
+            <span class="tp-alert-icon">⚠️</span>
+            <div>@Model.Error</div>
+        </div>
+    }
 
-<form method="post" asp-action="CrearOrdenPost" class="row g-2">
-    @Html.AntiForgeryToken()
+    <div class="tp-center">
+        <div class="tp-card tp-card-pad tp-order-form">
+            <div class="tp-form-head">
+                <div class="tp-h2">Generar Orden de Entrega</div>
+                <div class="tp-sub">Complete los datos para solicitar un piloto. El QR se generará automáticamente.</div>
+            </div>
 
-    <input type="hidden" asp-for="ClienteAppId" />
-    <input type="hidden" asp-for="TiendaId" />
+            <div class="tp-divider"></div>
 
-    <div class="col-md-6">
-        <label class="form-label">Usuario Final</label>
-        <select class="form-select" asp-for="UsuarioFinalId" asp-items="Model.UsuariosFinales">
-            <option value="">-- Seleccione --</option>
-        </select>
-        <span class="text-danger" asp-validation-for="UsuarioFinalId"></span>
+            <form method="post" asp-action="CrearOrdenPost" class="tp-form">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="ClienteAppId" />
+                <input type="hidden" asp-for="TiendaId" />
+
+                <div class="tp-step">
+                    <div class="tp-step-title">1. Seleccionar Usuario Final (Destinatario)</div>
+                    <div class="tp-step-row">
+                        <select class="tp-select" asp-for="UsuarioFinalId" asp-items="Model.UsuariosFinales">
+                            <option value="">Seleccione un usuario de la lista...</option>
+                        </select>
+
+                        <button class="tp-link-btn" type="button" data-tp-open="#tpModalUsuarioFinal">
+                            + Crear Nuevo
+                        </button>
+                    </div>
+                    <span class="tp-val" asp-validation-for="UsuarioFinalId"></span>
+                </div>
+
+                <div class="tp-step">
+                    <div class="tp-step-title">2. Descripción del Paquete / Nota</div>
+                    <textarea class="tp-textarea" asp-for="NotaPedido" rows="4"
+                              placeholder="Ej. Caja mediana frágil, contiene electrónicos..."></textarea>
+                    <span class="tp-sub">ℹ️ Los datos de la tienda se adjuntarán automáticamente.</span>
+                    <span class="tp-val" asp-validation-for="NotaPedido"></span>
+                </div>
+
+                <div class="tp-order-foot">
+                    <div class="tp-sub">
+                        Se generará Código (B) QR y Código (C) Cliente
+                    </div>
+                    <button class="tp-btn tp-btn-primary tp-btn-lg" type="submit">
+                        🚀 Crear Orden
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <div class="col-md-6">
-        <label class="form-label">Nota (opcional)</label>
-        <input class="form-control" asp-for="NotaPedido" />
-        <span class="text-danger" asp-validation-for="NotaPedido"></span>
-    </div>
+</div>
 
-    <div class="col-12 mt-2">
-        <button class="btn btn-success">Crear Orden</button>
-        <a class="btn btn-secondary" asp-action="Ordenes" asp-route-tiendaId="@Model.TiendaId">Ver órdenes</a>
-        <a class="btn btn-outline-primary" asp-action="UsuariosFinales" asp-route-tiendaId="@Model.TiendaId">Usuarios Finales</a>
-    </div>
-</form>
+@await Html.PartialAsync("_ModalUsuarioFinalCreate", new Login.ViewModels.Tienda.UsuarioFinalCreateVm())
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/tienda.js" asp-append-version="true"></script>
 }

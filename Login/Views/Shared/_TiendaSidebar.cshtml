@@ -1,0 +1,62 @@
+﻿@{
+    var currentController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? "").ToLower();
+    var currentAction = (ViewContext.RouteData.Values["action"]?.ToString() ?? "").ToLower();
+
+    bool IsActive(string action)
+        => currentController == "tienda" && currentAction == action.ToLower();
+}
+
+<div class="tp-brand">
+    <div class="tp-brand-ico" aria-hidden="true">
+        <!-- iconito simple -->
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M4 6h16M4 12h10M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+    </div>
+    <div class="tp-brand-txt">
+        <div class="tp-brand-title">PilotGo</div>
+        <div class="tp-brand-sub">TIENDA PANEL</div>
+    </div>
+</div>
+
+<nav class="tp-nav">
+    <a class="tp-item @(IsActive("Ordenes") ? "active" : "")"
+       asp-controller="Tienda" asp-action="Ordenes">
+        <span class="tp-ico" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 4h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+        </span>
+        <span>Vista General</span>
+    </a>
+
+    <a class="tp-item @(IsActive("CrearOrden") ? "active" : "")"
+       asp-controller="Tienda" asp-action="CrearOrden">
+        <span class="tp-ico" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+        </span>
+        <span>Nueva Orden</span>
+    </a>
+
+    <a class="tp-item @(IsActive("Ordenes") ? "" : "")"
+       asp-controller="Tienda" asp-action="Ordenes">
+        <span class="tp-ico" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M3 7h18M6 7v14h12V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+        </span>
+        <span>Mis Envíos</span>
+    </a>
+
+    <a class="tp-item @(IsActive("UsuariosFinales") ? "active" : "")"
+       asp-controller="Tienda" asp-action="UsuariosFinales">
+        <span class="tp-ico" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M16 21v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm12 10v-1a3 3 0 0 0-2.2-2.9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+        </span>
+        <span>Usuarios Finales</span>
+    </a>
+</nav>

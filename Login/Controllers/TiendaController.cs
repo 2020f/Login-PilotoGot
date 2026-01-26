@@ -4,11 +4,13 @@ using System.Threading.Tasks;
 using Login.Application.Interfaces;
 using Login.Data;
 using Login.Domain.Entities;
+using Login.Domain.Enums;
 using Login.ViewModels.Tienda;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+
 
 namespace Login.Controllers
 {
@@ -298,25 +300,9 @@ namespace Login.Controllers
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         // ==========================
         // 2) CREAR ORDEN
         // ==========================
-
 
 
 
@@ -386,11 +372,67 @@ namespace Login.Controllers
             }
         }
 
-        // ==========================
-        // 3) ORDENES DE LA TIENDA
-        // ==========================
 
-        [HttpGet]
+
+        
+
+[HttpGet]
+    public async Task<IActionResult> QrCodigos(int ordenId)
+    {
+        Tienda tienda;
+        try { tienda = await GetTiendaActivaAsync(); }
+        catch { return Unauthorized(); }
+
+        var orden = await _db.OrdenesEntrega
+            .AsNoTracking()
+            .Include(o => o.UsuarioFinal)
+            .Include(o => o.Codigos)
+            .FirstOrDefaultAsync(o => o.Id == ordenId && o.TiendaId == tienda.Id);
+
+        if (orden == null) return NotFound();
+
+        // 🔵 Código B (para piloto / recolección)
+        var codigoB = orden.Codigos
+            .Where(x => x.Tipo == TipoCodigo.B_Recoleccion)
+            .Select(x => x.Codigo)
+            .FirstOrDefault();
+
+        // 🟢 Código C (para usuario final / entrega)
+        var codigoC = orden.Codigos
+            .Where(x => x.Tipo == TipoCodigo.C_Finalizacion)
+            .Select(x => x.Codigo)
+            .FirstOrDefault();
+
+        var vm = new Login.ViewModels.Tienda.QrCodigosVm
+        {
+            OrdenId = orden.Id,
+            NumeroOrdenA = orden.NumeroOrdenA,
+            Estado = orden.Estado.ToString(),
+
+            CodigoB = codigoB ?? "",
+            CodigoC = codigoC ?? "",
+
+            UsuarioFinalNombre = orden.UsuarioFinal.Nombre,
+            DireccionUbicacion = orden.UsuarioFinal.DireccionUbicacion,
+            Descripcion = orden.NotaPedido
+        };
+
+        return PartialView("_ModalQrCodigos", vm);
+    }
+
+
+
+
+
+
+
+
+
+    // ==========================
+    // 3) ORDENES DE LA TIENDA
+    // ==========================
+
+    [HttpGet]
         public async Task<IActionResult> Ordenes(string? ok = null, string? error = null)
         {
             Tienda tienda;

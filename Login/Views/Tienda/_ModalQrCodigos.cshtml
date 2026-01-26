@@ -1,0 +1,69 @@
+﻿@model Login.ViewModels.Tienda.QrCodigosVm
+
+<div class="pg-overlay" id="pgQrOverlay" role="dialog" aria-modal="true">
+    <div class="pg-modal-wrap">
+
+        <div class="qr-modal">
+
+            <!-- HEADER -->
+            <div class="qr-header">
+                <div class="qr-title">
+                    ORDEN DE ENTREGA (A)
+                    <h2>#ORD-@Model.NumeroOrdenA</h2>
+                </div>
+
+                <button type="button" class="qr-close" aria-label="Cerrar">✕</button>
+            </div>
+
+            <!-- PROGRESO -->
+            <div class="qr-steps">
+                <div class="step @(Model.Estado == "Recolectada" || Model.Estado == "Asignada" || Model.Estado == "Creada" ? "active" : "")">
+                    Recolectando
+                </div>
+
+                <div class="step @(Model.Estado == "Recolectada" || Model.Estado == "Asignada" ? "" : "") @(Model.Estado == "Asignada" ? "active" : "")">
+                    En Ruta
+                </div>
+
+                <div class="step @(Model.Estado == "Entregada" ? "active" : "")">
+                    Entregado
+                </div>
+            </div>
+
+            <!-- CUERPO (2 columnas reales) -->
+            <div class="qr-body">
+
+                <!-- PILOTO -->
+                <div class="qr-card">
+                    <h4><span class="tag">B</span> Para el Piloto</h4>
+                    <p>El piloto debe escanear esto para iniciar la ruta.</p>
+
+                    <div class="qr-box">
+                        <img src="/Qr/Generar?codigo=@Model.CodigoB" alt="QR Piloto" />
+                    </div>
+                </div>
+
+                <!-- CLIENTE FINAL -->
+                <div class="qr-card">
+                    <h4><span class="tag blue">C</span> Para Usuario Final</h4>
+                    <p>Entregar este código al usuario final para recibir el paquete.</p>
+
+                    <div class="codigo-final">
+                        @Model.CodigoC
+                    </div>
+
+                    <small>🔒 Código de seguridad único</small>
+                </div>
+
+            </div>
+
+            <!-- FOOTER -->
+            <div class="qr-footer">
+                <strong>Destino:</strong> @Model.DireccionUbicacion <br />
+                <strong>Descripción:</strong> @Model.Descripcion
+            </div>
+
+        </div>
+
+    </div>
+</div>

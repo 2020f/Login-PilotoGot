@@ -1,54 +1,69 @@
 ﻿@model Login.ViewModels.Tienda.UsuariosFinalesIndexVm
 @{
+    Layout = "_LayoutTienda";
     ViewData["Title"] = "Usuarios Finales";
+    ViewData["PageTitle"] = "Gestión de Usuarios Finales";
 }
 
-<h2>Usuarios Finales</h2>
+<div class="tp-page">
 
-@if (!string.IsNullOrWhiteSpace(Model.Ok))
-{
-    <div class="alert alert-success">@Model.Ok</div>
-}
-@if (!string.IsNullOrWhiteSpace(Model.Error))
-{
-    <div class="alert alert-danger">@Model.Error</div>
-}
+    @if (!string.IsNullOrWhiteSpace(Model.Ok))
+    {
+        <div class="tp-alert tp-alert-ok">
+            <span class="tp-alert-icon">✅</span>
+            <div>@Model.Ok</div>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="tp-alert tp-alert-bad">
+            <span class="tp-alert-icon">⚠️</span>
+            <div>@Model.Error</div>
+        </div>
+    }
 
-<a class="btn btn-primary mb-3" asp-action="CrearUsuarioFinal" asp-route-tiendaId="@Model.TiendaId">Nuevo</a>
+    <div class="tp-toolbar">
+        <div class="tp-search">
+            <span class="tp-search-ico">🔎</span>
+            <input id="tpUsuariosSearch" class="tp-input tp-input-search"
+                   placeholder="Buscar usuario por nombre o teléfono..." />
+        </div>
 
-<a class="btn btn-primary mb-3" asp-action="CrearUsuarioFinal">Nuevo</a>
+        <button class="tp-btn tp-btn-dark" type="button" data-tp-open="#tpModalUsuarioFinal">
+            👤➕ Nuevo Usuario
+        </button>
+    </div>
 
-<table class="table table-sm table-striped align-middle">
-    <thead>
-        <tr>
-            <th>Nombre</th>
-            <th>Dirección</th>
-            <th>Teléfono</th>
-            <th>Activo</th>
-            <th>Creado</th>
-            <th style="width:160px;">Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
+    <div class="tp-grid tp-grid-3" id="tpUsuariosGrid">
         @foreach (var u in Model.Usuarios)
         {
-            <tr>
-                <td>@u.Nombre</td>
-                <td>@u.DireccionUbicacion</td>
-                <td>@u.Telefono</td>
-                <td>@(u.Activo ? "Sí" : "No")</td>
-                <td>@u.CreatedAt.ToLocalTime().ToString("g")</td>
-                <td>
-                    <a class="btn btn-sm btn-outline-primary"
-                       asp-action="EditarUsuarioFinal"
-                       asp-route-id="@u.Id">Editar</a>
+            <div class="tp-card tp-card-user"
+                 data-search="@($"{u.Nombre} {u.Telefono} {u.DireccionUbicacion}".ToLower())">
 
-                    <a class="btn btn-sm btn-outline-danger"
-                       asp-action="EliminarUsuarioFinal"
-                       asp-route-id="@u.Id">Eliminar</a>
-                </td>
-            </tr>
+                <div class="tp-user-top">
+                    <div>
+                        <div class="tp-user-name">@u.Nombre</div>
+                        <div class="tp-user-phone">📞 @u.Telefono</div>
+                    </div>
+                    <div class="tp-user-avatar"></div>
+                </div>
+
+                <div class="tp-user-loc">
+                    📍 <span>@u.DireccionUbicacion</span>
+                </div>
+
+                <div class="tp-user-actions">
+                    <a class="tp-btn tp-btn-ghost" asp-action="EditarUsuarioFinal" asp-route-id="@u.Id">Editar</a>
+                    <a class="tp-btn tp-btn-danger" asp-action="EliminarUsuarioFinal" asp-route-id="@u.Id">Eliminar</a>
+                </div>
+            </div>
         }
-    </tbody>
-</table>
+    </div>
 
+</div>
+
+@await Html.PartialAsync("_ModalUsuarioFinalCreate", new Login.ViewModels.Tienda.UsuarioFinalCreateVm())
+
+@section Scripts {
+    <script src="~/js/tienda.js" asp-append-version="true"></script>
+}

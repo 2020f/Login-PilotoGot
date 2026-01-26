@@ -1,60 +1,73 @@
 ﻿@model Login.ViewModels.Tienda.UsuarioFinalEditVm
 @{
+    Layout = "_LayoutTienda";
     ViewData["Title"] = "Editar Usuario Final";
+    ViewData["PageTitle"] = "Editar Usuario Final";
 }
 
-<h2>Editar Usuario Final</h2>
+<div class="tp-page">
 
-@if (!string.IsNullOrWhiteSpace(ViewBag.Ok))
-{
-    <div class="alert alert-success">@ViewBag.Ok</div>
-}
-@if (!string.IsNullOrWhiteSpace(ViewBag.Error))
-{
-    <div class="alert alert-danger">@ViewBag.Error</div>
-}
+    @if (!string.IsNullOrWhiteSpace(ViewBag.Ok as string))
+    {
+        <div class="tp-alert tp-alert-ok"><span class="tp-alert-icon">✅</span><div>@ViewBag.Ok</div></div>
+    }
+    @if (!string.IsNullOrWhiteSpace(ViewBag.Error as string))
+    {
+        <div class="tp-alert tp-alert-bad"><span class="tp-alert-icon">⚠️</span><div>@ViewBag.Error</div></div>
+    }
 
-<form method="post" asp-action="EditarUsuarioFinal" class="row g-2">
-    @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="Id" />
+    <div class="tp-card tp-card-pad tp-form-card">
+        <div class="tp-form-head">
+            <div class="tp-h2">Editar Usuario</div>
+            <div class="tp-sub">Actualiza datos del destinatario.</div>
+        </div>
 
-    <div class="col-md-6">
-        <label class="form-label">Nombre</label>
-        <input class="form-control" asp-for="Nombre" />
-        <span class="text-danger" asp-validation-for="Nombre"></span>
+        <form method="post" asp-action="EditarUsuarioFinal" class="tp-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            <div class="tp-grid tp-grid-2">
+                <div class="tp-field">
+                    <label class="tp-label">Nombre</label>
+                    <input class="tp-input" asp-for="Nombre" />
+                    <span class="tp-val" asp-validation-for="Nombre"></span>
+                </div>
+
+                <div class="tp-field">
+                    <label class="tp-label">Teléfono</label>
+                    <input class="tp-input" asp-for="Telefono" />
+                    <span class="tp-val" asp-validation-for="Telefono"></span>
+                </div>
+            </div>
+
+            <div class="tp-field">
+                <label class="tp-label">Dirección / Ubicación</label>
+                <input class="tp-input" asp-for="DireccionUbicacion" />
+                <span class="tp-val" asp-validation-for="DireccionUbicacion"></span>
+            </div>
+
+            <div class="tp-field">
+                <label class="tp-label">Notas</label>
+                <textarea class="tp-textarea" asp-for="Notas" rows="3"></textarea>
+                <span class="tp-val" asp-validation-for="Notas"></span>
+            </div>
+
+            <div class="tp-field">
+                <label class="tp-label">Activo</label>
+                <select class="tp-select" asp-for="Activo">
+                    <option value="true">Sí</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+
+            <div class="tp-form-actions">
+                <button class="tp-btn tp-btn-dark" type="submit">Guardar</button>
+                <a class="tp-btn tp-btn-ghost" asp-action="UsuariosFinales">Volver</a>
+            </div>
+        </form>
     </div>
 
-    <div class="col-md-6">
-        <label class="form-label">Teléfono</label>
-        <input class="form-control" asp-for="Telefono" />
-        <span class="text-danger" asp-validation-for="Telefono"></span>
-    </div>
-
-    <div class="col-12">
-        <label class="form-label">Dirección / Ubicación</label>
-        <input class="form-control" asp-for="DireccionUbicacion" />
-        <span class="text-danger" asp-validation-for="DireccionUbicacion"></span>
-    </div>
-
-    <div class="col-12">
-        <label class="form-label">Notas</label>
-        <textarea class="form-control" asp-for="Notas" rows="3"></textarea>
-        <span class="text-danger" asp-validation-for="Notas"></span>
-    </div>
-
-    <div class="col-md-4">
-        <label class="form-label">Activo</label>
-        <select class="form-select" asp-for="Activo">
-            <option value="true">Sí</option>
-            <option value="false">No</option>
-        </select>
-    </div>
-
-    <div class="col-12 mt-2">
-        <button class="btn btn-success">Guardar</button>
-        <a class="btn btn-secondary" asp-action="UsuariosFinales">Volver</a>
-    </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
