@@ -1,48 +1,121 @@
 ﻿@model Login.ViewModels.SuperAdmin.PlanesIndexVm
+@{
+    Layout = "_LayoutSuperAdmin";
+    ViewData["Title"] = "Planes y Suscripciones";
+    ViewData["PageTitle"] = "Planes y Suscripciones";
+}
 
-<h2>Planes</h2>
-
-<div style="margin-bottom:15px;">
-    <a href="/SuperAdmin/Planes" style="margin-right:10px;">📦 Planes</a>
-    <a href="/SuperAdmin/Clientes" style="margin-right:10px;">🏢 ClientesApp</a>
-    <a href="/SuperAdmin/CrearPlan">➕ Crear Plan</a>
+<div class="sa-card sa-card-pad" style="text-align:center; margin-bottom:18px;">
+    <div class="sa-row-title" style="font-size:22px;">Planes y Limitaciones SaaS</div>
+    <div class="sa-sub">
+        Configura los límites de tiendas y pilotos para cada nivel de suscripción.
+        Estos cambios afectan a los clientes nuevos inmediatamente.
+    </div>
 </div>
-
-
 
 @if (!string.IsNullOrEmpty(Model.Ok))
 {
-        <div style="color:green">@Model.Ok</div>
+    <div class="sa-card sa-card-pad" style="margin-bottom:12px; border-color:#bbf7d0;">
+        <span class="sa-pill sa-pill-ok">@Model.Ok</span>
+    </div>
 }
 @if (!string.IsNullOrEmpty(Model.Error))
 {
-        <div style="color:red">@Model.Error</div>
+    <div class="sa-card sa-card-pad" style="margin-bottom:12px; border-color:#fecdd3;">
+        <span class="sa-pill sa-pill-bad">@Model.Error</span>
+    </div>
 }
 
-<p>
-    <a asp-action="CrearPlan" asp-controller="SuperAdmin">Crear nuevo plan</a>
-</p>
+<div class="sa-grid-3">
 
-<table border="1" cellpadding="5">
-    <thead>
-        <tr>
-            <th>Nombre</th>
-            <th>Precio</th>
-            <th>Max Tiendas</th>
-            <th>Max Pilotos</th>
-            <th>Max Órdenes/mes</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var p in Model.Planes)
-        {
-            <tr>
-                <td>@p.Nombre</td>
-                <td>@p.PrecioMensual</td>
-                <td>@p.MaxTiendas</td>
-                <td>@p.MaxPilotos</td>
-                <td>@p.MaxOrdenesPorMes</td>
-            </tr>
-        }
-    </tbody>
-</table>
+    @foreach (var p in Model.Planes)
+    {
+        var nombre = (p.Nombre ?? "").ToLower();
+        var isPopular = nombre.Contains("pro"); // marca Pro como POPULAR
+
+        <div class="sa-card sa-card-pad sa-plan-card"
+             data-plan="@p.Id"
+             style="padding:18px; border-top:4px solid @(isPopular ? "#2563eb" : "#e2e8f0");">
+
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div style="font-weight:900; font-size:20px;">@p.Nombre</div>
+
+                @if (isPopular)
+                {
+                    <span class="sa-pill" style="background:#eef2ff; color:#1d4ed8; border:1px solid #c7d2fe;">
+                        POPULAR
+                    </span>
+                }
+            </div>
+
+            <div style="margin:10px 0 14px;">
+                <span style="font-size:46px; font-weight:1000;">$@p.PrecioMensual</span>
+                <span class="sa-sub">/mes</span>
+            </div>
+
+            <div class="sa-card sa-card-pad" style="background:#f8fafc; margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:800;">Tiendas Máximas</span>
+                    <span style="font-weight:900;">@p.MaxTiendas</span>
+                </div>
+            </div>
+
+            <div class="sa-card sa-card-pad" style="background:#f8fafc; margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:800;">Pilotos Máximos</span>
+                    <span style="font-weight:900;">@p.MaxPilotos</span>
+                </div>
+            </div>
+
+            <div class="sa-card sa-card-pad" style="background:#f8fafc; margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:800;">Órdenes / mes</span>
+                    <span style="font-weight:900;">@p.MaxOrdenesPorMes</span>
+                </div>
+            </div>
+
+            <div class="sa-sub" style="margin:12px 0 16px; display:grid; gap:6px;">
+                <div>✅ Soporte</div>
+                <div>✅ Reportes</div>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <a class="sa-btn sa-btn-primary" style="flex:1;"
+                   href="/SuperAdmin/EditarPlan?id=@p.Id">
+                    Editar Límites
+                </a>
+
+                <form method="post" action="/SuperAdmin/TogglePlan" style="margin:0;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@p.Id" />
+                    <button class="sa-btn" type="submit"
+                            title="@(p.Activo ? "Desactivar" : "Activar")"
+                            style="min-width:110px;">
+                        @(p.Activo ? "Desactivar" : "Activar")
+                    </button>
+                </form>
+            </div>
+
+            <div style="margin-top:12px;">
+                @if (p.Activo)
+                {
+                    <span class="sa-pill sa-pill-ok">ACTIVO</span>
+                }
+                else
+                {
+                    <span class="sa-pill sa-pill-bad">INACTIVO</span>
+                }
+            </div>
+
+        </div>
+    }
+
+</div>
+
+<div style="margin-top:16px; text-align:center;">
+    <a class="sa-btn" href="/SuperAdmin/CrearPlan">➕ Crear nuevo plan</a>
+</div>
+
+@section Scripts {
+    <script src="~/js/superadmin/planes.js" asp-append-version="true"></script>
+}

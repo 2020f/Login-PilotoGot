@@ -1,0 +1,61 @@
+﻿@model Login.ViewModels.Tienda.UsuarioFinalEditVm
+@{
+    ViewData["Title"] = "Editar Usuario Final";
+}
+
+<h2>Editar Usuario Final</h2>
+
+@if (!string.IsNullOrWhiteSpace(ViewBag.Ok))
+{
+    <div class="alert alert-success">@ViewBag.Ok</div>
+}
+@if (!string.IsNullOrWhiteSpace(ViewBag.Error))
+{
+    <div class="alert alert-danger">@ViewBag.Error</div>
+}
+
+<form method="post" asp-action="EditarUsuarioFinal" class="row g-2">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div class="col-md-6">
+        <label class="form-label">Nombre</label>
+        <input class="form-control" asp-for="Nombre" />
+        <span class="text-danger" asp-validation-for="Nombre"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Teléfono</label>
+        <input class="form-control" asp-for="Telefono" />
+        <span class="text-danger" asp-validation-for="Telefono"></span>
+    </div>
+
+    <div class="col-12">
+        <label class="form-label">Dirección / Ubicación</label>
+        <input class="form-control" asp-for="DireccionUbicacion" />
+        <span class="text-danger" asp-validation-for="DireccionUbicacion"></span>
+    </div>
+
+    <div class="col-12">
+        <label class="form-label">Notas</label>
+        <textarea class="form-control" asp-for="Notas" rows="3"></textarea>
+        <span class="text-danger" asp-validation-for="Notas"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">Activo</label>
+        <select class="form-select" asp-for="Activo">
+            <option value="true">Sí</option>
+            <option value="false">No</option>
+        </select>
+    </div>
+
+    <div class="col-12 mt-2">
+        <button class="btn btn-success">Guardar</button>
+        <a class="btn btn-secondary" asp-action="UsuariosFinales">Volver</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

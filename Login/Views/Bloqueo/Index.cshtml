@@ -1,0 +1,25 @@
+﻿@{
+    ViewData["Title"] = "Servicio no disponible";
+    var motivo = (ViewBag.Motivo as string) ?? "Suspendido";
+}
+
+<div style="max-width: 720px; margin: 40px auto;">
+    <h2 style="margin-bottom:10px;">Servicio no disponible</h2>
+
+    <div style="border:1px solid #dc3545; padding:15px; border-radius:8px; background:#fff5f5;">
+        <b style="color:#dc3545;">Tu cuenta está: @motivo</b>
+        <p style="margin-top:10px;">
+            No puedes usar el sistema en este estado. Si crees que es un error, contacta al administrador.
+        </p>
+    </div>
+
+    <div style="margin-top:15px;">
+        <!-- Logout por Identity (normal en proyectos con Identity UI) -->
+        <form method="post" action="/Identity/Account/Logout">
+            @Html.AntiForgeryToken()
+            <button type="submit" style="background:#dc3545; color:white; border:0; padding:10px 14px; border-radius:8px;">
+                Cerrar sesión
+            </button>
+        </form>
+    </div>
+</div>

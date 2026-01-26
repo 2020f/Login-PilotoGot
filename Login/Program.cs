@@ -1,6 +1,7 @@
 using Login.Application.Interfaces;
 using Login.Application.Services;
 using Login.Data;
+using Login.Filters;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,13 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // 1) MVC + Razor Pages
-builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<ClienteAppEstadoFilter>(); // ✅ filtro tenant
+
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<ClienteAppEstadoFilter>(); // ✅ global: bloquea Gestor/Cliente/Piloto si tenant no está Activo
+});
+
 builder.Services.AddRazorPages();
 
 // 2) DbContext + SQL Server
@@ -35,7 +42,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 .AddDefaultTokenProviders();
 
 // 4) Cookies
-builder.Services.ConfigureApplicationCookie(options => 
+builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Identity/Account/Login";
     options.LogoutPath = "/Identity/Account/Logout";

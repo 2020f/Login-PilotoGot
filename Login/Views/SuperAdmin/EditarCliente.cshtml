@@ -1,0 +1,104 @@
+﻿@model Login.ViewModels.SuperAdmin.ClienteAppEditVm
+@using Login.Domain.Enums
+@{
+    Layout = "_LayoutSuperAdmin";
+    ViewData["Title"] = "Editar Cliente";
+}
+
+<div class="sa-modal-backdrop" id="saModalEditarCliente">
+    <div class="sa-modal" role="dialog" aria-modal="true">
+
+        <div class="sa-modal-head">
+            <div>
+                <h3>Editar ClienteApp</h3>
+                <p>Modificar datos generales del cliente.</p>
+            </div>
+
+            <a class="sa-modal-close" href="/SuperAdmin/Clientes" title="Cerrar">×</a>
+        </div>
+
+        <form method="post" asp-action="EditarCliente">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            <div class="sa-modal-body">
+                <div style="display:grid; gap:14px;">
+
+                    <div>
+                        <div class="sa-sub" style="font-weight:800;">Nombre Comercial</div>
+                        <input class="sa-input" asp-for="NombreComercial"
+                               style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                        <span asp-validation-for="NombreComercial" class="sa-sub" style="color:#e11d48;"></span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                        <div>
+                            <div class="sa-sub" style="font-weight:800;">Ubicación</div>
+                            <input class="sa-input" asp-for="Ubicacion"
+                                   placeholder="Ej: Santo Domingo, RD"
+                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                            <span asp-validation-for="Ubicacion" class="sa-sub" style="color:#e11d48;"></span>
+                        </div>
+
+                        <div>
+                            <div class="sa-sub" style="font-weight:800;">Teléfono</div>
+                            <input class="sa-input" asp-for="Telefono"
+                                   placeholder="Ej: 809-555-1234"
+                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                            <span asp-validation-for="Telefono" class="sa-sub" style="color:#e11d48;"></span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="sa-sub" style="font-weight:800;">Plan</div>
+                        <select class="sa-input" asp-for="PlanId"
+                                style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
+                            @foreach (var p in (List<Login.Domain.Entities.Plan>)ViewBag.Planes)
+                            {
+                                <option value="@p.Id">@p.Nombre</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div>
+                        <div class="sa-sub" style="font-weight:800;">Estado</div>
+                        <select class="sa-input" asp-for="Estado"
+                                style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
+                            <option value="@EstadoClienteApp.Activo">Activo</option>
+                            <option value="@EstadoClienteApp.Suspendido">Suspendido</option>
+                            <option value="@EstadoClienteApp.Vencido">Vencido</option>
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="sa-modal-foot">
+                <a class="sa-btn" href="/SuperAdmin/Clientes">Cancelar</a>
+                <button class="sa-btn sa-btn-primary" type="submit">💾 Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const backdrop = document.getElementById("saModalEditarCliente");
+            if (!backdrop) return;
+
+            backdrop.addEventListener("click", (e) => {
+                if (e.target === backdrop) {
+                    window.location.href = "/SuperAdmin/Clientes";
+                }
+            });
+
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") {
+                    window.location.href = "/SuperAdmin/Clientes";
+                }
+            });
+        })();
+    </script>
+}

@@ -1,0 +1,106 @@
+﻿@model Login.ViewModels.Tienda.TiendaEditVm
+@{
+    ViewData["Title"] = "Editar Tienda";
+}
+
+
+@if (!string.IsNullOrWhiteSpace(ViewBag.Ok))
+{
+    <div class="alert alert-success">@ViewBag.Ok</div>
+}
+@if (!string.IsNullOrWhiteSpace(ViewBag.Error))
+{
+    <div class="alert alert-danger">@ViewBag.Error</div>
+}
+
+
+
+
+
+
+
+
+
+<h2>Editar Tienda</h2>
+
+<div class="mb-3">
+    <a class="btn btn-secondary" asp-action="Tiendas">← Volver</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.EmailCliente))
+{
+    <div class="alert alert-info">
+        <b>Email (login tienda):</b> @Model.EmailCliente
+    </div>
+}
+
+<form method="post" asp-action="EditarTienda" class="row g-3">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div class="col-md-6">
+        <label class="form-label">Nombre</label>
+        <input class="form-control" asp-for="Nombre" />
+        <span class="text-danger" asp-validation-for="Nombre"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Teléfono</label>
+        <input class="form-control" asp-for="Telefono" />
+        <span class="text-danger" asp-validation-for="Telefono"></span>
+    </div>
+
+    <div class="col-12">
+        <label class="form-label">Dirección</label>
+        <input class="form-control" asp-for="Direccion" />
+        <span class="text-danger" asp-validation-for="Direccion"></span>
+    </div>
+
+    <div class="col-12">
+        <div class="form-check">
+            <input class="form-check-input" asp-for="Activo" />
+            <label class="form-check-label">Activo</label>
+        </div>
+    </div>
+
+    <div class="col-12 d-flex gap-2">
+        <button class="btn btn-success">Guardar</button>
+        <a class="btn btn-outline-secondary" asp-action="Tiendas">Cancelar</a>
+    </div>
+</form>
+
+
+<hr class="my-4" />
+
+<h5>Reset Password (Tienda)</h5>
+
+<form method="post" asp-action="ResetPasswordTienda" class="row g-2">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" name="TiendaId" value="@Model.Id" />
+
+    <div class="col-md-6">
+        <input class="form-control" name="NuevoPassword" type="password" placeholder="Nuevo password (mín 6)" required />
+    </div>
+
+    <div class="col-md-6">
+        <button class="btn btn-warning">Resetear Password</button>
+    </div>
+
+    <div class="col-12">
+        <small class="text-muted">
+            Esto cambia el password del usuario principal de la tienda. (Admin power 😈)
+        </small>
+    </div>
+</form>
+
+
+
+
+
+
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

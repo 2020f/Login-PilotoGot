@@ -1,0 +1,59 @@
+﻿@{
+    var title = ViewData["Title"] as string ?? "PilotGo - SuperAdmin";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title</title>
+
+    <link rel="stylesheet" href="~/css/superadmin.css" asp-append-version="true" />
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+    <div class="sa-shell">
+
+        <aside class="sa-sidebar" id="saSidebar">
+            <partial name="_SuperAdminSidebar" />
+
+            <div class="sa-sidebar-footer" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                <partial name="_SuperAdminUserBadge" />
+
+                @* ✅ Cerrar sesión (Identity Logout por POST) *@
+                @if (User?.Identity?.IsAuthenticated ?? false)
+                {
+                    <form asp-area="Identity"
+                          asp-page="/Account/Logout"
+                          asp-route-returnUrl="/Identity/Account/Login"
+                          method="post"
+                          style="margin:0;">
+                        @Html.AntiForgeryToken()
+
+                        <button type="submit"
+                                class="sa-btn"
+                                title="Cerrar sesión"
+                                style="width:38px; height:38px; padding:0; display:grid; place-items:center; border-radius:12px;">
+                            ↩
+                        </button>
+                    </form>
+                }
+            </div>
+        </aside>
+
+        <main class="sa-main">
+            <header class="sa-topbar">
+                <partial name="_SuperAdminTopbar" />
+            </header>
+
+            <section class="sa-content">
+                @RenderBody()
+            </section>
+        </main>
+
+    </div>
+
+    <script src="~/js/superadmin.js" asp-append-version="true"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

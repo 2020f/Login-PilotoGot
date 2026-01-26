@@ -1,0 +1,65 @@
+﻿@model Login.ViewModels.Supervisor.PilotoEditVm
+@using Login.Domain.Enums
+@{
+    ViewData["Title"] = "Editar Piloto";
+}
+
+<h2>Editar Piloto</h2>
+
+<div class="mb-3">
+    <a class="btn btn-secondary" asp-action="Pilotos">← Volver</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.EmailPiloto))
+{
+    <div class="alert alert-info">
+        <b>Email (login):</b> @Model.EmailPiloto
+    </div>
+}
+
+<form method="post" asp-action="EditarPiloto" class="row g-3">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div class="col-md-6">
+        <label class="form-label">Nombre</label>
+        <input class="form-control" asp-for="Nombre" />
+        <span class="text-danger" asp-validation-for="Nombre"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Teléfono</label>
+        <input class="form-control" asp-for="Telefono" />
+        <span class="text-danger" asp-validation-for="Telefono"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label">Estado</label>
+        <select class="form-select" asp-for="Estado">
+            <option value="@EstadoPiloto.Disponible">Disponible</option>
+            <option value="@EstadoPiloto.Ocupado">Ocupado</option>
+            <option value="@EstadoPiloto.Inactivo">Inactivo</option>
+        </select>
+    </div>
+
+    <div class="col-md-6 d-flex align-items-end">
+        <div class="form-check">
+            <input class="form-check-input" asp-for="Activo" />
+            <label class="form-check-label">Activo</label>
+        </div>
+    </div>
+
+    <div class="col-12 d-flex gap-2">
+        <button class="btn btn-success">Guardar</button>
+
+        <form method="post" asp-action="EliminarPiloto" class="d-inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button class="btn btn-danger" type="submit">Eliminar</button>
+        </form>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

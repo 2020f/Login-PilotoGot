@@ -1,0 +1,26 @@
+﻿@model Login.ViewModels.Tienda.UsuarioFinalDeleteVm
+@{
+    ViewData["Title"] = "Eliminar Usuario Final";
+}
+
+<h2>Eliminar Usuario Final</h2>
+
+<div class="alert alert-warning">
+    ¿Seguro que quieres eliminar este usuario final? Esto NO se puede deshacer.
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <p><strong>Nombre:</strong> @Model.Nombre</p>
+        <p><strong>Dirección:</strong> @Model.DireccionUbicacion</p>
+        <p><strong>Teléfono:</strong> @Model.Telefono</p>
+    </div>
+</div>
+
+<form method="post" asp-action="EliminarUsuarioFinalConfirmado" class="mt-3">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.Id" />
+
+    <button class="btn btn-danger">Sí, eliminar</button>
+    <a class="btn btn-secondary" asp-action="UsuariosFinales">Cancelar</a>
+</form>

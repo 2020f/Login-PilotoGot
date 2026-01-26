@@ -1,15 +1,15 @@
-﻿@model Login.ViewModels.SuperAdmin.PlanCreateVm
+﻿@model Login.ViewModels.SuperAdmin.PlanEditVm
 @{
     Layout = "_LayoutSuperAdmin";
-    ViewData["Title"] = "Crear Plan";
-    ViewData["PageTitle"] = "Crear Plan";
+    ViewData["Title"] = "Editar Plan";
+    ViewData["PageTitle"] = "Editar Plan";
 }
 
 <div class="sa-card sa-card-pad" style="max-width:900px; margin:0 auto;">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
         <div>
-            <div class="sa-row-title" style="font-size:18px;">Crear Plan</div>
-            <div class="sa-sub">Define precio y límites del plan.</div>
+            <div class="sa-row-title" style="font-size:18px;">Editar Plan</div>
+            <div class="sa-sub">Actualiza precio, límites y estado.</div>
         </div>
 
         <a class="sa-btn" href="/SuperAdmin/Planes">← Volver</a>
@@ -28,8 +28,9 @@
         </div>
     }
 
-    <form asp-action="CrearPlan" asp-controller="SuperAdmin" method="post" style="margin-top:16px;">
+    <form asp-action="EditarPlan" asp-controller="SuperAdmin" method="post" style="margin-top:16px;">
         @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
             <div>
@@ -66,11 +67,16 @@
                        style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
                 <span asp-validation-for="MaxOrdenesPorMes" class="sa-sub" style="color:#e11d48;"></span>
             </div>
+
+            <div style="grid-column: 1 / -1; display:flex; align-items:center; gap:10px; margin-top:6px;">
+                <input asp-for="Activo" style="transform:scale(1.15);" />
+                <div style="font-weight:800;">Activo</div>
+            </div>
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
             <a class="sa-btn" href="/SuperAdmin/Planes">Cancelar</a>
-            <button class="sa-btn sa-btn-primary" type="submit">💾 Guardar</button>
+            <button class="sa-btn sa-btn-primary" type="submit">💾 Guardar cambios</button>
         </div>
     </form>
 </div>

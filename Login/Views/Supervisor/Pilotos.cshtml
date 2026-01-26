@@ -41,20 +41,27 @@
                 <td>@p.Estado</td>
                 <td>@(p.Activo ? "Sí" : "No")</td>
                 <td>@p.CreatedAt.ToLocalTime().ToString("g")</td>
-                <td style="min-width:180px;">
-                    @if (p.Activo)
-                    {
-                        <form method="post" asp-action="DesactivarPiloto" class="d-inline">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@p.Id" />
-                            <button class="btn btn-sm btn-danger">Desactivar</button>
-                        </form>
-                    }
-                    else
-                    {
-                        <span class="text-muted">-</span>
-                    }
-                </td>
+                <td style="min-width:260px;">
+    <a class="btn btn-sm btn-outline-primary"
+       asp-action="EditarPiloto"
+       asp-route-id="@p.Id">
+        Editar
+    </a>
+
+    @if (p.Activo)
+    {
+        <form method="post" asp-action="EliminarPiloto" class="d-inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@p.Id" />
+            <button class="btn btn-sm btn-danger">Eliminar</button>
+        </form>
+    }
+    else
+    {
+        <span class="text-muted">-</span>
+    }
+</td>
+
             </tr>
         }
     </tbody>

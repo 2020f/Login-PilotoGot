@@ -175,6 +175,200 @@ namespace Login.Controllers
 
 
 
+        [HttpGet]
+        public async Task<IActionResult> EditarTienda(int id, string? ok = null, string? error = null)
+        {
+
+            ViewBag.Ok = ok;
+            ViewBag.Error = error;
+
+
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception ex) { return RedirectToAction(nameof(Tiendas), new { error = ex.Message }); }
+
+            var tienda = await _db.Tiendas
+                .AsNoTracking()
+                .SingleOrDefaultAsync(t => t.Id == id && t.ClienteAppId == clienteAppId);
+
+            if (tienda is null)
+                return RedirectToAction(nameof(Tiendas), new { error = "Tienda no encontrada." });
+
+            // Buscar email del usuario principal de esa tienda (UsuariosTienda -> IdentityUser)
+            var identityId = await _db.UsuariosTienda
+                .AsNoTracking()
+                .Where(ut => ut.TiendaId == tienda.Id && ut.Activo && ut.EsPrincipal)
+                .Select(ut => ut.IdentityUserId)
+                .FirstOrDefaultAsync();
+
+            string? email = null;
+            if (!string.IsNullOrWhiteSpace(identityId))
+            {
+                var user = await _userManager.FindByIdAsync(identityId);
+                email = user?.Email;
+            }
+
+            var vm = new Login.ViewModels.Tienda.TiendaEditVm
+            {
+                Id = tienda.Id,
+                Nombre = tienda.Nombre,
+                Direccion = tienda.Direccion,
+                Telefono = tienda.Telefono,
+                Activo = tienda.Activo,
+                EmailCliente = email
+            };
+
+            return View(vm);
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditarTienda(Login.ViewModels.Tienda.TiendaEditVm input)
+        {
+            if (!ModelState.IsValid)
+                return View(input);
+
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception ex) { return RedirectToAction(nameof(Tiendas), new { error = ex.Message }); }
+
+            var tienda = await _db.Tiendas
+                .SingleOrDefaultAsync(t => t.Id == input.Id && t.ClienteAppId == clienteAppId);
+
+            if (tienda is null)
+                return RedirectToAction(nameof(Tiendas), new { error = "Tienda no encontrada." });
+
+            tienda.Nombre = input.Nombre.Trim();
+            tienda.Direccion = input.Direccion.Trim();
+            tienda.Telefono = input.Telefono.Trim();
+            tienda.Activo = input.Activo;
+
+            await _db.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Tiendas), new { ok = "Tienda actualizada ✅" });
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DesactivarTienda(int id)
+        {
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception ex) { return RedirectToAction(nameof(Tiendas), new { error = ex.Message }); }
+
+            var tienda = await _db.Tiendas
+                .SingleOrDefaultAsync(t => t.Id == id && t.ClienteAppId == clienteAppId);
+
+            if (tienda is null)
+                return RedirectToAction(nameof(Tiendas), new { error = "Tienda no encontrada." });
+
+            // Bloqueo si tiene órdenes pendientes
+            var tienePendientes = await _db.OrdenesEntrega
+                .AnyAsync(o => o.TiendaId == tienda.Id &&
+                               (o.Estado == EstadoOrden.Creada ||
+                                o.Estado == EstadoOrden.Asignada ||
+                                o.Estado == EstadoOrden.Recolectada));
+
+            if (tienePendientes)
+                return RedirectToAction(nameof(Tiendas), new { error = "No puedes desactivar: la tienda tiene órdenes activas." });
+
+            tienda.Activo = false;
+
+            // (Opcional) También desactivar el usuario principal de la tienda en Identity
+            var identityId = await _db.UsuariosTienda
+                .Where(ut => ut.TiendaId == tienda.Id && ut.Activo && ut.EsPrincipal)
+                .Select(ut => ut.IdentityUserId)
+                .FirstOrDefaultAsync();
+
+            if (!string.IsNullOrWhiteSpace(identityId))
+            {
+                var user = await _userManager.FindByIdAsync(identityId);
+                if (user != null)
+                {
+                    user.LockoutEnabled = true;
+                    user.LockoutEnd = DateTimeOffset.UtcNow.AddYears(100); // “bloqueado por la eternidad”
+                    await _userManager.UpdateAsync(user);
+                }
+            }
+
+            await _db.SaveChangesAsync();
+            return RedirectToAction(nameof(Tiendas), new { ok = "Tienda desactivada ✅" });
+        }
+
+
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPasswordTienda(Login.ViewModels.Tienda.ResetPasswordTiendaVm input)
+        {
+            if (!ModelState.IsValid)
+                return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, error = "Password inválido." });
+
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception ex)
+            {
+                return RedirectToAction(nameof(Tiendas), new { error = ex.Message });
+            }
+
+            // ✅ Seguridad: la tienda debe ser del tenant del Gestor
+            var tiendaOk = await _db.Tiendas
+                .AsNoTracking()
+                .AnyAsync(t => t.Id == input.TiendaId && t.ClienteAppId == clienteAppId);
+
+            if (!tiendaOk)
+                return RedirectToAction(nameof(Tiendas), new { error = "No tienes permiso para resetear esa tienda." });
+
+            // ✅ Buscar IdentityUserId del usuario principal de esa tienda
+            var identityId = await _db.UsuariosTienda
+                .AsNoTracking()
+                .Where(ut => ut.TiendaId == input.TiendaId && ut.Activo && ut.EsPrincipal)
+                .Select(ut => ut.IdentityUserId)
+                .FirstOrDefaultAsync();
+
+            if (string.IsNullOrWhiteSpace(identityId))
+                return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, error = "La tienda no tiene usuario principal." });
+
+            var user = await _userManager.FindByIdAsync(identityId);
+            if (user is null)
+                return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, error = "Usuario de la tienda no existe en Identity." });
+
+            // ✅ Reset real de password (sin saber el actual)
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetRes = await _userManager.ResetPasswordAsync(user, token, input.NuevoPassword);
+
+            if (!resetRes.Succeeded)
+            {
+                var msg = string.Join(" | ", resetRes.Errors.Select(e => e.Description));
+                return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, error = msg });
+            }
+
+            // ✅ Si estaba lockeado, lo desbloqueamos (por si desactivaste antes)
+            user.LockoutEnd = null;
+            await _userManager.UpdateAsync(user);
+
+            return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, ok = "Password reseteado ✅" });
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -309,6 +503,34 @@ namespace Login.Controllers
 
 
 
+        [HttpGet]
+        public async Task<IActionResult> EditarPiloto(int id)
+        {
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception ex) { return RedirectToAction(nameof(Pilotos), new { error = ex.Message }); }
+
+            var piloto = await _db.Pilotos
+                .AsNoTracking()
+                .SingleOrDefaultAsync(p => p.Id == id && p.ClienteAppId == clienteAppId);
+
+            if (piloto is null)
+                return RedirectToAction(nameof(Pilotos), new { error = "Piloto no encontrado." });
+
+            var user = await _userManager.FindByIdAsync(piloto.IdentityUserId);
+
+            var vm = new Login.ViewModels.Supervisor.PilotoEditVm
+            {
+                Id = piloto.Id,
+                Nombre = piloto.Nombre,
+                Telefono = piloto.Telefono,
+                Estado = piloto.Estado,
+                Activo = piloto.Activo,
+                EmailPiloto = user?.Email
+            };
+
+            return View(vm);
+        }
 
 
 
@@ -316,6 +538,35 @@ namespace Login.Controllers
 
 
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditarPiloto(Login.ViewModels.Supervisor.PilotoEditVm input)
+        {
+            if (!ModelState.IsValid)
+                return View(input);
+
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception ex) { return RedirectToAction(nameof(Pilotos), new { error = ex.Message }); }
+
+            var piloto = await _db.Pilotos
+                .SingleOrDefaultAsync(p => p.Id == input.Id && p.ClienteAppId == clienteAppId);
+
+            if (piloto is null)
+                return RedirectToAction(nameof(Pilotos), new { error = "Piloto no encontrado." });
+
+            piloto.Nombre = input.Nombre.Trim();
+            piloto.Telefono = input.Telefono.Trim();
+            piloto.Estado = input.Estado;
+            piloto.Activo = input.Activo;
+
+            // Si lo desactivan desde editar, forzamos estado Inactivo
+            if (!piloto.Activo)
+                piloto.Estado = EstadoPiloto.Inactivo;
+
+            await _db.SaveChangesAsync();
+            return RedirectToAction(nameof(Pilotos), new { ok = "Piloto actualizado ✅" });
+        }
 
 
 
@@ -323,6 +574,24 @@ namespace Login.Controllers
 
 
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EliminarPiloto(int id)
+        {
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception ex) { return RedirectToAction(nameof(Pilotos), new { error = ex.Message }); }
+
+            var piloto = await _db.Pilotos.SingleOrDefaultAsync(p => p.Id == id && p.ClienteAppId == clienteAppId);
+            if (piloto is null)
+                return RedirectToAction(nameof(Pilotos), new { error = "Piloto no encontrado." });
+
+            piloto.Activo = false;
+            piloto.Estado = EstadoPiloto.Inactivo;
+
+            await _db.SaveChangesAsync();
+            return RedirectToAction(nameof(Pilotos), new { ok = "Piloto eliminado (desactivado) ✅" });
+        }
 
 
 

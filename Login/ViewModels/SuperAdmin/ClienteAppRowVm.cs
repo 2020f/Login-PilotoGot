@@ -8,6 +8,10 @@
         public bool Activo { get; set; }
         public string Estado { get; set; } = "";
         public string? GestorEmail { get; set; }
+        public int MaxTiendas { get; set; }
+        public int MaxPilotos { get; set; }
+
+
         public int TiendasCount { get; set; }
         public int PilotosCount { get; set; }
     }

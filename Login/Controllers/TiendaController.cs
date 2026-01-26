@@ -167,6 +167,152 @@ namespace Login.Controllers
             return RedirectToAction(nameof(UsuariosFinales), new { ok = "Usuario final creado ✅" });
         }
 
+
+        // ==========================
+        // 1.1) EDITAR USUARIO FINAL
+        // ==========================
+
+        [HttpGet]
+        public async Task<IActionResult> EditarUsuarioFinal(int id, string? ok = null, string? error = null)
+        {
+            Tienda tienda;
+            try { tienda = await GetTiendaActivaAsync(); }
+            catch { return RedirectToAction(nameof(SeleccionarTienda)); }
+
+            ViewBag.Ok = ok;
+            ViewBag.Error = error;
+
+            var u = await _db.UsuariosFinales
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == id && x.TiendaId == tienda.Id);
+
+            if (u is null)
+                return RedirectToAction(nameof(UsuariosFinales), new { error = "Usuario final no encontrado o no es de tu tienda." });
+
+            var vm = new UsuarioFinalEditVm
+            {
+                Id = u.Id,
+                Nombre = u.Nombre,
+                DireccionUbicacion = u.DireccionUbicacion,
+                Telefono = u.Telefono,
+                Notas = u.Notas,
+                Activo = u.Activo
+            };
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditarUsuarioFinal(UsuarioFinalEditVm input)
+        {
+            if (!ModelState.IsValid) return View(input);
+
+            Tienda tienda;
+            try { tienda = await GetTiendaActivaAsync(); }
+            catch { return RedirectToAction(nameof(SeleccionarTienda)); }
+
+            var u = await _db.UsuariosFinales
+                .SingleOrDefaultAsync(x => x.Id == input.Id && x.TiendaId == tienda.Id);
+
+            if (u is null)
+                return RedirectToAction(nameof(UsuariosFinales), new { error = "Usuario final no encontrado o no es de tu tienda." });
+
+            u.Nombre = input.Nombre.Trim();
+            u.DireccionUbicacion = input.DireccionUbicacion.Trim();
+            u.Telefono = input.Telefono.Trim();
+            u.Notas = string.IsNullOrWhiteSpace(input.Notas) ? null : input.Notas.Trim();
+            u.Activo = input.Activo;
+
+            await _db.SaveChangesAsync();
+
+            return RedirectToAction(nameof(UsuariosFinales), new { ok = "Usuario final actualizado ✅" });
+        }
+
+        // ==========================
+        // 1.2) ELIMINAR USUARIO FINAL
+        // ==========================
+
+        [HttpGet]
+        public async Task<IActionResult> EliminarUsuarioFinal(int id)
+        {
+            Tienda tienda;
+            try { tienda = await GetTiendaActivaAsync(); }
+            catch { return RedirectToAction(nameof(SeleccionarTienda)); }
+
+            var u = await _db.UsuariosFinales
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == id && x.TiendaId == tienda.Id);
+
+            if (u is null)
+                return RedirectToAction(nameof(UsuariosFinales), new { error = "Usuario final no encontrado o no es de tu tienda." });
+
+            // ✅ Regla: no se puede borrar si tiene órdenes
+            var tieneOrdenes = await _db.OrdenesEntrega
+                .AsNoTracking()
+                .AnyAsync(o => o.UsuarioFinalId == u.Id);
+
+            if (tieneOrdenes)
+                return RedirectToAction(nameof(UsuariosFinales), new { error = "No puedes eliminar: este usuario final ya tiene órdenes." });
+
+            var vm = new UsuarioFinalDeleteVm
+            {
+                Id = u.Id,
+                Nombre = u.Nombre,
+                DireccionUbicacion = u.DireccionUbicacion,
+                Telefono = u.Telefono
+            };
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EliminarUsuarioFinalConfirmado(int id)
+        {
+            Tienda tienda;
+            try { tienda = await GetTiendaActivaAsync(); }
+            catch { return RedirectToAction(nameof(SeleccionarTienda)); }
+
+            var u = await _db.UsuariosFinales
+                .SingleOrDefaultAsync(x => x.Id == id && x.TiendaId == tienda.Id);
+
+            if (u is null)
+                return RedirectToAction(nameof(UsuariosFinales), new { error = "Usuario final no encontrado o no es de tu tienda." });
+
+            var tieneOrdenes = await _db.OrdenesEntrega
+                .AsNoTracking()
+                .AnyAsync(o => o.UsuarioFinalId == u.Id);
+
+            if (tieneOrdenes)
+                return RedirectToAction(nameof(UsuariosFinales), new { error = "No puedes eliminar: este usuario final ya tiene órdenes." });
+
+            _db.UsuariosFinales.Remove(u);
+            await _db.SaveChangesAsync();
+
+            return RedirectToAction(nameof(UsuariosFinales), new { ok = "Usuario final eliminado ✅" });
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         // ==========================
         // 2) CREAR ORDEN
         // ==========================

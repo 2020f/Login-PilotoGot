@@ -1,0 +1,46 @@
+﻿@{
+    var controller = (ViewContext.RouteData.Values["controller"]?.ToString() ?? "").ToLower();
+    var action = (ViewContext.RouteData.Values["action"]?.ToString() ?? "").ToLower();
+
+    string Active(string c, string a = "")
+    {
+        var cc = c.ToLower();
+        var aa = a.ToLower();
+        if (controller == cc && (string.IsNullOrWhiteSpace(aa) || action == aa)) return "active";
+        return "";
+    }
+}
+
+<div class="sa-brand">
+    <div class="sa-brand-logo">✈️</div>
+    <div class="sa-brand-name">
+        <span class="sa-brand-title">PilotGo</span>
+        <span class="sa-badge">SUPER</span>
+    </div>
+</div>
+
+<nav class="sa-nav">
+    <a class="sa-nav-item @Active("SuperAdmin","Dashboard")" href="/SuperAdmin/Dashboard">
+        <span class="sa-ico">▦</span><span>Dashboard</span>
+    </a>
+
+    <div class="sa-nav-section">GESTIÓN SAAS</div>
+
+    <a class="sa-nav-item @Active("SuperAdmin","Clientes")" href="/SuperAdmin/Clientes">
+        <span class="sa-ico">🏢</span><span>Clientes (Empresas)</span>
+    </a>
+
+    <a class="sa-nav-item @Active("SuperAdmin","Planes")" href="/SuperAdmin/Planes">
+        <span class="sa-ico">🎫</span><span>Planes y Suscripciones</span>
+    </a>
+
+    <div class="sa-nav-section">SISTEMA</div>
+
+    <a class="sa-nav-item @Active("SuperAdmin","Finanzas")" href="/SuperAdmin/Finanzas">
+        <span class="sa-ico">💳</span><span>Finanzas</span>
+    </a>
+
+    <a class="sa-nav-item @Active("SuperAdmin","Auditoria")" href="/SuperAdmin/Auditoria">
+        <span class="sa-ico">🕒</span><span>Auditoría Global</span>
+    </a>
+</nav>

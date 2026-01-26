@@ -1,53 +1,158 @@
 ﻿@model Login.ViewModels.SuperAdmin.ClientesIndexVm
+@{
+    Layout = "_LayoutSuperAdmin";
+    ViewData["Title"] = "Gestión de Clientes (Empresas)";
+    ViewData["PageTitle"] = "Gestión de Clientes (Empresas)";
+}
 
-<h2>ClientesApp (Tenants)</h2>
+<div class="sa-card sa-card-pad" style="margin-bottom:14px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <div>
+            <div class="sa-row-title" style="font-size:16px;">Directorio de Empresas</div>
+            <div class="sa-sub">Administra las cuentas de las empresas que usan PilotGo.</div>
+        </div>
 
-<!-- ✅ Menú rápido SuperAdmin -->
-<div style="margin-bottom:15px;">
-    <a href="/SuperAdmin/Planes" style="margin-right:10px;">📦 Planes</a>
-    <a href="/SuperAdmin/Clientes" style="margin-right:10px;">🏢 ClientesApp</a>
-    <a href="/SuperAdmin/CrearCliente">➕ Crear ClienteApp</a>
+       
+
+            <a class="sa-btn sa-btn-primary" href="/SuperAdmin/CrearCliente">
+            ➕ Nueva Empresa
+        </a>
+    </div>
 </div>
 
 @if (!string.IsNullOrEmpty(Model.Ok))
 {
-        <div style="color: green">@Model.Ok</div>
+    <div class="sa-card sa-card-pad" style="margin-bottom:12px; border-color:#bbf7d0;">
+        <span class="sa-pill sa-pill-ok">@Model.Ok</span>
+    </div>
 }
 @if (!string.IsNullOrEmpty(Model.Error))
 {
-        <div style="color: red">@Model.Error</div>
+    <div class="sa-card sa-card-pad" style="margin-bottom:12px; border-color:#fecdd3;">
+        <span class="sa-pill sa-pill-bad">@Model.Error</span>
+    </div>
 }
 
-<table border="1" cellpadding="5">
-    <tr>
-        <th>Nombre</th>
-        <th>Plan</th>
-        <th>Estado</th>
-        <th>Gestor</th>
-        <th>Tiendas</th>
-        <th>Pilotos</th>
-        <th>Acción</th>
-    </tr>
+<div class="sa-card sa-card-pad" style="margin-bottom:12px;">
+    <div style="display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+        <div class="sa-sub" style="font-weight:800; color:#334155;">Buscar</div>
+        <input id="saClientesSearch" class="sa-input"
+               placeholder="Buscar por empresa, email, plan o estado..."
+               style="min-width:320px; width:420px; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+    </div>
+</div>
 
-    @foreach (var c in Model.Clientes)
-    {
-        <tr>
-            <td>@c.NombreComercial</td>
-            <td>@c.PlanNombre</td>
-            <td>@c.Estado</td>
-            <td>@(c.GestorEmail ?? "—")</td>
-            <td>@c.TiendasCount</td>
-            <td>@c.PilotosCount</td>
-            <td>
-                @if (string.IsNullOrWhiteSpace(c.GestorEmail))
+<div class="sa-card">
+    <div class="sa-card-pad" style="padding-bottom:0;">
+        <table class="sa-table" id="saClientesTable">
+            <thead>
+                <tr>
+                    <th style="width:90px;">ID</th>
+                    <th>EMPRESA / EMAIL</th>
+                    <th style="width:140px;">PLAN ACTUAL</th>
+                    <th style="width:190px;">USO TIENDAS</th>
+                    <th style="width:190px;">USO PILOTOS</th>
+                    <th style="width:140px;">ESTADO</th>
+                    <th style="width:160px; text-align:right;">ACCIONES</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model.Clientes)
                 {
-                        <a href="/SuperAdmin/CrearGestor?clienteAppId=@c.Id">Crear Gestor</a>
+                    // defensivo: evita divisiones raras
+                    var maxTiendas = c.MaxTiendas <= 0 ? 0 : c.MaxTiendas;
+                    var maxPilotos = c.MaxPilotos <= 0 ? 0 : c.MaxPilotos;
+
+                    int pctTiendas = (maxTiendas == 0) ? 100 : (int)System.Math.Round((double)c.TiendasCount * 100.0 / maxTiendas);
+                    int pctPilotos = (maxPilotos == 0) ? 100 : (int)System.Math.Round((double)c.PilotosCount * 100.0 / maxPilotos);
+
+                    pctTiendas = System.Math.Clamp(pctTiendas, 0, 100);
+                    pctPilotos = System.Math.Clamp(pctPilotos, 0, 100);
+
+                    // estado para UI
+                    var estadoTxt = (c.Estado ?? "").Trim();
+                    var estadoLower = estadoTxt.ToLower();
+                    var isActivo = estadoLower.Contains("activo");
+                    var isSuspend = estadoLower.Contains("suspend");
+
+                    <tr class="sa-row"
+                        data-search="@($"{c.Id} {c.NombreComercial} {c.PlanNombre} {c.GestorEmail} {c.Estado}".ToLower())">
+
+                        <td style="color:#94a3b8; font-weight:800;">#@c.Id</td>
+
+                        <td>
+                            <div class="sa-row-title">@c.NombreComercial</div>
+                            <div class="sa-sub">@((c.GestorEmail ?? "—"))</div>
+                        </td>
+
+                        <td>
+                            <span class="sa-pill" style="background:#eef2ff; color:#1d4ed8; border:1px solid #c7d2fe;">
+                                @c.PlanNombre
+                            </span>
+                        </td>
+
+                        <td>
+                            <div class="sa-sub">
+                                Uso: <b>@c.TiendasCount</b> / <b>@(maxTiendas == 0 ? "∞" : maxTiendas.ToString())</b>
+                            </div>
+                            <div class="sa-progress">
+                                <span style="width:@pctTiendas%"></span>
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="sa-sub">
+                                Uso: <b>@c.PilotosCount</b> / <b>@(maxPilotos == 0 ? "∞" : maxPilotos.ToString())</b>
+                            </div>
+                            <div class="sa-progress">
+                                <span style="width:@pctPilotos%"></span>
+                            </div>
+                        </td>
+
+                        <td>
+                            @if (isActivo)
+                            {
+                                <span class="sa-pill sa-pill-ok">ACTIVO</span>
+                            }
+                            else if (isSuspend)
+                            {
+                                <span class="sa-pill sa-pill-bad">SUSPENDED</span>
+                            }
+                            else
+                            {
+                                <span class="sa-pill sa-pill-bad">@estadoTxt</span>
+                            }
+                        </td>
+
+                        <td style="text-align:right;">
+                            <a class="sa-btn" href="/SuperAdmin/EditarCliente?id=@c.Id" title="Editar">✏️</a>
+
+                            @if (string.IsNullOrWhiteSpace(c.GestorEmail))
+                            {
+                                <a class="sa-btn" href="/SuperAdmin/CrearGestor?clienteAppId=@c.Id" title="Crear Gestor">👤</a>
+                            }
+                            else
+                            {
+                                <span class="sa-btn" title="Gestor OK">✅</span>
+                            }
+                        </td>
+                    </tr>
                 }
-                else
-                {
-                        <span>✔</span>
-                }
-            </td>
-        </tr>
-    }
-</table>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="sa-card-pad" style="display:flex; justify-content:space-between; color:#64748b; font-size:13px;">
+        <div id="saClientesCount">Mostrando @Model.Clientes.Count de @Model.Clientes.Count empresas</div>
+        <div style="display:flex; gap:10px;">
+            <button class="sa-btn" disabled>Anterior</button>
+            <button class="sa-btn" disabled>Siguiente</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/superadmin/clientes.js" asp-append-version="true"></script>
+}
+
+@await Html.PartialAsync("_ModalCrearCliente", new Login.ViewModels.SuperAdmin.ClienteAppCreateVm())

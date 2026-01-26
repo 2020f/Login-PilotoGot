@@ -1,26 +1,102 @@
 ﻿@model Login.ViewModels.SuperAdmin.ClienteAppCreateVm
+@{
+    Layout = "_LayoutSuperAdmin";
+    ViewData["Title"] = "Registrar Nuevo Cliente SaaS";
+    ViewData["PageTitle"] = "Registrar Nuevo Cliente SaaS";
+}
 
-<h2>Crear ClienteApp</h2>
+<div class="sa-modal-backdrop" id="saModalCrearCliente">
+    <div class="sa-modal" role="dialog" aria-modal="true" aria-labelledby="saModalTitle">
+        <div class="sa-modal-head">
+            <div>
+                <h3 id="saModalTitle">Registrar Nuevo Cliente SaaS</h3>
+                <p>Crear una instancia para una nueva empresa de delivery.</p>
+            </div>
 
-<form method="post">
-    <div>
-        <label>Nombre comercial</label><br />
-        <input asp-for="NombreComercial" />
+            <a class="sa-modal-close" href="/SuperAdmin/Clientes" title="Cerrar">×</a>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="sa-card sa-card-pad" style="margin: 0 18px 12px; border-color:#fecdd3;">
+                <div class="sa-sub" style="color:#b91c1c; font-weight:800;">Revisa lo siguiente:</div>
+                <ul style="margin:8px 0 0 18px; color:#b91c1c;">
+                    @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <form method="post" action="/SuperAdmin/CrearCliente">
+            @Html.AntiForgeryToken()
+
+            <div class="sa-modal-body">
+                <div style="display:grid; gap:14px;">
+
+                    <div>
+                        <div class="sa-sub" style="font-weight:800; color:#334155;">Nombre de la Empresa</div>
+                        <input class="sa-input" asp-for="NombreComercial"
+                               placeholder="Ej. Delivery Express S.R.L."
+                               style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                        <span asp-validation-for="NombreComercial" class="sa-sub" style="color:#e11d48;"></span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                        <div>
+                            <div class="sa-sub" style="font-weight:800; color:#334155;">Ubicación</div>
+                            <input class="sa-input" asp-for="Ubicacion"
+                                   placeholder="Ej. Santo Domingo, RD"
+                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                            <span asp-validation-for="Ubicacion" class="sa-sub" style="color:#e11d48;"></span>
+                        </div>
+
+                        <div>
+                            <div class="sa-sub" style="font-weight:800; color:#334155;">Teléfono</div>
+                            <input class="sa-input" asp-for="Telefono"
+                                   placeholder="Ej. 809-555-1234"
+                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                            <span asp-validation-for="Telefono" class="sa-sub" style="color:#e11d48;"></span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="sa-sub" style="font-weight:800; color:#334155; margin-bottom:8px;">
+                            Seleccionar Plan de Suscripción
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+                            @foreach (var p in (IEnumerable<Login.Domain.Entities.Plan>)ViewBag.Planes)
+                            {
+                                <label class="sa-card sa-card-pad" style="cursor:pointer;">
+                                    <input type="radio" name="PlanId" value="@p.Id" style="margin-right:8px;"
+                                    @(Model.PlanId == p.Id ? "checked" : "") />
+                                    <div style="font-weight:900;">@p.Nombre</div>
+                                    <div class="sa-sub">@p.MaxTiendas Tiendas<br />@p.MaxPilotos Pilotos</div>
+                                </label>
+                            }
+                        </div>
+
+                        <span asp-validation-for="PlanId" class="sa-sub" style="color:#e11d48;"></span>
+                    </div>
+
+                    <div class="sa-card sa-card-pad" style="background:#f8fafc;">
+                        <div class="sa-sub">Luego de crear el cliente, podrás crear su Gestor desde la tabla.</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="sa-modal-foot">
+                <a class="sa-btn" href="/SuperAdmin/Clientes">Cancelar</a>
+                <button class="sa-btn sa-btn-primary" type="submit">💾 Guardar Cliente</button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <div>
-        <label>Plan</label><br />
-        <select asp-for="PlanId">
-            <option value="">-- seleccionar plan --</option>
-            @foreach (var p in ViewBag.Planes)
-            {
-                <option value="@p.Id">@p.Nombre</option>
-            }
-        </select>
-    </div>
-
-    <br />
-    <button type="submit">Crear Cliente</button>
-</form>
-
-<p><a href="/SuperAdmin/Clientes">Volver</a></p>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/superadmin/crearcliente.js" asp-append-version="true"></script>
+}

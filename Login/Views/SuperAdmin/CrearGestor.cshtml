@@ -1,22 +1,72 @@
 ﻿@model Login.ViewModels.SuperAdmin.GestorCreateVm
+@{
+    Layout = "_LayoutSuperAdmin";
+    ViewData["Title"] = "Crear Gestor";
+    ViewData["PageTitle"] = "Crear Gestor";
+}
 
-<h2>Crear Gestor</h2>
+<div class="sa-modal-backdrop" id="saModalGestor">
+    <div class="sa-modal" role="dialog" aria-modal="true" aria-labelledby="saModalTitle">
+        <div class="sa-modal-head">
+            <div>
+                <h3 id="saModalTitle">Crear Gestor</h3>
+                <p>Este usuario será el administrador principal de esta empresa.</p>
+            </div>
 
-<form method="post">
-    <input type="hidden" asp-for="ClienteAppId" />
+            <a class="sa-modal-close" href="/SuperAdmin/Clientes" title="Cerrar">×</a>
+        </div>
 
-    <div>
-        <label>Email del gestor</label><br />
-        <input asp-for="Email" />
+        @* Errores de validación *@
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="sa-card sa-card-pad" style="margin: 0 18px 12px; border-color:#fecdd3;">
+                <div class="sa-sub" style="color:#b91c1c; font-weight:800;">Revisa lo siguiente:</div>
+                <ul style="margin:8px 0 0 18px; color:#b91c1c;">
+                    @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <form method="post" action="/SuperAdmin/CrearGestor">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="ClienteAppId" />
+
+            <div class="sa-modal-body">
+                <div style="display:grid; gap:14px;">
+                    <div>
+                        <div class="sa-sub" style="font-weight:800; color:#334155;">Email del gestor</div>
+                        <input class="sa-input" asp-for="Email" placeholder="admin@empresa.com"
+                               style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                        <span class="sa-sub" style="color:#ef4444;" asp-validation-for="Email"></span>
+                    </div>
+
+                    <div>
+                        <div class="sa-sub" style="font-weight:800; color:#334155;">Password</div>
+                        <input class="sa-input" asp-for="Password" type="password" placeholder="••••••••"
+                               style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                        <span class="sa-sub" style="color:#ef4444;" asp-validation-for="Password"></span>
+                    </div>
+
+                    <div class="sa-card sa-card-pad" style="background:#f8fafc;">
+                        <div class="sa-sub">
+                            Tip: usa un password fuerte. Si el gestor lo olvida, luego lo reseteamos desde el panel.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sa-modal-foot">
+                <a class="sa-btn" href="/SuperAdmin/Clientes">Cancelar</a>
+                <button class="sa-btn sa-btn-primary" type="submit">👤 Crear Gestor</button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <div>
-        <label>Password</label><br />
-        <input asp-for="Password" type="password" />
-    </div>
-
-    <br />
-    <button type="submit">Crear Gestor</button>
-</form>
-
-<p><a href="/SuperAdmin/Clientes">Volver</a></p>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/superadmin/creargestor.js" asp-append-version="true"></script>
+}

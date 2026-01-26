@@ -1,0 +1,73 @@
+﻿@model Login.ViewModels.SuperAdmin.ClienteAppCreateVm
+
+@{
+    var planes = ViewBag.Planes as IEnumerable<Login.Domain.Entities.Plan>
+                 ?? Enumerable.Empty<Login.Domain.Entities.Plan>();
+}
+
+<div class="sa-modal-backdrop" id="saModalCrearCliente" style="display:none;">
+    <div class="sa-modal">
+        <div class="sa-modal-head">
+            <div>
+                <h3>Registrar Nuevo Cliente SaaS</h3>
+                <p>Crear una instancia para una nueva empresa de delivery.</p>
+            </div>
+            <button class="sa-modal-close" type="button" data-sa-close>×</button>
+        </div>
+
+        <form method="post" action="/SuperAdmin/CrearCliente">
+            @Html.AntiForgeryToken()
+
+            <div class="sa-modal-body">
+                <div style="display:grid; gap:14px;">
+
+                    <div>
+                        <div class="sa-sub" style="font-weight:800; color:#334155;">Nombre de la Empresa</div>
+                        <input class="sa-input" name="NombreComercial" placeholder="Ej. Delivery Express S.R.L."
+                               style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                        <div>
+                            <div class="sa-sub" style="font-weight:800; color:#334155;">Ubicación</div>
+                            <input class="sa-input" name="Ubicacion" placeholder="Ej. Santo Domingo, RD"
+                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
+                        </div>
+                        <div>
+                            <div class="sa-sub" style="font-weight:800; color:#334155;">Teléfono Contacto</div>
+                            <input class="sa-input" name="Telefono" placeholder="809-555-1234"
+                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="sa-sub" style="font-weight:800; color:#334155; margin-bottom:8px;">
+                            Seleccionar Plan de Suscripción
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+                            @foreach (var p in planes)
+                            {
+                                <label class="sa-card sa-card-pad" style="cursor:pointer;">
+                                    <input type="radio" name="PlanId" value="@p.Id" style="margin-right:8px;">
+                                    <div style="font-weight:900;">@p.Nombre</div>
+                                    <div class="sa-sub">@p.MaxTiendas Tiendas<br />@p.MaxPilotos Pilotos</div>
+                                </label>
+                            }
+                        </div>
+
+                        <div class="sa-card sa-card-pad" style="margin-top:10px; background:#f1f5f9;">
+                            <div class="sa-sub">Límites: <b id="saPlanLimits">—</b></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="sa-modal-foot">
+                <button class="sa-btn" type="button" data-sa-close>Cancelar</button>
+                <button class="sa-btn sa-btn-primary" type="submit">💾 Guardar Cliente</button>
+            </div>
+        </form>
+    </div>
+</div>
