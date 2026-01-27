@@ -11,13 +11,25 @@
     <link rel="stylesheet" href="~/css/tienda.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
 </head>
-<body>
+<body class="tp-body">
     <div class="tp-shell">
         <aside class="tp-sidebar" id="tpSidebar">
             <partial name="_TiendaSidebar" />
 
             <div class="tp-sidebar-footer">
                 <partial name="_TiendaUserBadge" />
+
+                <!-- ✅ Cerrar sesión -->
+                <form asp-area="Identity"
+                      asp-page="/Account/Logout"
+                      method="post"
+                      class="tp-logout-form">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="tp-logout-btn-full" title="Cerrar sesión">
+                        <span class="tp-logout-ico">⏻</span>
+                        <span>Cerrar sesión</span>
+                    </button>
+                </form>
             </div>
         </aside>
 
@@ -26,6 +38,7 @@
                 <partial name="_TiendaTopbar" />
             </header>
 
+            <!-- ✅ Importante: contenido sin scroll aquí -->
             <section class="tp-content">
                 @RenderBody()
             </section>

@@ -1,95 +1,81 @@
 ﻿@model List<Login.Domain.Entities.Tienda>
-
 @{
-    ViewData["Title"] = "Tiendas";
+    ViewData["Title"] = "Red de Tiendas";
+    Layout = "_LayoutGestor";
 }
-
-<div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="mb-0">🏪 Tiendas</h2>
-
-    <div class="d-flex gap-2">
-        <a class="btn btn-success" asp-action="CrearTienda">
-            + Crear tienda
-        </a>
-        <a class="btn btn-outline-secondary" asp-action="Ordenes">
-            Volver a Órdenes
-        </a>
-    </div>
-</div>
 
 @if (ViewBag.Ok != null)
 {
     <div class="alert alert-success">@ViewBag.Ok</div>
 }
-
 @if (ViewBag.Error != null)
 {
     <div class="alert alert-danger">@ViewBag.Error</div>
 }
 
-@if (Model == null || !Model.Any())
-{
-    <div class="alert alert-info">
-        No hay tiendas creadas todavía. Dale a <strong>“Crear tienda”</strong> para agregar la primera.
+<div class="d-flex align-items-start justify-content-between mb-3">
+    <div>
+        <div class="h4 fw-bold mb-1">Tiendas Asociadas</div>
+        <div class="text-secondary fw-semibold">Puntos de recolección registrados.</div>
     </div>
-}
-else
-{
-    <div class="card shadow-sm">
-        <div class="card-body">
 
-            <div class="table-responsive">
-                <table class="table table-striped align-middle mb-0">
-                    <thead>
+    <a class="btn btn-link fw-bold text-decoration-none" asp-action="CrearTienda">
+        <i class="bi bi-shop me-2"></i> Nueva Tienda
+    </a>
+</div>
+
+<div class="pg-card p-0">
+    <div class="pg-table-wrap">
+        <table class="pg-table">
+            <thead>
+                <tr>
+                    <th style="width:120px;">ID</th>
+                    <th>Nombre Tienda</th>
+                    <th>Ubicación</th>
+                    <th style="width:180px;">Teléfono</th>
+                    <th style="width:200px;">Encargado</th>
+                    <th style="width:160px; text-align:right;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model == null || !Model.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-secondary fw-bold p-4">
+                            No hay tiendas creadas todavía.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var t in Model)
+                    {
                         <tr>
-                            <th>Nombre</th>
-                            <th>Dirección</th>
-                            <th>Teléfono</th>
-                            <th class="text-center">Activo</th>
-                            <th class="text-center">Acciones</th>
+                            <td class="text-secondary fw-bold">#@t.Id</td>
+                            <td class="fw-bold">@t.Nombre</td>
+                            <td>@t.Direccion</td>
+                            <td>@t.Telefono</td>
+                            <td class="text-secondary">—</td>
+                            <td style="text-align:right;">
+                                <a class="pg-action-ico" asp-action="EditarTienda" asp-route-id="@t.Id" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
 
+                                @if (t.Activo)
+                                {
+                                    <form method="post" asp-action="DesactivarTienda" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@t.Id" />
+                                        <button type="submit" class="pg-action-ico danger" title="Desactivar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var t in Model)
-                        {
-                            <tr>
-                                <td>@t.Nombre</td>
-                                <td>@t.Direccion</td>
-                                <td>@t.Telefono</td>
-                                <td class="text-center">
-                                    @if (t.Activo)
-                                    {
-                                        <span class="badge bg-success">Sí</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary">No</span>
-                                    }
-                                </td>
-                                <td class="text-center" style="min-width:220px;">
-                                    <a class="btn btn-sm btn-outline-primary"
-                                       asp-action="EditarTienda"
-                                       asp-route-id="@t.Id">
-                                        Editar
-                                    </a>
-
-                                    @if (t.Activo)
-                                    {
-                                        <form method="post" asp-action="DesactivarTienda" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@t.Id" />
-                                            <button class="btn btn-sm btn-danger">Desactivar</button>
-                                        </form>
-                                    }
-                                </td>
-
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-
-        </div>
+                    }
+                }
+            </tbody>
+        </table>
     </div>
-}
+</div>

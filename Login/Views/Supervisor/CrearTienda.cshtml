@@ -1,60 +1,78 @@
 ﻿@model Login.ViewModels.Tienda.TiendaCreateVm
-
 @{
-    ViewData["Title"] = "Crear Tienda";
+    ViewData["Title"] = "Nueva Tienda";
+    Layout = "_LayoutGestor";
 }
 
-<h2 class="mb-3">➕ Crear nueva tienda</h2>
+<div class="pg-card p-4">
 
-<div class="card shadow-sm">
-    <div class="card-body">
+    <div class="d-flex align-items-start justify-content-between mb-3">
+        <div>
+            <div class="h4 fw-bold mb-1">Nueva Tienda</div>
+            <div class="text-secondary fw-semibold">Registra una tienda y crea su usuario de acceso (rol Cliente).</div>
+        </div>
 
-        <form asp-action="CrearTienda" method="post">
-            @Html.AntiForgeryToken()
-
-            <h5 class="mb-3">Datos de la tienda</h5>
-
-            <div class="mb-3">
-                <label asp-for="Nombre" class="form-label"></label>
-                <input asp-for="Nombre" class="form-control" />
-                <span asp-validation-for="Nombre" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Direccion" class="form-label"></label>
-                <input asp-for="Direccion" class="form-control" />
-                <span asp-validation-for="Direccion" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Telefono" class="form-label"></label>
-                <input asp-for="Telefono" class="form-control" />
-                <span asp-validation-for="Telefono" class="text-danger"></span>
-            </div>
-
-            <hr class="my-4" />
-
-            <h5 class="mb-3">Usuario de acceso (Interfaz Tienda)</h5>
-
-            <div class="mb-3">
-                <label asp-for="EmailCliente" class="form-label"></label>
-                <input asp-for="EmailCliente" class="form-control" />
-                <span asp-validation-for="EmailCliente" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="PasswordCliente" class="form-label"></label>
-                <input asp-for="PasswordCliente" type="password" class="form-control" />
-                <span asp-validation-for="PasswordCliente" class="text-danger"></span>
-            </div>
-
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">💾 Crear tienda + usuario</button>
-                <a asp-action="Tiendas" class="btn btn-secondary">⬅ Volver</a>
-            </div>
-        </form>
-
+        <a asp-action="Tiendas" class="btn btn-outline-secondary fw-bold">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
     </div>
+
+    <form asp-action="CrearTienda" method="post" class="row g-3">
+        @Html.AntiForgeryToken()
+
+        <div class="col-12">
+            <div class="fw-bold mb-2">Datos de la tienda</div>
+            <div class="text-secondary fw-semibold" style="font-size:13px;">Estos datos se verán en despacho y en el listado de tiendas.</div>
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="Nombre" class="form-label fw-bold"></label>
+            <input asp-for="Nombre" class="form-control" placeholder="Ej: Pizza Hut Los Prados" />
+            <span asp-validation-for="Nombre" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="Telefono" class="form-label fw-bold"></label>
+            <input asp-for="Telefono" class="form-control" placeholder="809-555-0202" />
+            <span asp-validation-for="Telefono" class="text-danger"></span>
+        </div>
+
+        <div class="col-12">
+            <label asp-for="Direccion" class="form-label fw-bold"></label>
+            <input asp-for="Direccion" class="form-control" placeholder="Ej: Calle 5 #10" />
+            <span asp-validation-for="Direccion" class="text-danger"></span>
+        </div>
+
+        <hr class="my-4" />
+
+        <div class="col-12">
+            <div class="fw-bold mb-2">Usuario de acceso (Interfaz Tienda)</div>
+            <div class="text-secondary fw-semibold" style="font-size:13px;">Este usuario se crea en Identity y se asigna al rol <b>Cliente</b>.</div>
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="EmailCliente" class="form-label fw-bold"></label>
+            <input asp-for="EmailCliente" class="form-control" placeholder="correo@tienda.com" />
+            <span asp-validation-for="EmailCliente" class="text-danger"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="PasswordCliente" class="form-label fw-bold"></label>
+            <input asp-for="PasswordCliente" type="password" class="form-control" placeholder="Mínimo 6 caracteres" />
+            <span asp-validation-for="PasswordCliente" class="text-danger"></span>
+        </div>
+
+        <div class="col-12 d-flex gap-2 mt-2">
+            <button type="submit" class="btn btn-dark fw-bold">
+                <i class="bi bi-check2-circle"></i> Crear tienda + usuario
+            </button>
+
+            <a asp-action="Tiendas" class="btn btn-link fw-bold text-decoration-none text-secondary">
+                Cancelar
+            </a>
+        </div>
+
+    </form>
 </div>
 
 @section Scripts {

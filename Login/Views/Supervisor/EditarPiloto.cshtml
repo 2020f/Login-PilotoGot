@@ -2,63 +2,82 @@
 @using Login.Domain.Enums
 @{
     ViewData["Title"] = "Editar Piloto";
+    Layout = "_LayoutGestor";
 }
 
-<h2>Editar Piloto</h2>
+<div class="pg-card p-4">
 
-<div class="mb-3">
-    <a class="btn btn-secondary" asp-action="Pilotos">← Volver</a>
-</div>
-
-@if (!string.IsNullOrWhiteSpace(Model.EmailPiloto))
-{
-    <div class="alert alert-info">
-        <b>Email (login):</b> @Model.EmailPiloto
-    </div>
-}
-
-<form method="post" asp-action="EditarPiloto" class="row g-3">
-    @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="Id" />
-
-    <div class="col-md-6">
-        <label class="form-label">Nombre</label>
-        <input class="form-control" asp-for="Nombre" />
-        <span class="text-danger" asp-validation-for="Nombre"></span>
-    </div>
-
-    <div class="col-md-6">
-        <label class="form-label">Teléfono</label>
-        <input class="form-control" asp-for="Telefono" />
-        <span class="text-danger" asp-validation-for="Telefono"></span>
-    </div>
-
-    <div class="col-md-6">
-        <label class="form-label">Estado</label>
-        <select class="form-select" asp-for="Estado">
-            <option value="@EstadoPiloto.Disponible">Disponible</option>
-            <option value="@EstadoPiloto.Ocupado">Ocupado</option>
-            <option value="@EstadoPiloto.Inactivo">Inactivo</option>
-        </select>
-    </div>
-
-    <div class="col-md-6 d-flex align-items-end">
-        <div class="form-check">
-            <input class="form-check-input" asp-for="Activo" />
-            <label class="form-check-label">Activo</label>
+    <div class="d-flex align-items-start justify-content-between mb-3">
+        <div>
+            <div class="h4 fw-bold mb-1">Editar Piloto</div>
+            <div class="text-secondary fw-semibold">Actualiza datos, estado y activación.</div>
         </div>
+
+        <a asp-action="Pilotos" class="btn btn-outline-secondary fw-bold">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
     </div>
 
-    <div class="col-12 d-flex gap-2">
-        <button class="btn btn-success">Guardar</button>
+    @if (!string.IsNullOrWhiteSpace(Model.EmailPiloto))
+    {
+        <div class="pg-card p-3 mb-3" style="box-shadow:none;">
+            <div class="text-secondary fw-bold" style="font-size:12px; letter-spacing:1px;">EMAIL (LOGIN)</div>
+            <div class="fw-bold">@Model.EmailPiloto</div>
+        </div>
+    }
 
-        <form method="post" asp-action="EliminarPiloto" class="d-inline">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="id" value="@Model.Id" />
-            <button class="btn btn-danger" type="submit">Eliminar</button>
-        </form>
-    </div>
-</form>
+    <form method="post" asp-action="EditarPiloto" class="row g-3">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <div class="col-md-6">
+            <label class="form-label fw-bold">Nombre</label>
+            <input class="form-control" asp-for="Nombre" />
+            <span class="text-danger" asp-validation-for="Nombre"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-bold">Teléfono</label>
+            <input class="form-control" asp-for="Telefono" />
+            <span class="text-danger" asp-validation-for="Telefono"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-bold">Estado</label>
+            <select class="form-select" asp-for="Estado">
+                <option value="@EstadoPiloto.Disponible">Disponible</option>
+                <option value="@EstadoPiloto.Ocupado">Ocupado</option>
+                <option value="@EstadoPiloto.Inactivo">Inactivo</option>
+            </select>
+        </div>
+
+        <div class="col-md-6 d-flex align-items-end">
+            <div class="form-check">
+                <input class="form-check-input" asp-for="Activo" />
+                <label class="form-check-label fw-bold">Activo</label>
+            </div>
+        </div>
+
+        <div class="col-12 d-flex gap-2 mt-2">
+            <button class="btn btn-dark fw-bold">
+                <i class="bi bi-save2"></i> Guardar cambios
+            </button>
+
+            <form method="post" asp-action="EliminarPiloto" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button class="btn btn-outline-danger fw-bold" type="submit">
+                    <i class="bi bi-trash"></i> Eliminar
+                </button>
+            </form>
+
+            <a asp-action="Pilotos" class="btn btn-link fw-bold text-decoration-none text-secondary">
+                Cancelar
+            </a>
+        </div>
+    </form>
+
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

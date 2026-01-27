@@ -1,14 +1,9 @@
 ﻿@model List<Login.Domain.Entities.Piloto>
+@using Login.Domain.Enums
 @{
-    ViewData["Title"] = "Pilotos (Supervisor)";
+    ViewData["Title"] = "Flota de Pilotos";
+    Layout = "_LayoutGestor";
 }
-
-<h2>Pilotos</h2>
-
-<div class="d-flex gap-2 mb-3">
-    <a class="btn btn-secondary" asp-action="Ordenes">← Volver a Órdenes</a>
-    <a class="btn btn-success" asp-action="CrearPiloto">+ Crear Piloto</a>
-</div>
 
 @if (!string.IsNullOrWhiteSpace(ViewBag.Ok))
 {
@@ -19,50 +14,54 @@
     <div class="alert alert-danger">@ViewBag.Error</div>
 }
 
-<table class="table table-sm table-striped align-middle">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Teléfono</th>
-            <th>Estado</th>
-            <th>Activo</th>
-            <th>Creado</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var p in Model)
-        {
-            <tr>
-                <td>@p.Id</td>
-                <td>@p.Nombre</td>
-                <td>@p.Telefono</td>
-                <td>@p.Estado</td>
-                <td>@(p.Activo ? "Sí" : "No")</td>
-                <td>@p.CreatedAt.ToLocalTime().ToString("g")</td>
-                <td style="min-width:260px;">
-    <a class="btn btn-sm btn-outline-primary"
-       asp-action="EditarPiloto"
-       asp-route-id="@p.Id">
-        Editar
+<div class="d-flex align-items-start justify-content-between mb-3">
+    <div>
+        <div class="h4 fw-bold mb-1">Gestión de Pilotos</div>
+        <div class="text-secondary fw-semibold">Administre su flota y credenciales de acceso.</div>
+    </div>
+
+    <a class="btn btn-link fw-bold text-decoration-none" asp-action="CrearPiloto">
+        <i class="bi bi-plus-lg me-2"></i> Nuevo Piloto
     </a>
+</div>
 
-    @if (p.Activo)
+<div class="pg-grid">
+    @foreach (var p in Model)
     {
-        <form method="post" asp-action="EliminarPiloto" class="d-inline">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="id" value="@p.Id" />
-            <button class="btn btn-sm btn-danger">Eliminar</button>
-        </form>
-    }
-    else
-    {
-        <span class="text-muted">-</span>
-    }
-</td>
+        var statusClass = p.Estado == EstadoPiloto.Disponible ? "ok"
+        : p.Estado == EstadoPiloto.Ocupado ? "busy"
+        : "";
 
-            </tr>
-        }
-    </tbody>
-</table>
+        var nombreSafe = (p?.Nombre ?? "").Trim();
+        var inicial = !string.IsNullOrEmpty(nombreSafe)
+        ? nombreSafe.Substring(0, 1).ToUpper()
+        : "?";
+
+        <div class="pg-card pg-pilotbox">
+            <div class="pg-pilotbox-top">
+                <div class="pg-pilotbox-left">
+                    <div class="pg-big-avatar">@inicial</div>
+                    <div>
+                        <div class="fw-bold">@p.Nombre</div>
+                        <div class="text-secondary fw-semibold">@p.Telefono</div>
+                    </div>
+                </div>
+
+                <div class="pg-pill-status @statusClass">
+                    @p.Estado
+                </div>
+            </div>
+
+            <div class="pg-pilotbox-mid">
+                <div>
+                    Órdenes Activas:
+                    <span class="fw-black">0</span>
+                </div>
+
+                <a class="pg-link" asp-action="EditarPiloto" asp-route-id="@p.Id">
+                    Editar
+                </a>
+            </div>
+        </div>
+    }
+</div>

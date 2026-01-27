@@ -23,130 +23,138 @@
 
 <div class="tp-page">
 
-    @if (ViewBag.Ok != null)
-    {
-        <div class="tp-alert tp-alert-ok">
-            <span class="tp-alert-icon">✅</span>
-            <div>@ViewBag.Ok</div>
-        </div>
-    }
+    <!-- ✅ ZONA FIJA (NO SCROLL) -->
+    <div class="tp-sticky">
 
-    @if (ViewBag.Error != null)
-    {
-        <div class="tp-alert tp-alert-bad">
-            <span class="tp-alert-icon">⚠️</span>
-            <div>@ViewBag.Error</div>
-        </div>
-    }
-
-    <div class="tp-cards">
-        <div class="tp-card tp-card-stat">
-            <div class="tp-card-stat-head">
-                <div class="tp-card-stat-title">EN PROCESO / RECOLECTANDO</div>
-                <div class="tp-chip tp-chip-warn">⏳</div>
-            </div>
-            <div class="tp-card-stat-value">@enProceso</div>
-        </div>
-
-        <div class="tp-card tp-card-stat">
-            <div class="tp-card-stat-head">
-                <div class="tp-card-stat-title">EN RUTA</div>
-                <div class="tp-chip tp-chip-blue">🛵</div>
-            </div>
-            <div class="tp-card-stat-value">@enRuta</div>
-        </div>
-
-        <div class="tp-card tp-card-stat">
-            <div class="tp-card-stat-head">
-                <div class="tp-card-stat-title">ENTREGADOS HOY</div>
-                <div class="tp-chip tp-chip-ok">✔</div>
-            </div>
-            <div class="tp-card-stat-value">@entregadosHoy</div>
-        </div>
-    </div>
-
-    <div class="tp-section-head">
-        <div>
-            <h2 class="tp-h2">Envíos Activos</h2>
-            <div class="tp-sub">Seguimiento por orden (A) y estado: Recolectando → En ruta → Entregado.</div>
-        </div>
-
-        <div class="tp-actions">
-            <a class="tp-btn tp-btn-ghost" asp-action="CrearOrden">＋ Nueva Orden</a>
-            <a class="tp-link" asp-action="Ordenes">Ver todos</a>
-        </div>
-    </div>
-
-    <div class="tp-list">
-        @if (!ordenes.Any())
+        @if (ViewBag.Ok != null)
         {
-            <div class="tp-empty">
-                <div class="tp-empty-title">No hay envíos todavía.</div>
-                <div class="tp-empty-sub">Crea una orden y aquí verás el seguimiento.</div>
-                <a class="tp-btn tp-btn-primary" asp-action="CrearOrden">Crear primera orden</a>
+            <div class="tp-alert tp-alert-ok">
+                <span class="tp-alert-icon">✅</span>
+                <div>@ViewBag.Ok</div>
             </div>
         }
-        else
+
+        @if (ViewBag.Error != null)
         {
-            foreach (var o in ordenes)
+            <div class="tp-alert tp-alert-bad">
+                <span class="tp-alert-icon">⚠️</span>
+                <div>@ViewBag.Error</div>
+            </div>
+        }
+
+        <div class="tp-cards">
+            <div class="tp-card tp-card-stat">
+                <div class="tp-card-stat-head">
+                    <div class="tp-card-stat-title">EN PROCESO / RECOLECTANDO</div>
+                    <div class="tp-chip tp-chip-warn">⏳</div>
+                </div>
+                <div class="tp-card-stat-value">@enProceso</div>
+            </div>
+
+            <div class="tp-card tp-card-stat">
+                <div class="tp-card-stat-head">
+                    <div class="tp-card-stat-title">EN RUTA</div>
+                    <div class="tp-chip tp-chip-blue">🛵</div>
+                </div>
+                <div class="tp-card-stat-value">@enRuta</div>
+            </div>
+
+            <div class="tp-card tp-card-stat">
+                <div class="tp-card-stat-head">
+                    <div class="tp-card-stat-title">ENTREGADOS HOY</div>
+                    <div class="tp-chip tp-chip-ok">✔</div>
+                </div>
+                <div class="tp-card-stat-value">@entregadosHoy</div>
+            </div>
+        </div>
+
+        <div class="tp-section-head">
+            <div>
+                <h2 class="tp-h2">Envíos Activos</h2>
+                <div class="tp-sub">Seguimiento por orden (A) y estado: Recolectando → En ruta → Entregado.</div>
+            </div>
+
+            <div class="tp-actions">
+                <a class="tp-btn tp-btn-ghost" asp-action="CrearOrden">＋ Nueva Orden</a>
+                <a class="tp-link" asp-action="Ordenes">Ver todos</a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ✅ SOLO AQUÍ SE SCROLLEA -->
+    <div class="tp-scroll">
+        <div class="tp-list">
+            @if (!ordenes.Any())
             {
-                var estado = (o.Estado ?? "").Trim();
-                var s = estado.ToLower();
-
-                var pillClass = "tp-pill tp-pill-gray";
-                var leftBarClass = "tp-leftbar tp-leftbar-gray";
-                var pillText = estado;
-
-                if (s.Contains("recolect") || s.Contains("proceso"))
-                {
-                    pillClass = "tp-pill tp-pill-warn";
-                    leftBarClass = "tp-leftbar tp-leftbar-warn";
-                    pillText = "Recolectando / En espera";
-                }
-                else if (s.Contains("ruta"))
-                {
-                    pillClass = "tp-pill tp-pill-blue";
-                    leftBarClass = "tp-leftbar tp-leftbar-blue";
-                    pillText = "En ruta";
-                }
-                else if (s.Contains("entreg"))
-                {
-                    pillClass = "tp-pill tp-pill-ok";
-                    leftBarClass = "tp-leftbar tp-leftbar-ok";
-                    pillText = "Entregado";
-                }
-
-                <div class="tp-card tp-card-order">
-                    <div class="@leftBarClass"></div>
-
-                    <div class="tp-order-body">
-                        <div class="tp-order-top">
-                            <div class="tp-order-meta">
-                                <div class="tp-order-code">#ORD-@o.NumeroOrdenA</div>
-                                <span class="@pillClass">@pillText</span>
-                            </div>
-
-                            <div class="tp-order-time">
-                                @o.CreatedAt.ToLocalTime().ToString("hh:mm tt")
-                            </div>
-                        </div>
-
-                        <div class="tp-order-title">@o.UsuarioFinal</div>
-
-                        <div class="tp-order-sub">
-                            Creada: @o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt")
-                        </div>
-                    </div>
-
-                    <div class="tp-order-actions">
-                        <a href="javascript:void(0)" data-open-qr data-orden-id="@o.OrdenId">
-                            Ver QR y Códigos →
-                        </a>
-
-                    </div>
+                <div class="tp-empty">
+                    <div class="tp-empty-title">No hay envíos todavía.</div>
+                    <div class="tp-empty-sub">Crea una orden y aquí verás el seguimiento.</div>
+                    <a class="tp-btn tp-btn-primary" asp-action="CrearOrden">Crear primera orden</a>
                 </div>
             }
-        }
+            else
+            {
+                foreach (var o in ordenes)
+                {
+                    var estado = (o.Estado ?? "").Trim();
+                    var s = estado.ToLower();
+
+                    var pillClass = "tp-pill tp-pill-gray";
+                    var leftBarClass = "tp-leftbar tp-leftbar-gray";
+                    var pillText = estado;
+
+                    if (s.Contains("recolect") || s.Contains("proceso"))
+                    {
+                        pillClass = "tp-pill tp-pill-warn";
+                        leftBarClass = "tp-leftbar tp-leftbar-warn";
+                        pillText = "Recolectando / En espera";
+                    }
+                    else if (s.Contains("ruta"))
+                    {
+                        pillClass = "tp-pill tp-pill-blue";
+                        leftBarClass = "tp-leftbar tp-leftbar-blue";
+                        pillText = "En ruta";
+                    }
+                    else if (s.Contains("entreg"))
+                    {
+                        pillClass = "tp-pill tp-pill-ok";
+                        leftBarClass = "tp-leftbar tp-leftbar-ok";
+                        pillText = "Entregado";
+                    }
+
+                    <div class="tp-card tp-card-order">
+                        <div class="@leftBarClass"></div>
+
+                        <div class="tp-order-body">
+                            <div class="tp-order-top">
+                                <div class="tp-order-meta">
+                                    <div class="tp-order-code">#ORD-@o.NumeroOrdenA</div>
+                                    <span class="@pillClass">@pillText</span>
+                                </div>
+
+                                <div class="tp-order-time">
+                                    @o.CreatedAt.ToLocalTime().ToString("hh:mm tt")
+                                </div>
+                            </div>
+
+                            <div class="tp-order-title">@o.UsuarioFinal</div>
+
+                            <div class="tp-order-sub">
+                                Creada: @o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt")
+                            </div>
+                        </div>
+
+                        <div class="tp-order-actions">
+                            <a href="javascript:void(0)" data-open-qr data-orden-id="@o.OrdenId">
+                                Ver QR y Códigos →
+                            </a>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
     </div>
 </div>
+
 <div id="tpModalHost"></div>

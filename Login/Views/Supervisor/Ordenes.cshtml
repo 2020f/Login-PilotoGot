@@ -1,113 +1,220 @@
 ﻿@model Login.ViewModels.Supervisor.OrdenesIndexVm
 @{
-    ViewData["Title"] = "Órdenes (Supervisor)";
+    ViewData["Title"] = "Despacho en Vivo";
+    Layout = "_LayoutGestor";
 }
 
-<h2>Órdenes</h2>
+<div class="pg-page">
 
+    @if (!string.IsNullOrWhiteSpace(Model.Ok))
+    {
+        <div class="alert alert-success">@Model.Ok</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="alert alert-danger">@Model.Error</div>
+    }
 
-<div class="d-flex gap-2 mb-3">
-    <a class="btn btn-success"
-       asp-controller="Supervisor"
-       asp-action="Tiendas">
-        + Crear / Ver Tiendas
-    </a>
+    <!-- FILTROS FIJOS -->
+    <div class="pg-filters-sticky">
+        <div class="pg-card pg-filters mb-3">
+            <form method="get" asp-action="Ordenes" class="d-flex align-items-center gap-3 w-100">
+                <div class="pg-filter-block">
+                    <select class="pg-filter-select" name="tiendaId" asp-items="Model.Tiendas">
+                        <option value="">Todas las Tiendas</option>
+                    </select>
+                    <i class="bi bi-chevron-down text-secondary"></i>
+                </div>
 
-    <a class="btn btn-outline-secondary"
-       asp-controller="Supervisor"
-       asp-action="Pilotos">
-        Pilotos
-    </a>
+                <div class="pg-filter-block">
+                    <select class="pg-filter-select" name="estado" asp-items="Model.Estados"></select>
+                    <i class="bi bi-chevron-down text-secondary"></i>
+                </div>
+
+                <!-- fecha (solo visual) -->
+                <div class="pg-filter-block">
+                    <input class="pg-filter-input" type="text" placeholder="dd/mm/aaaa" disabled />
+                    <i class="bi bi-calendar3 text-secondary"></i>
+                </div>
+
+                <div class="pg-search">
+                    <i class="bi bi-search text-secondary"></i>
+                    <input type="number" name="numeroOrdenA" value="@Model.NumeroOrdenA" placeholder="Buscar por #Orden ID..." />
+                </div>
+
+                @if (Model.PilotoId.HasValue)
+                {
+                    <input type="hidden" name="pilotoId" value="@Model.PilotoId" />
+                }
+
+                <button class="d-none" type="submit"></button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SOLO ESTO SCROLLEA -->
+    <div class="pg-orders-scroll">
+        <div class="d-flex flex-column gap-3">
+            @foreach (var o in Model.Ordenes)
+            {
+                // ====== helpers seguros ======
+                var pilotoSafe = (o.PilotoNombre ?? "").Trim();
+                var pilotoInicial = !string.IsNullOrEmpty(pilotoSafe) ? pilotoSafe.Substring(0, 1).ToUpper() : "?";
+
+                var pilotoTel = string.IsNullOrWhiteSpace(o.PilotoTelefono) ? "—" : o.PilotoTelefono;
+
+                var tiendaDir = string.IsNullOrWhiteSpace(o.TiendaDireccion) ? "—" : o.TiendaDireccion;
+                var tiendaTel = string.IsNullOrWhiteSpace(o.TiendaTelefono) ? "—" : o.TiendaTelefono;
+                var notasTxt = string.IsNullOrWhiteSpace(o.Notas) ? "—" : o.Notas;
+
+                <div class="pg-card pg-order">
+
+                    <!-- LEFT -->
+                    <div class="pg-order-left">
+                        <div class="pg-order-label">ORDEN ID (A)</div>
+                        <div class="pg-order-id">ORD-@o.NumeroOrdenA</div>
+
+                        @{
+                            var estadoTxt = o.Estado ?? "";
+
+                            // Ajusta si tus estados son "Asignada / Recolectada / Entregada..."
+                            var isRecolectando =
+                            estadoTxt.Contains("Recolect", System.StringComparison.OrdinalIgnoreCase) ||
+                            estadoTxt.Contains("Recolectada", System.StringComparison.OrdinalIgnoreCase);
+
+                            // si no es recolectando, badge gris como tu UI
+                            var badgeClass = isRecolectando ? "" : "gray";
+                        }
+
+                        <div class="pg-status @badgeClass">
+                            <i class="bi bi-box-seam"></i>
+                            <span>@(string.IsNullOrWhiteSpace(o.Estado) ? "En Proceso" : o.Estado)</span>
+                        </div>
+
+                        <div class="pg-time">
+                            <i class="bi bi-clock"></i>
+                            <span>@o.CreatedAt.ToLocalTime().ToString("hh:mm tt")</span>
+                        </div>
+                    </div>
+
+                    <!-- MID -->
+                    <div class="pg-order-mid">
+                        <div class="pg-store">
+                            <div class="pg-store-ico">
+                                <i class="bi bi-shop"></i>
+                            </div>
+
+                            <div>
+                                <div class="pg-store-name">@o.TiendaNombre</div>
+
+                                <div class="pg-store-meta">
+                                    <span><i class="bi bi-geo-alt"></i> <span class="ms-1">@tiendaDir</span></span>
+                                    <span><i class="bi bi-telephone"></i> <span class="ms-1">@tiendaTel</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pg-note">
+                            <div class="pg-note-title">NOTA DE LA TIENDA:</div>
+                            <div class="pg-note-text">"@notasTxt"</div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT -->
+                    <div class="pg-order-right">
+                        <div class="pg-right-title">PILOTO ASIGNADO</div>
+
+                        @if (!string.IsNullOrWhiteSpace(o.PilotoNombre))
+                        {
+                            <div class="pg-pilot-card">
+                                <div class="pg-pilot-left">
+                                    <div class="pg-avatar">@pilotoInicial</div>
+                                    <div>
+                                        <div class="pg-pilot-name">@o.PilotoNombre</div>
+                                        <div class="pg-pilot-phone">@pilotoTel</div>
+                                    </div>
+                                </div>
+
+                                <a class="pg-edit-ico" asp-action="Pilotos" title="Editar piloto">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <button type="button"
+                                    class="pg-assign-btn"
+                                    data-open-assign
+                                    data-codigob="@o.CodigoB"
+                                    data-ordena="@o.NumeroOrdenA">
+                                <i class="bi bi-person-plus"></i>
+                                <span>Asignar Piloto</span>
+                            </button>
+
+                            <div class="pg-attn">Requiere Atención</div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
 </div>
 
+<!-- MODAL -->
+<div class="modal fade pg-modal" id="asignarPilotoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:540px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <div class="pg-modal-title">Asignar Piloto</div>
+                    <div class="pg-modal-sub">
+                        Seleccione un piloto disponible para la orden <b id="modalOrdenLabel">ORD-0000</b>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
 
+            <div class="modal-body">
+                <div class="pg-modal-search">
+                    <i class="bi bi-search text-secondary"></i>
+                    <input id="pilotSearch" type="text" placeholder="Buscar piloto por nombre..." />
+                </div>
 
+                <form id="asignarPilotoForm" method="post" asp-action="AsignarPiloto" class="mt-3">
+                    @Html.AntiForgeryToken()
 
+                    <input id="modalCodigoB" type="hidden" name="CodigoB" value="" />
+                    <input id="modalPilotoId" type="hidden" name="PilotoId" value="" />
 
-@if (!string.IsNullOrWhiteSpace(Model.Ok))
-{
-    <div class="alert alert-success">@Model.Ok</div>
-}
-@if (!string.IsNullOrWhiteSpace(Model.Error))
-{
-    <div class="alert alert-danger">@Model.Error</div>
-}
+                    <div id="pilotList">
+                        @foreach (var p in Model.Pilotos)
+                        {
+                            var pText = (p.Text ?? "").Trim();
+                            var pInicial = !string.IsNullOrEmpty(pText) ? pText.Substring(0, 1).ToUpper() : "?";
 
-<form method="get" asp-action="Ordenes" class="row g-2 mb-3">
-    <div class="col-md-3">
-        <label class="form-label">Tienda</label>
-        <select class="form-select" name="tiendaId" asp-items="Model.Tiendas">
-            <option value="">Todas</option>
-        </select>
+                            <div class="pg-pilot-pick"
+                                 data-piloto-id="@p.Value"
+                                 data-filter="@p.Text">
+                                <div class="pg-pick-left">
+                                    <div class="pg-pick-avatar">@pInicial</div>
+                                    <div>
+                                        <div class="fw-bold">@p.Text</div>
+                                        <div class="text-secondary fw-semibold" style="font-size:13px;">—</div>
+                                    </div>
+                                </div>
+                                <i class="bi bi-chevron-right text-secondary"></i>
+                            </div>
+                        }
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link text-secondary fw-bold" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+            </div>
+        </div>
     </div>
-
-    <div class="col-md-3">
-        <label class="form-label">Piloto</label>
-        <select class="form-select" name="pilotoId" asp-items="Model.Pilotos">
-            <option value="">Todos</option>
-        </select>
-    </div>
-
-    <div class="col-md-3">
-        <label class="form-label">Estado</label>
-        <select class="form-select" name="estado" asp-items="Model.Estados"></select>
-    </div>
-
-    <div class="col-md-3">
-        <label class="form-label">A (Número)</label>
-        <input class="form-control" name="numeroOrdenA" value="@Model.NumeroOrdenA" />
-    </div>
-
-    <div class="col-12">
-        <button class="btn btn-primary">Filtrar</button>
-        <a class="btn btn-secondary" asp-action="Ordenes">Limpiar</a>
-    </div>
-</form>
-
-<table class="table table-sm table-striped align-middle">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>A</th>
-            <th>Tienda</th>
-            <th>Estado</th>
-            <th>Piloto</th>
-            <th>Creada</th>
-            <th>Asignar</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var o in Model.Ordenes)
-        {
-            <tr>
-                <td>@o.OrdenId</td>
-                <td>@o.NumeroOrdenA</td>
-                <td>@o.TiendaNombre</td>
-                <td>@o.Estado</td>
-                <td>@(o.PilotoNombre ?? "-")</td>
-                <td>@o.CreatedAt.ToLocalTime().ToString("g")</td>
-                <td style="min-width: 320px;">
-                    @if (!string.IsNullOrWhiteSpace(o.CodigoB))
-                    {
-                        <form method="post" asp-action="AsignarPiloto" class="d-flex gap-2">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="CodigoB" value="@o.CodigoB" />
-                            <select class="form-select form-select-sm" name="PilotoId" required>
-                                <option value="">-- piloto --</option>
-                                @foreach (var p in Model.Pilotos)
-                                {
-                                    <option value="@p.Value">@p.Text</option>
-                                }
-                            </select>
-                            <button class="btn btn-sm btn-success">Asignar</button>
-                        </form>
-                    }
-                    else
-                    {
-                        <span class="text-muted">Sin código B</span>
-                    }
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+</div>

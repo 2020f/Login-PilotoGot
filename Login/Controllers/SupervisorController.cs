@@ -358,23 +358,6 @@ namespace Login.Controllers
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         // ==========================
         // PILOTOS (Gestor)
         // ==========================
@@ -676,26 +659,86 @@ namespace Login.Controllers
             if (!string.IsNullOrWhiteSpace(estado) && System.Enum.TryParse<EstadoOrden>(estado, out var est))
                 q = q.Where(o => o.Estado == est);
 
+
+
+
+
             vm.Ordenes = await q
-                .OrderByDescending(o => o.CreatedAt)
-                .Take(200)
-                .Select(o => new OrdenRowVm
-                {
-                    OrdenId = o.Id,
-                    ClienteAppId = o.ClienteAppId,
-                    TiendaId = o.TiendaId,
-                    TiendaNombre = o.Tienda.Nombre,
-                    NumeroOrdenA = o.NumeroOrdenA,
-                    Estado = o.Estado.ToString(),
-                    PilotoId = o.PilotoId,
-                    PilotoNombre = o.Piloto != null ? o.Piloto.Nombre : null,
-                    CreatedAt = o.CreatedAt,
-                    CodigoB = o.Codigos
-                        .Where(c => c.Tipo == TipoCodigo.B_Recoleccion)
-                        .Select(c => c.Codigo)
-                        .FirstOrDefault()
-                })
-                .ToListAsync();
+    .OrderByDescending(o => o.CreatedAt)
+    .Take(200)
+    .Select(o => new OrdenRowVm
+    {
+        OrdenId = o.Id,
+        ClienteAppId = o.ClienteAppId,
+
+        TiendaId = o.TiendaId,
+        TiendaNombre = o.Tienda.Nombre,
+
+        // ✅ NUEVO
+        TiendaDireccion = o.Tienda.Direccion,
+        TiendaTelefono = o.Tienda.Telefono,
+
+        NumeroOrdenA = o.NumeroOrdenA,
+        Estado = o.Estado.ToString(),
+
+        PilotoId = o.PilotoId,
+        PilotoNombre = o.Piloto != null ? o.Piloto.Nombre : null,
+        PilotoTelefono = o.Piloto != null ? o.Piloto.Telefono : null,
+
+        CreatedAt = o.CreatedAt,
+
+        // ✅ NUEVO: tu campo real
+        Notas = o.NotaPedido,
+
+        CodigoB = o.Codigos
+            .Where(c => c.Tipo == TipoCodigo.B_Recoleccion)
+            .Select(c => c.Codigo)
+            .FirstOrDefault()
+    })
+    .ToListAsync();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            //vm.Ordenes = await q
+            //    .OrderByDescending(o => o.CreatedAt)
+            //    .Take(200)
+            //    .Select(o => new OrdenRowVm
+            //    {
+            //        OrdenId = o.Id,
+            //        ClienteAppId = o.ClienteAppId,
+            //        TiendaId = o.TiendaId,
+            //        TiendaNombre = o.Tienda.Nombre,
+            //        NumeroOrdenA = o.NumeroOrdenA,
+            //        Estado = o.Estado.ToString(),
+            //        PilotoId = o.PilotoId,
+            //        PilotoNombre = o.Piloto != null ? o.Piloto.Nombre : null,
+            //        CreatedAt = o.CreatedAt,
+            //        CodigoB = o.Codigos
+            //            .Where(c => c.Tipo == TipoCodigo.B_Recoleccion)
+            //            .Select(c => c.Codigo)
+            //            .FirstOrDefault()
+            //    })
+            //    .ToListAsync();
+
+
+
+
+
+
 
             return View(vm);
         }

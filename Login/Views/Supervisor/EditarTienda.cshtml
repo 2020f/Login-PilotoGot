@@ -1,8 +1,8 @@
 ﻿@model Login.ViewModels.Tienda.TiendaEditVm
 @{
     ViewData["Title"] = "Editar Tienda";
+    Layout = "_LayoutGestor";
 }
-
 
 @if (!string.IsNullOrWhiteSpace(ViewBag.Ok))
 {
@@ -13,93 +13,93 @@
     <div class="alert alert-danger">@ViewBag.Error</div>
 }
 
+<div class="pg-card p-4">
 
-
-
-
-
-
-
-
-<h2>Editar Tienda</h2>
-
-<div class="mb-3">
-    <a class="btn btn-secondary" asp-action="Tiendas">← Volver</a>
-</div>
-
-@if (!string.IsNullOrWhiteSpace(Model.EmailCliente))
-{
-    <div class="alert alert-info">
-        <b>Email (login tienda):</b> @Model.EmailCliente
-    </div>
-}
-
-<form method="post" asp-action="EditarTienda" class="row g-3">
-    @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="Id" />
-
-    <div class="col-md-6">
-        <label class="form-label">Nombre</label>
-        <input class="form-control" asp-for="Nombre" />
-        <span class="text-danger" asp-validation-for="Nombre"></span>
-    </div>
-
-    <div class="col-md-6">
-        <label class="form-label">Teléfono</label>
-        <input class="form-control" asp-for="Telefono" />
-        <span class="text-danger" asp-validation-for="Telefono"></span>
-    </div>
-
-    <div class="col-12">
-        <label class="form-label">Dirección</label>
-        <input class="form-control" asp-for="Direccion" />
-        <span class="text-danger" asp-validation-for="Direccion"></span>
-    </div>
-
-    <div class="col-12">
-        <div class="form-check">
-            <input class="form-check-input" asp-for="Activo" />
-            <label class="form-check-label">Activo</label>
+    <div class="d-flex align-items-start justify-content-between mb-3">
+        <div>
+            <div class="h4 fw-bold mb-1">Editar Tienda</div>
+            <div class="text-secondary fw-semibold">Actualiza datos y administra acceso del usuario principal.</div>
         </div>
+
+        <a asp-action="Tiendas" class="btn btn-outline-secondary fw-bold">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
     </div>
 
-    <div class="col-12 d-flex gap-2">
-        <button class="btn btn-success">Guardar</button>
-        <a class="btn btn-outline-secondary" asp-action="Tiendas">Cancelar</a>
+    @if (!string.IsNullOrWhiteSpace(Model.EmailCliente))
+    {
+        <div class="pg-card p-3 mb-3" style="box-shadow:none;">
+            <div class="text-secondary fw-bold" style="font-size:12px; letter-spacing:1px;">EMAIL (LOGIN TIENDA)</div>
+            <div class="fw-bold">@Model.EmailCliente</div>
+        </div>
+    }
+
+    <form method="post" asp-action="EditarTienda" class="row g-3">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <div class="col-md-6">
+            <label class="form-label fw-bold">Nombre</label>
+            <input class="form-control" asp-for="Nombre" />
+            <span class="text-danger" asp-validation-for="Nombre"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-bold">Teléfono</label>
+            <input class="form-control" asp-for="Telefono" />
+            <span class="text-danger" asp-validation-for="Telefono"></span>
+        </div>
+
+        <div class="col-12">
+            <label class="form-label fw-bold">Dirección</label>
+            <input class="form-control" asp-for="Direccion" />
+            <span class="text-danger" asp-validation-for="Direccion"></span>
+        </div>
+
+        <div class="col-12">
+            <div class="form-check">
+                <input class="form-check-input" asp-for="Activo" />
+                <label class="form-check-label fw-bold">Activo</label>
+            </div>
+        </div>
+
+        <div class="col-12 d-flex gap-2 mt-2">
+            <button class="btn btn-dark fw-bold">
+                <i class="bi bi-save2"></i> Guardar cambios
+            </button>
+            <a class="btn btn-link fw-bold text-decoration-none text-secondary" asp-action="Tiendas">Cancelar</a>
+        </div>
+    </form>
+
+    <hr class="my-4" />
+
+    <div class="h5 fw-bold mb-2">Reset Password (Tienda)</div>
+    <div class="text-secondary fw-semibold mb-3" style="font-size:13px;">
+        Cambia el password del usuario principal de la tienda (sin saber el actual).
     </div>
-</form>
 
+    <form method="post" asp-action="ResetPasswordTienda" class="row g-2">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="TiendaId" value="@Model.Id" />
 
-<hr class="my-4" />
+        <div class="col-md-6">
+            <input class="form-control" name="NuevoPassword" type="password" placeholder="Nuevo password (mín 6)" required />
+        </div>
 
-<h5>Reset Password (Tienda)</h5>
+        <div class="col-md-6">
+            <button class="btn btn-warning fw-bold w-100">
+                <i class="bi bi-key"></i> Resetear password
+            </button>
+        </div>
 
-<form method="post" asp-action="ResetPasswordTienda" class="row g-2">
-    @Html.AntiForgeryToken()
+        <div class="col-12">
+            <small class="text-secondary fw-semibold">
+                Tip: si la tienda estaba lockeada, este reset también la desbloquea.
+            </small>
+        </div>
+    </form>
 
-    <input type="hidden" name="TiendaId" value="@Model.Id" />
-
-    <div class="col-md-6">
-        <input class="form-control" name="NuevoPassword" type="password" placeholder="Nuevo password (mín 6)" required />
-    </div>
-
-    <div class="col-md-6">
-        <button class="btn btn-warning">Resetear Password</button>
-    </div>
-
-    <div class="col-12">
-        <small class="text-muted">
-            Esto cambia el password del usuario principal de la tienda. (Admin power 😈)
-        </small>
-    </div>
-</form>
-
-
-
-
-
-
-
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

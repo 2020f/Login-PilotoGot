@@ -1,0 +1,138 @@
+﻿@using System.Security.Claims
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PilotGo</title>
+
+    <!-- Bootstrap (base) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <!-- Estilo PilotGo (Gestor) -->
+    <link rel="stylesheet" href="~/css/gestor.css" asp-append-version="true" />
+</head>
+<body class="pg-body">
+
+    <div class="pg-app">
+
+        <!-- SIDEBAR -->
+        <aside class="pg-sidebar">
+            <div class="pg-brand">
+                <div class="pg-brand-icon">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                </div>
+                <div class="pg-brand-text">
+                    <div class="pg-brand-name">PilotGo</div>
+                    <div class="pg-brand-sub">GESTOR OPERATIVO</div>
+                </div>
+            </div>
+
+            <!-- Perfil (demo) -->
+            <div class="pg-org">
+                <div class="pg-org-avatar">OP</div>
+                <div class="pg-org-meta">
+                    <div class="pg-org-name">Operaciones</div>
+                    <div class="pg-org-sub">Delivery Express S.R.L.</div>
+                </div>
+            </div>
+
+            <div class="pg-nav">
+
+                <div class="pg-nav-group">
+                    <div class="pg-nav-title">PRINCIPAL</div>
+
+                    <a class="pg-nav-item" asp-controller="Supervisor" asp-action="Ordenes">
+                        <span class="pg-nav-ico"><i class="bi bi-diagram-3"></i></span>
+                        <span>Despacho &amp; Órdenes</span>
+                    </a>
+
+                    <a class="pg-nav-item pg-nav-disabled" href="javascript:void(0)">
+                        <span class="pg-nav-ico"><i class="bi bi-bar-chart"></i></span>
+                        <span>Estadísticas</span>
+                    </a>
+                </div>
+
+                <div class="pg-nav-group">
+                    <div class="pg-nav-title">ADMINISTRACIÓN</div>
+
+                    <a class="pg-nav-item" asp-controller="Supervisor" asp-action="Pilotos">
+                        <span class="pg-nav-ico"><i class="bi bi-speedometer2"></i></span>
+                        <span>Pilotos (Flota)</span>
+                    </a>
+
+                    <a class="pg-nav-item" asp-controller="Supervisor" asp-action="Tiendas">
+                        <span class="pg-nav-ico"><i class="bi bi-shop"></i></span>
+                        <span>Tiendas (Negocios)</span>
+                    </a>
+
+                    <a class="pg-nav-item pg-nav-disabled" href="javascript:void(0)">
+                        <span class="pg-nav-ico"><i class="bi bi-clock-history"></i></span>
+                        <span>Historial Global</span>
+                    </a>
+                </div>
+
+            </div>
+
+            
+            <div style="margin-top:18px;">
+                <form asp-area="Identity" asp-page="/Account/Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="pg-logout-btn">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Cerrar sesión</span>
+                    </button>
+                </form>
+            </div>
+            
+        </aside>
+
+        <!-- MAIN -->
+        <main class="pg-main">
+
+            <!-- TOPBAR -->
+            <header class="pg-topbar">
+                <div class="pg-topbar-left">
+                    <div class="pg-page-title">
+                        <i class="bi bi-broadcast-pin"></i>
+                        <span>@ViewData["Title"]</span>
+                    </div>
+                </div>
+
+                <div class="pg-topbar-right">
+                    <div class="pg-pill">
+                        <span class="pg-dot"></span>
+                        <span>Sistema Operativo</span>
+                    </div>
+
+                    <button type="button" class="pg-icon-btn" aria-label="Notificaciones">
+                        <i class="bi bi-bell"></i>
+                        <span class="pg-badge-dot"></span>
+                    </button>
+
+                    <!-- ✅ CERRAR SESIÓN -->
+                    <form asp-area="Identity" asp-page="/Account/Logout" method="post" class="pg-logout-form">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="pg-icon-btn" aria-label="Cerrar sesión" title="Cerrar sesión">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </button>
+                    </form>
+                </div>
+            </header>
+
+            <!-- CONTENT -->
+            <section class="pg-content">
+                @RenderBody()
+            </section>
+
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/gestor.js" asp-append-version="true"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>
