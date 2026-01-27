@@ -1,83 +1,179 @@
 ﻿@page
 @model LoginModel
-
 @{
-    ViewData["Title"] = "Log in";
+    ViewData["Title"] = "Iniciar sesión";
+    Layout = "_LayoutAuth"; // ✅ usa el layout bonito (abajo te lo dejo). Si no quieres, pon Layout = null;
 }
 
-<h1>@ViewData["Title"]</h1>
-<div class="row">
-    <div class="col-md-4">
-        <section>
-            <form id="account" method="post">
-                <h2>Use a local account to log in.</h2>
-                <hr />
-                <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-                <div class="form-floating mb-3">
-                    <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                    <label asp-for="Input.Email" class="form-label">Email</label>
-                    <span asp-validation-for="Input.Email" class="text-danger"></span>
+<link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+
+<div class="auth-shell">
+    <!-- LADO IZQUIERDO (Brand / Mensaje) -->
+    <aside class="auth-side">
+        <div class="auth-brand">
+            <div class="auth-logo">
+                <i class="bi bi-lightning-charge-fill"></i>
+            </div>
+            <div>
+                <div class="auth-brand-name">PilotGo</div>
+                <div class="auth-brand-sub">GESTIÓN DE ENTREGAS</div>
+            </div>
+        </div>
+
+        <div class="auth-hero">
+            <h1 class="auth-hero-title">Operación de entregas, sin caos.</h1>
+            <p class="auth-hero-text">
+                PilotGo es la tecnología diseñada para hacer tu operación de entregas más eficiente, segura y profesional.
+            </p>
+
+            <div class="auth-bullets">
+                <div class="auth-bullet">
+                    <span class="auth-dot"></span>
+                    <span>Asignación y seguimiento en tiempo real</span>
                 </div>
-                <div class="form-floating mb-3">
-                    <input asp-for="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
-                    <label asp-for="Input.Password" class="form-label">Password</label>
-                    <span asp-validation-for="Input.Password" class="text-danger"></span>
+                <div class="auth-bullet">
+                    <span class="auth-dot"></span>
+                    <span>Control por roles: Gestor, Tienda y Piloto</span>
                 </div>
-                <div class="checkbox mb-3">
-                    <label asp-for="Input.RememberMe" class="form-label">
-                        <input class="form-check-input" asp-for="Input.RememberMe" />
-                        @Html.DisplayNameFor(m => m.Input.RememberMe)
-                    </label>
+                <div class="auth-bullet">
+                    <span class="auth-dot"></span>
+                    <span>Validaciones con códigos y QR por orden</span>
                 </div>
-                <div>
-                    <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
-                </div>
-                <div>
-                    <p>
-                        <a id="forgot-password" asp-page="./ForgotPassword">Forgot your password?</a>
-                    </p>
-                    <p>
-                        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">Register as a new user</a>
-                    </p>
-                    <p>
-                        <a id="resend-confirmation" asp-page="./ResendEmailConfirmation">Resend email confirmation</a>
-                    </p>
-                </div>
-            </form>
-        </section>
-    </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Use another service to log in.</h3>
-            <hr />
-            @{
-                if ((Model.ExternalLogins?.Count ?? 0) == 0)
-                {
-                    <div>
-                        <p>
-                            There are no external authentication services configured. See this <a href="https://go.microsoft.com/fwlink/?LinkID=532715">article
-                            about setting up this ASP.NET application to support logging in via external services</a>.
-                        </p>
+            </div>
+        </div>
+
+        <div class="auth-side-footer">
+            <div class="auth-mini">
+                <i class="bi bi-shield-check"></i>
+                <span>Acceso seguro • Auditoría • Control</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- LADO DERECHO (Formulario) -->
+    <main class="auth-main">
+        <div class="auth-card">
+            <div class="auth-card-head">
+                <div class="auth-kicker">Bienvenido</div>
+                <div class="auth-title">Inicia sesión</div>
+                <div class="auth-sub">Ingresa tus credenciales para continuar.</div>
+            </div>
+
+            <form id="account" method="post" class="auth-form">
+
+                <div asp-validation-summary="ModelOnly" class="auth-alert" role="alert"></div>
+
+                <div class="auth-field">
+                    <label asp-for="Input.Email" class="auth-label">Email</label>
+                    <div class="auth-input-wrap">
+                        <i class="bi bi-envelope"></i>
+                        <input asp-for="Input.Email"
+                               class="auth-input"
+                               autocomplete="username"
+                               aria-required="true"
+                               placeholder="correo@empresa.com" />
                     </div>
-                }
-                else
+                    <span asp-validation-for="Input.Email" class="auth-val"></span>
+                </div>
+
+                <div class="auth-field">
+                    <label asp-for="Input.Password" class="auth-label">Contraseña</label>
+                    <div class="auth-input-wrap">
+                        <i class="bi bi-lock"></i>
+                        <input asp-for="Input.Password"
+                               class="auth-input"
+                               autocomplete="current-password"
+                               aria-required="true"
+                               placeholder="••••••••" />
+                        <button type="button" class="auth-eye" data-auth-toggle>
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Input.Password" class="auth-val"></span>
+                </div>
+
+                <div class="auth-row">
+                    <label class="auth-check">
+                        <input class="auth-check-input" asp-for="Input.RememberMe" />
+                        <span class="auth-check-text">@Html.DisplayNameFor(m => m.Input.RememberMe)</span>
+                    </label>
+
+                    <a id="forgot-password" class="auth-link" asp-page="./ForgotPassword">
+                        ¿Olvidaste tu contraseña?
+                    </a>
+                </div>
+
+                <button id="login-submit" type="submit" class="auth-btn">
+                    Entrar
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+
+                <div class="auth-divider">
+                    <span>o</span>
+                </div>
+
+                @* External logins (si no usas, queda limpio) *@
+                @if ((Model.ExternalLogins?.Count ?? 0) > 0)
                 {
-                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
-                        <div>
-                            <p>
-                                @foreach (var provider in Model.ExternalLogins!)
-                                {
-                                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
-                                }
-                            </p>
+                    <form id="external-account"
+                          asp-page="./ExternalLogin"
+                          asp-route-returnUrl="@Model.ReturnUrl"
+                          method="post"
+                          class="auth-ext">
+                        <div class="auth-ext-title">Continuar con</div>
+
+                        <div class="auth-ext-grid">
+                            @foreach (var provider in Model.ExternalLogins!)
+                            {
+                                <button type="submit"
+                                        class="auth-ext-btn"
+                                        name="provider"
+                                        value="@provider.Name"
+                                        title="Iniciar sesión con @provider.DisplayName">
+                                    <i class="bi bi-box-arrow-in-right"></i>
+                                    @provider.DisplayName
+                                </button>
+                            }
                         </div>
                     </form>
                 }
-            }
-        </section>
-    </div>
+
+                <div class="auth-foot">
+                    <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="auth-link">
+                        Crear cuenta
+                    </a>
+                    <span class="auth-foot-dot">•</span>
+                    <a id="resend-confirmation" asp-page="./ResendEmailConfirmation" class="auth-link">
+                        Reenviar confirmación
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="auth-copy">
+            © @DateTime.Now.Year PilotGo • Todos los derechos reservados
+        </div>
+    </main>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Toggle password view (sin librerías)
+        (function () {
+            const btn = document.querySelector("[data-auth-toggle]");
+            if (!btn) return;
+
+            btn.addEventListener("click", function () {
+                const wrap = btn.closest(".auth-input-wrap");
+                const input = wrap.querySelector("input");
+                const icon = btn.querySelector("i");
+                if (!input) return;
+
+                const isPass = input.type === "password";
+                input.type = isPass ? "text" : "password";
+                icon.className = isPass ? "bi bi-eye-slash" : "bi bi-eye";
+            });
+        })();
+    </script>
 }
