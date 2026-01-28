@@ -1,91 +1,300 @@
 ﻿@model Login.ViewModels.Piloto.MisOrdenesIndexVm
 @{
-    ViewData["Title"] = "Piloto - Mi Orden";
+    ViewData["Title"] = "PilotGo - Piloto";
 }
 
-<h2>Mi Orden</h2>
-
-@if (!string.IsNullOrWhiteSpace(Model.Ok))
-{
-    <div class="alert alert-success">@Model.Ok</div>
-}
-@if (!string.IsNullOrWhiteSpace(Model.Error))
-{
-    <div class="alert alert-danger">@Model.Error</div>
+@{
+    Layout = "_LayoutPiloto";
 }
 
-@if (Model.Ordenes.Count == 0)
-{
-    <div class="alert alert-info">
-        No tienes órdenes asignadas ahora mismo.
-    </div>
-}
-else
-{
-    var o = Model.Ordenes[0];
 
-    <div class="card">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <h5 class="mb-1">Orden A: <span class="badge bg-dark">@o.NumeroOrdenA</span></h5>
-                    <div class="text-muted">Estado: <b>@o.Estado</b></div>
-                </div>
-                <div class="text-muted">@o.CreatedAt.ToLocalTime().ToString("g")</div>
+<link rel="stylesheet" href="~/css/piloto.css" asp-append-version="true" />
+
+<div class="pg-shell">
+    <!-- Topbar -->
+    <header class="pg-topbar">
+        <div class="pg-brand">
+            <div class="pg-logo">↘</div>
+            <div class="pg-brand-text">
+                <div class="pg-brand-name">PilotGo</div>
             </div>
-
-            <hr />
-
-            @if (!o.PuedeVerDestinoFinal)
-            {
-                <div class="text-muted fw-bold mb-2">🔎 Buscando paquetes…</div>
-
-                <div class="mb-2">
-                    <div class="fw-bold">🏪 Ir a la tienda (Pickup)</div>
-                    <div><b>@o.TiendaNombre</b> (@o.TiendaTelefono)</div>
-                    <div>@o.TiendaDireccion</div>
-                </div>
-
-                @if (!string.IsNullOrWhiteSpace(o.NotaPedido))
-                {
-                    <div class="mb-3">
-                        <div class="fw-bold">📝 Nota del pedido</div>
-                        <div>@o.NotaPedido</div>
-                    </div>
-                }
-
-                <form method="post" asp-action="ConfirmarRecolecta" class="d-flex gap-2">
-                    @Html.AntiForgeryToken()
-                    <input class="form-control" name="CodigoB"
-                           placeholder="Escanea / pega Código B (QR de tienda)"
-                           required />
-                    <button class="btn btn-warning">Llegué a la tienda</button>
-                </form>
-            }
-            else
-            {
-                <div class="fw-bold mb-2">📍 Destino final (Delivery)</div>
-                <div><b>@o.UsuarioFinalNombre</b> (@o.UsuarioFinalTelefono)</div>
-                <div class="mb-3">@o.UsuarioFinalDireccion</div>
-
-                <div class="alert alert-secondary">
-                    Para cerrar entrega: escribe el <b>Código C</b> y vuelve a escanear/pegar el <b>Código B</b>.
-                </div>
-
-                <form method="post" asp-action="ConfirmarEntrega" class="d-flex gap-2 flex-wrap">
-                    @Html.AntiForgeryToken()
-
-                    <input class="form-control" name="CodigoB"
-                           placeholder="Escanea / pega Código B (QR)"
-                           required />
-
-                    <input class="form-control" name="CodigoC"
-                           placeholder="Código C (cliente final)"
-                           required />
-
-                    <button class="btn btn-success">Cerrar entrega</button>
-                </form>
-            }
         </div>
-    </div>
-}
+
+        <div class="pg-topbar-right">
+            <span class="pg-status-dot"></span>
+            <span class="pg-status-text">En línea</span>
+            <button class="pg-bell" type="button" aria-label="Notificaciones">
+                <span class="pg-bell-dot"></span>
+                🔔
+            </button>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <main class="pg-main">
+
+        <!-- Alerts (ok / error) -->
+        @if (!string.IsNullOrWhiteSpace(Model.Ok))
+        {
+            <div class="pg-toast pg-toast-ok">
+                <div class="pg-toast-title">Listo</div>
+                <div class="pg-toast-msg">@Model.Ok</div>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Error))
+        {
+            <div class="pg-toast pg-toast-err">
+                <div class="pg-toast-title">Ojo</div>
+                <div class="pg-toast-msg">@Model.Error</div>
+            </div>
+        }
+
+        @if (Model.Ordenes.Count == 0)
+        {
+            <section class="pg-card">
+                <div class="pg-card-body">
+                    <div class="pg-empty">
+                        <div class="pg-empty-title">Sin órdenes</div>
+                        <div class="pg-empty-sub">No tienes órdenes asignadas ahora mismo.</div>
+                    </div>
+                </div>
+            </section>
+        }
+        else
+        {
+            var o = Model.Ordenes[0];
+
+            <section class="pg-panel">
+                <div class="pg-panel-handle"></div>
+
+                <!-- Header de orden -->
+                <div class="pg-order-head">
+                    <div>
+                        <div class="pg-order-kicker">ORDEN ACTUAL</div>
+                        <div class="pg-order-id">ORD-@o.NumeroOrdenA</div>
+
+                        <div class="pg-order-meta">
+                            <span class="pg-chip pg-chip-id">ID ORDEN (A)</span>
+
+                            @if (!o.PuedeVerDestinoFinal)
+                            {
+                                <span class="pg-chip pg-chip-verified pg-muted">QR Verificado</span>
+                            }
+                            else
+                            {
+                                <span class="pg-chip pg-chip-verified">QR Verificado</span>
+                            }
+                        </div>
+                    </div>
+
+                    @if (!o.PuedeVerDestinoFinal)
+                    {
+                        <span class="pg-pill pg-pill-warn">📦 Recolectando</span>
+                    }
+                    else
+                    {
+                        <div class="pg-pill-stack">
+                            <span class="pg-pill pg-pill-blue">🚴 En Ruta</span>
+                            <div class="pg-eta">ETA: 12 min</div>
+                        </div>
+                    }
+                </div>
+
+                <div class="pg-divider"></div>
+
+                @* ======================
+                   1) Estado ASIGNADA (antes del scan B)
+                   ====================== *@
+                @if (!o.PuedeVerDestinoFinal)
+                {
+                    <div class="pg-card pg-soft">
+                        <div class="pg-card-body">
+                            <div class="pg-row">
+                                <div class="pg-avatar">🏪</div>
+                                <div class="pg-grow">
+                                    <div class="pg-card-kicker">IR A TIENDA</div>
+                                    <div class="pg-card-title">@o.TiendaNombre</div>
+                                    <div class="pg-card-sub">@o.TiendaDireccion</div>
+                                </div>
+                            </div>
+
+                            <div class="pg-actions">
+                                <a class="pg-btn pg-btn-light" href="tel:@o.TiendaTelefono">
+                                    📞 Llamar
+                                </a>
+
+                                <a class="pg-btn pg-btn-light"
+                                   target="_blank"
+                                   href="https://waze.com/ul?q=@Uri.EscapeDataString(o.TiendaDireccion)">
+                                    △ Waze
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(o.NotaPedido))
+                    {
+                        <div class="pg-note">
+                            <div class="pg-note-title">📝 Nota del pedido</div>
+                            <div class="pg-note-body">@o.NotaPedido</div>
+                        </div>
+                    }
+
+                    <div class="pg-loading">
+                        <span class="pg-spinner"></span>
+                        <span>Buscando paquetes...</span>
+                    </div>
+
+                    <!-- Form ConfirmarRecolecta (misma lógica) -->
+                    <form method="post" asp-action="ConfirmarRecolecta" class="pg-form">
+                        @Html.AntiForgeryToken()
+
+                        <input class="pg-input"
+                               name="CodigoB"
+                               placeholder="Escanea / pega Código B (QR de tienda)"
+                               required />
+
+                        <button class="pg-btn pg-btn-dark pg-btn-wide" type="submit">
+                            ⛶ Escanear QR de Orden
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    @* ======================
+                       2) Estado RECOLECTADA (destino final desbloqueado)
+                       ====================== *@
+
+                    <div class="pg-card pg-soft pg-left-accent">
+                        <div class="pg-card-body">
+                            <div class="pg-row">
+                                <div class="pg-avatar">📍</div>
+                                <div class="pg-grow">
+                                    <div class="pg-card-kicker">ENTREGAR A CLIENTE FINAL</div>
+                                    <div class="pg-card-title">@o.UsuarioFinalNombre</div>
+                                    <div class="pg-card-sub">@o.UsuarioFinalDireccion</div>
+                                    <div class="pg-badge-mini">Entrada por el Lobby</div>
+                                    <div class="pg-phone">@o.UsuarioFinalTelefono</div>
+                                </div>
+
+                                <button class="pg-more" type="button" aria-label="Más">
+                                    ⋮
+                                </button>
+                            </div>
+
+                            <div class="pg-actions">
+                                <a class="pg-btn pg-btn-light" href="tel:@o.UsuarioFinalTelefono">
+                                    📞 Llamar
+                                </a>
+
+                                <a class="pg-btn pg-btn-primary"
+                                   target="_blank"
+                                   href="https://waze.com/ul?q=@Uri.EscapeDataString(o.UsuarioFinalDireccion)">
+                                    △ Ir con Waze
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pg-center-hint">¿LLEGASTE AL DESTINO?</div>
+
+                    <!-- Botón que abre modal (NO cambia tu lógica) -->
+                    <button class="pg-btn pg-btn-green pg-btn-wide"
+                            type="button"
+                            id="btnAbrirValidacion">
+                        🛡 Validar Entrega
+                    </button>
+
+                    <div class="pg-subhint">
+                        🔒 Requiere Código (C) + Escaneo QR Final (B)
+                    </div>
+
+                    <!-- Form real ConfirmarEntrega (se envía desde el modal) -->
+                    <form method="post" asp-action="ConfirmarEntrega" id="formConfirmarEntrega" class="pg-hidden">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="CodigoB" id="hdCodigoB" />
+                        <input type="hidden" name="CodigoC" id="hdCodigoC" />
+                    </form>
+
+                    <!-- Modal Validación Segura -->
+                    <div class="pg-modal-backdrop" id="modalBackdrop" aria-hidden="true"></div>
+
+                    <section class="pg-modal" id="modalValidacion" aria-hidden="true" role="dialog" aria-label="Validación Segura">
+                        <header class="pg-modal-head">
+                            <div class="pg-modal-title">
+                                <div class="pg-shield">🛡</div>
+                                <div>
+                                    <div class="pg-modal-h1">Validación Segura</div>
+                                    <div class="pg-modal-sub">Doble factor de autenticación</div>
+                                </div>
+                            </div>
+
+                            <button class="pg-modal-close" type="button" id="btnCerrarModal" aria-label="Cerrar">✕</button>
+                        </header>
+
+                        <div class="pg-modal-body">
+                            <!-- Step 1 -->
+                            <div class="pg-step">
+                                <div class="pg-step-left">
+                                    <div class="pg-step-num">1</div>
+                                    <div>
+                                        <div class="pg-step-title">Código del Cliente (C)</div>
+                                        <div class="pg-step-sub">Solicite el código de 6 dígitos al cliente.</div>
+                                    </div>
+                                </div>
+                                <div class="pg-step-right">
+                                    <span class="pg-check" id="chkC" aria-hidden="true">✓</span>
+                                </div>
+                            </div>
+
+                            <div class="pg-c-input">
+                                <input class="pg-input"
+                                       id="txtCodigoC"
+                                       inputmode="numeric"
+                                       maxlength="20"
+                                       placeholder="Código C (20 dígitos)"
+                                       autocomplete="one-time-code" />
+                                <small class="pg-help">Ej: 957f5360</small>
+                            </div>
+
+                            <div class="pg-modal-divider"></div>
+
+                            <!-- Step 2 -->
+                            <div class="pg-step">
+                                <div class="pg-step-left">
+                                    <div class="pg-step-num">2</div>
+                                    <div>
+                                        <div class="pg-step-title">Validación QR Final</div>
+                                        <div class="pg-step-sub">Escanee nuevamente el QR de la orden para cerrar.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pg-scanbox">
+                                <input class="pg-input"
+                                       id="txtCodigoBFinal"
+                                       placeholder="Escanear / pegar QR de cierre (Código B)"
+                                       disabled />
+                                <button class="pg-btn pg-btn-light pg-btn-wide"
+                                        id="btnHabilitadoScan"
+                                        type="button"
+                                        disabled>
+                                    ⛶ Escanear QR de Cierre
+                                </button>
+                            </div>
+
+                            <button class="pg-btn pg-btn-lock pg-btn-wide"
+                                    id="btnFinalizarEntrega"
+                                    type="button"
+                                    disabled>
+                                🔒 Finalizar Entrega
+                            </button>
+                        </div>
+                    </section>
+                }
+            </section>
+        }
+    </main>
+</div>
+
+<script src="~/js/piloto.js" asp-append-version="true"></script>

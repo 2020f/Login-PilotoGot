@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - PilotGo</title>
+
+    <link rel="stylesheet" href="~/css/piloto.css" asp-append-version="true" />
+</head>
+<body>
+
+    <!-- App Shell -->
+    <div class="pg-app">
+
+        <!-- TopBar (ÚNICO) -->
+        <header class="pg-topbar">
+            <div class="pg-top-left">
+                <div class="pg-logo">🚴</div>
+                <span class="pg-title">PilotGo</span>
+            </div>
+
+            <div class="pg-top-right">
+                <span class="pg-online" aria-hidden="true"></span>
+                <span class="pg-user">Piloto</span>
+
+                <!-- Cerrar sesión (Identity) -->
+                <form asp-area="Identity"
+                      asp-page="/Account/Logout"
+                      method="post"
+                      class="pg-logout-form">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="pg-logout-btn" title="Cerrar sesión" aria-label="Cerrar sesión">
+                        ⎋
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <!-- Body -->
+        <main class="pg-container">
+            @RenderBody()
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="pg-bottom">
+            <button class="pg-nav-btn active" type="button">
+                <span class="pg-nav-ico">🧾</span>
+                <span class="pg-nav-text">Orden</span>
+            </button>
+
+            <button class="pg-nav-btn" type="button">
+                <span class="pg-nav-ico">📍</span>
+                <span class="pg-nav-text">Ruta</span>
+            </button>
+
+            <button class="pg-nav-btn" type="button">
+                <span class="pg-nav-ico">👤</span>
+                <span class="pg-nav-text">Perfil</span>
+            </button>
+        </nav>
+
+    </div>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>
