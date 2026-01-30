@@ -1,0 +1,204 @@
+﻿@model Login.ViewModels.Supervisor.EstadisticasGestorVm
+@{
+    ViewData["Title"] = "Estadísticas";
+    Layout = "_LayoutGestor";
+}
+
+<link rel="stylesheet" href="~/css/estadisticagestor.css" asp-append-version="true" />
+
+<div class="pg-page stats-page">
+
+    <!-- ✅ HEADER + FILTROS (fijos arriba) -->
+    <div class="stats-header">
+        <div class="stats-title">
+            <div class="stats-title-main">
+                <i class="bi bi-bar-chart-line"></i>
+                Estadísticas
+            </div>
+            <div class="stats-sub">
+                Resumen operativo del despacho (por rango, tienda y piloto).
+            </div>
+        </div>
+
+        <form method="get" asp-action="Estadisticas" class="stats-filters">
+            <div class="stats-filter">
+                <label>Desde</label>
+                <input type="date" name="desde" value="@Model.Desde.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <div class="stats-filter">
+                <label>Hasta</label>
+                <input type="date" name="hasta" value="@Model.Hasta.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <div class="stats-filter">
+                <label>Tienda</label>
+                <select name="tiendaId" asp-items="Model.Tiendas"></select>
+            </div>
+
+            <div class="stats-filter">
+                <label>Piloto</label>
+                <select name="pilotoId" asp-items="Model.Pilotos"></select>
+            </div>
+
+            <button class="stats-btn" type="submit">
+                <i class="bi bi-funnel"></i> Aplicar
+            </button>
+        </form>
+    </div>
+
+    <!-- ✅ TODO LO DE ABAJO SCROLLEA -->
+    <div class="pg-stats-scroll">
+
+        <!-- CARDS -->
+        <div class="stats-cards">
+            <div class="stats-card">
+                <div class="kpi-label">Total órdenes</div>
+                <div class="kpi-value">@Model.Cards.Total</div>
+                <div class="kpi-sub">En el rango seleccionado</div>
+            </div>
+
+            <div class="stats-card ok">
+                <div class="kpi-label">Entregadas</div>
+                <div class="kpi-value">@Model.Cards.Entregadas</div>
+                <div class="kpi-sub">@Model.Cards.PorcentajeEntrega% completadas</div>
+            </div>
+
+            <div class="stats-card warn">
+                <div class="kpi-label">Pendientes</div>
+                <div class="kpi-value">@Model.Cards.Pendientes</div>
+                <div class="kpi-sub">Creada / Asignada / Recolectada</div>
+            </div>
+
+            <div class="stats-card danger">
+                <div class="kpi-label">Incidentes</div>
+                <div class="kpi-value">@Model.Cards.Incidentes</div>
+                <div class="kpi-sub">Requieren revisión</div>
+            </div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="stats-grid">
+            <div class="stats-panel">
+                <div class="panel-head">
+                    <div class="panel-title">Órdenes por día</div>
+                    <div class="panel-sub">Total / Entregadas / Incidentes</div>
+                </div>
+
+                <div class="pg-chart-box">
+                    <canvas id="chartPorDia"></canvas>
+                </div>
+
+                <!-- datos escondidos para JS -->
+                <script type="application/json" id="dataPorDia">
+                    {
+                      "labels": [@Html.Raw(string.Join(",", Model.PorDia.Select(x => $"\"{x.Dia:dd/MM}\"")))],
+                      "total":  [@string.Join(",", Model.PorDia.Select(x => x.Total))],
+                      "entregadas":[@string.Join(",", Model.PorDia.Select(x => x.Entregadas))],
+                      "incidentes":[@string.Join(",", Model.PorDia.Select(x => x.Incidentes))]
+                    }
+                </script>
+            </div>
+
+            <div class="stats-panel">
+                <div class="panel-head">
+                    <div class="panel-title">Tiempos promedio (minutos)</div>
+                    <div class="panel-sub">Eficiencia del proceso</div>
+                </div>
+
+                <div class="time-grid">
+                    <div class="time-row">
+                        <span>Creada → Asignada</span>
+                        <b>@((int)Model.Tiempos.MinCreadaAsignada) min</b>
+                    </div>
+                    <div class="time-row">
+                        <span>Asignada → Recolectada</span>
+                        <b>@((int)Model.Tiempos.MinAsignadaRecolectada) min</b>
+                    </div>
+                    <div class="time-row">
+                        <span>Recolectada → Entregada</span>
+                        <b>@((int)Model.Tiempos.MinRecolectadaEntregada) min</b>
+                    </div>
+                    <div class="time-row total">
+                        <span>Total (Creada → Entregada)</span>
+                        <b>@((int)Model.Tiempos.MinTotalCreadaEntregada) min</b>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RANKINGS -->
+        <div class="stats-grid">
+            <div class="stats-panel">
+                <div class="panel-head">
+                    <div class="panel-title">Top Pilotos</div>
+                    <div class="panel-sub">Entregas / Incidentes / Tiempo prom.</div>
+                </div>
+
+                <div class="rank-list">
+                    @if (Model.TopPilotos.Count == 0)
+                    {
+                        <div class="rank-empty">No hay datos de pilotos en este rango.</div>
+                    }
+                    else
+                    {
+                        foreach (var p in Model.TopPilotos)
+                        {
+                            <div class="rank-item">
+                                <div class="rank-left">
+                                    <div class="rank-avatar">@p.Nombre.Substring(0, 1).ToUpper()</div>
+                                    <div>
+                                        <div class="rank-name">@p.Nombre</div>
+                                        <div class="rank-meta">Total: <b>@p.Total</b> • Entregadas: <b>@p.Entregadas</b> • Incidentes: <b>@p.Incidentes</b></div>
+                                    </div>
+                                </div>
+                                <div class="rank-right">
+                                    <div class="rank-chip">@p.PromedioMinutosEntrega min</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <div class="stats-panel">
+                <div class="panel-head">
+                    <div class="panel-title">Top Tiendas</div>
+                    <div class="panel-sub">Volumen y calidad</div>
+                </div>
+
+                <div class="rank-list">
+                    @if (Model.TopTiendas.Count == 0)
+                    {
+                        <div class="rank-empty">No hay datos de tiendas en este rango.</div>
+                    }
+                    else
+                    {
+                        foreach (var t in Model.TopTiendas)
+                        {
+                            <div class="rank-item">
+                                <div class="rank-left">
+                                    <div class="rank-avatar store"><i class="bi bi-shop"></i></div>
+                                    <div>
+                                        <div class="rank-name">@t.Nombre</div>
+                                        <div class="rank-meta">Total: <b>@t.Total</b> • Entregadas: <b>@t.Entregadas</b> • Incidentes: <b>@t.Incidentes</b></div>
+                                    </div>
+                                </div>
+                                <div class="rank-right">
+                                    <div class="rank-chip">@t.Total</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- ✅ /pg-stats-scroll -->
+
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="~/js/estadisticagestor.js" asp-append-version="true"></script>
+}

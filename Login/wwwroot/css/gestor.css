@@ -785,3 +785,41 @@ html, body {
     .pg-logout-btn:hover {
         background: rgba(255,255,255,.10);
     }
+
+/* ================================
+   SIDEBAR HOVER (COLAPSABLE) - FIX
+================================ */
+.pg-sidebar.pg-sidebar-hover {
+    width: 280px !important;
+    transition: width .25s ease !important;
+    overflow: hidden !important;
+}
+
+    /* colapsado cuando NO hay hover */
+    .pg-sidebar.pg-sidebar-hover:not(:hover) {
+        width: 86px !important;
+    }
+
+        /* ocultar textos al colapsar */
+        .pg-sidebar.pg-sidebar-hover:not(:hover) .pg-brand-text,
+        .pg-sidebar.pg-sidebar-hover:not(:hover) .pg-org-meta,
+        .pg-sidebar.pg-sidebar-hover:not(:hover) .pg-nav-title,
+        .pg-sidebar.pg-sidebar-hover:not(:hover) .pg-nav-item span:not(.pg-nav-ico),
+        .pg-sidebar.pg-sidebar-hover:not(:hover) .pg-logout-btn span {
+            display: none !important;
+        }
+
+        /* centrar items */
+        .pg-sidebar.pg-sidebar-hover:not(:hover) .pg-nav-item {
+            justify-content: center !important;
+        }
+
+    /* mantener iconos */
+    .pg-sidebar.pg-sidebar-hover .pg-nav-ico {
+        flex-shrink: 0 !important;
+    }
+
+
+.pg-main {
+    transition: margin-left .25s ease;
+}

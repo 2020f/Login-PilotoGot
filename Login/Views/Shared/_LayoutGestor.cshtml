@@ -20,7 +20,9 @@
     <div class="pg-app">
 
         <!-- SIDEBAR -->
-        <aside class="pg-sidebar">
+        
+        <aside class="pg-sidebar pg-sidebar-hover">
+
             <div class="pg-brand">
                 <div class="pg-brand-icon">
                     <i class="bi bi-lightning-charge-fill"></i>
@@ -50,10 +52,13 @@
                         <span>Despacho &amp; Órdenes</span>
                     </a>
 
-                    <a class="pg-nav-item pg-nav-disabled" href="javascript:void(0)">
+                    <a class="pg-nav-item"
+                       asp-controller="Supervisor"
+                       asp-action="Estadisticas">
                         <span class="pg-nav-ico"><i class="bi bi-bar-chart"></i></span>
                         <span>Estadísticas</span>
                     </a>
+
                 </div>
 
                 <div class="pg-nav-group">
@@ -108,10 +113,19 @@
                         <span>Sistema Operativo</span>
                     </div>
 
+
+
+
+
+
                     <button type="button" class="pg-icon-btn" aria-label="Notificaciones">
                         <i class="bi bi-bell"></i>
                         <span class="pg-badge-dot"></span>
                     </button>
+
+
+
+
 
                     <!-- ✅ CERRAR SESIÓN -->
                     <form asp-area="Identity" asp-page="/Account/Logout" method="post" class="pg-logout-form">

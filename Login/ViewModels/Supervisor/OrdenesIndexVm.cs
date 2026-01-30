@@ -11,6 +11,9 @@ namespace Login.ViewModels.Supervisor
         public string? Estado { get; set; }  // string para UI simple
         public int? NumeroOrdenA { get; set; }
 
+        public DateTime? Fecha { get; set; } 
+
+
         // Dropdowns
         public List<SelectListItem> Tiendas { get; set; } = new();
         public List<SelectListItem> Pilotos { get; set; } = new();

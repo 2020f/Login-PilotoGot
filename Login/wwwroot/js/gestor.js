@@ -68,3 +68,30 @@
         search.addEventListener("input", () => filterPilots(search.value));
     }
 })();
+
+
+// ====== Auto-submit filtros (Ordenes) ======
+const filtrosForm = document.querySelector(".pg-filters form");
+if (filtrosForm) {
+    const selects = filtrosForm.querySelectorAll("select.pg-filter-select");
+    const numeroOrdenInput = filtrosForm.querySelector(".pg-search input");
+
+    selects.forEach(s => {
+        s.addEventListener("change", () => filtrosForm.submit());
+    });
+
+    // debounce para no spamear submit al escribir
+    let t = null;
+    if (numeroOrdenInput) {
+        numeroOrdenInput.addEventListener("input", () => {
+            clearTimeout(t);
+            t = setTimeout(() => filtrosForm.submit(), 450);
+        });
+    }
+}
+
+const fechaInput = filtrosForm.querySelector('input[type="date"]');
+
+if (fechaInput) {
+    fechaInput.addEventListener("change", () => filtrosForm.submit());
+}

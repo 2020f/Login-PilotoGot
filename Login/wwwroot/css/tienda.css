@@ -27,10 +27,11 @@ body {
 }
 
 .tp-shell {
-    min-height: 100vh;
-    display: grid;
-    grid-template-columns: 280px 1fr;
+    display: flex;
+    height: 100vh;
+    width: 100%;
 }
+
 
 .tp-sidebar {
     background: radial-gradient(1200px 600px at 0% 0%, #122a52 0%, var(--bg) 55%, #070b14 100%);
@@ -1335,3 +1336,250 @@ html, body {
 .tp-logout-ico {
     font-weight: 900;
 }
+
+/* =========================================
+   TIENDA - SIDEBAR HOVER (DEFINITIVO)
+========================================= */
+
+/* sidebar con ancho fijo */
+.tp-sidebar.tp-sidebar-hover {
+    width: 280px;
+    flex: 0 0 280px;
+    transition: width .22s ease, flex-basis .22s ease;
+    overflow: hidden;
+}
+
+    /* colapsado cuando NO hay hover */
+    .tp-sidebar.tp-sidebar-hover:not(:hover) {
+        width: 86px;
+        flex-basis: 86px;
+    }
+
+        /* ✅ OCULTA TEXTO, PERO NO TOCA EL ICONO */
+        .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-brand-title,
+        .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-brand-sub,
+        .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-user-name,
+        .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-user-role,
+        .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-logout-btn-full span:not(.tp-logout-ico) {
+            display: none !important;
+        }
+
+        /* ✅ SOLO OCULTA EL TEXTO DE CADA ITEM (EL ICONO QUEDA) */
+        .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-item .tp-text {
+            display: none !important;
+        }
+
+        /* items centrados */
+        .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-item {
+            display: grid !important;
+            place-items: center !important;
+            padding: 10px !important;
+            gap: 0 !important;
+        }
+
+        /* icono en modo botón */
+        .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-ico {
+            width: 42px !important;
+            height: 42px !important;
+            border-radius: 14px !important;
+            display: grid !important;
+            place-items: center !important;
+        }
+
+/* main ocupa el resto */
+.tp-main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* evita túnel */
+.tp-main {
+    margin-left: 0 !important;
+}
+
+
+/* =========================================
+   SIDEBAR COLAPSADO - ICONOS "PRO"
+   (cuando NO hay hover)
+========================================= */
+
+.tp-sidebar.tp-sidebar-hover:not(:hover) .tp-nav {
+    gap: 12px; /* más aire */
+}
+
+/* cada item se vuelve un botón real */
+.tp-sidebar.tp-sidebar-hover:not(:hover) .tp-item {
+    width: 100%;
+    border-radius: 16px;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    display: grid !important;
+    place-items: center !important;
+    padding: 10px !important;
+}
+
+/* el contenedor del icono se vuelve "card" */
+.tp-sidebar.tp-sidebar-hover:not(:hover) .tp-ico {
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 18px !important;
+    background: rgba(255,255,255,.10) !important; /* más visible */
+    border: 1px solid rgba(255,255,255,.14) !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,.22) !important;
+    display: grid !important;
+    place-items: center !important;
+    color: #dbeafe !important;
+}
+
+    /* icono interno más grande */
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-ico i,
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-ico svg {
+        font-size: 18px !important;
+    }
+
+/* hover en colapsado: brilla */
+.tp-sidebar.tp-sidebar-hover:not(:hover) .tp-item:hover .tp-ico {
+    background: rgba(37,99,235,.22) !important;
+    border-color: rgba(96,165,250,.28) !important;
+    transform: translateY(-1px);
+}
+
+/* activo en colapsado: se nota MÁS */
+.tp-sidebar.tp-sidebar-hover:not(:hover) .tp-item.active .tp-ico,
+.tp-sidebar.tp-sidebar-hover:not(:hover) .tp-item.tp-active .tp-ico {
+    background: rgba(37,99,235,.28) !important;
+    border-color: rgba(96,165,250,.35) !important;
+    box-shadow: 0 14px 30px rgba(37,99,235,.18) !important;
+}
+
+/* footer: logout se ve como botón icon-only bonito */
+.tp-sidebar.tp-sidebar-hover:not(:hover) .tp-logout-btn-full {
+    width: 56px !important;
+    height: 56px !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    border-radius: 18px !important;
+    background: rgba(255,255,255,.10) !important;
+    border: 1px solid rgba(255,255,255,.14) !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,.22) !important;
+    justify-content: center !important;
+}
+
+    /* oculta texto cuando colapsa (si no lo tenías ya) */
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-text,
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-brand-title,
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-brand-sub,
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-user-name,
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-user-role,
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-logout-btn-full span:not(.tp-logout-ico) {
+        display: none !important;
+    }
+
+
+/* =========================================
+   SIDEBAR COLAPSADO LIMPIO (ICON ONLY)
+========================================= */
+
+.tp-sidebar.tp-sidebar-hover:not(:hover) {
+    width: 72px;
+    flex-basis: 72px;
+}
+
+    /* OCULTAR TODO EL TEXTO */
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-brand-title,
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-brand-sub,
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-item span:not(.tp-ico),
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-user-name,
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-user-role,
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-logout-btn-full span {
+        display: none !important;
+    }
+
+    /* NAV más compacta */
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-nav {
+        gap: 14px;
+    }
+
+    /* ITEM = icono centrado */
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-item {
+        padding: 0;
+        height: 48px;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        background: transparent !important;
+    }
+
+    /* ICONO LIMPIO */
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-ico {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: rgba(255,255,255,.06);
+        border: 1px solid rgba(255,255,255,.08);
+        display: grid;
+        place-items: center;
+        color: #c7d2fe;
+    }
+
+        /* tamaño del icono */
+        .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-ico i {
+            font-size: 18px;
+        }
+
+    /* hover sutil */
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-item:hover .tp-ico {
+        background: rgba(255,255,255,.12);
+    }
+
+    /* activo claro pero elegante */
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-item.active .tp-ico {
+        background: rgba(37,99,235,.28);
+        border-color: rgba(96,165,250,.35);
+        color: #ffffff;
+    }
+
+    /* FOOTER logout solo icono */
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-logout-btn-full {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        margin: 0 auto;
+        border-radius: 12px;
+        justify-content: center;
+    }
+
+/* =========================================
+   CENTRAR ICONOS EN SIDEBAR COLAPSADO
+   (FIX REAL DEL BORDE DERECHO)
+========================================= */
+
+/* sidebar colapsado */
+.tp-sidebar.tp-sidebar-hover:not(:hover) {
+    width: 68px;
+    flex-basis: 68px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* 🔥 CLAVE */
+}
+
+    /* contenedor del menú */
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-nav {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* 🔥 CLAVE */
+    }
+
+    /* cada item centrado REAL */
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-item {
+        width: 100%;
+        display: flex;
+        justify-content: center; /* 🔥 */
+        align-items: center;
+    }
+
+    /* icono centrado perfecto */
+    .tp-sidebar.tp-sidebar-hover:not(:hover) .tp-ico {
+        margin: 0 auto; /* 🔥 */
+    }

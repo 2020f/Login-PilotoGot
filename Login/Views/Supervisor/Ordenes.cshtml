@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "Despacho en Vivo";
     Layout = "_LayoutGestor";
-}
+}  
 
 <div class="pg-page">
 
@@ -19,36 +19,41 @@
     <div class="pg-filters-sticky">
         <div class="pg-card pg-filters mb-3">
             <form method="get" asp-action="Ordenes" class="d-flex align-items-center gap-3 w-100">
+
                 <div class="pg-filter-block">
-                    <select class="pg-filter-select" name="tiendaId" asp-items="Model.Tiendas">
+                    <select class="pg-filter-select" asp-for="TiendaId" asp-items="Model.Tiendas">
                         <option value="">Todas las Tiendas</option>
                     </select>
                     <i class="bi bi-chevron-down text-secondary"></i>
                 </div>
 
                 <div class="pg-filter-block">
-                    <select class="pg-filter-select" name="estado" asp-items="Model.Estados"></select>
+                    <select class="pg-filter-select" asp-for="PilotoId" asp-items="Model.Pilotos"></select>
                     <i class="bi bi-chevron-down text-secondary"></i>
                 </div>
 
-                <!-- fecha (solo visual) -->
                 <div class="pg-filter-block">
-                    <input class="pg-filter-input" type="text" placeholder="dd/mm/aaaa" disabled />
+                    <select class="pg-filter-select" asp-for="Estado" asp-items="Model.Estados"></select>
+                    <i class="bi bi-chevron-down text-secondary"></i>
+                </div>
+
+                <!-- fecha -->
+                <div class="pg-filter-block">
+                    <input class="pg-filter-input"
+                           asp-for="Fecha"
+                           type="date" />
                     <i class="bi bi-calendar3 text-secondary"></i>
                 </div>
 
+
                 <div class="pg-search">
                     <i class="bi bi-search text-secondary"></i>
-                    <input type="number" name="numeroOrdenA" value="@Model.NumeroOrdenA" placeholder="Buscar por #Orden ID..." />
+                    <input asp-for="NumeroOrdenA" type="number" placeholder="Buscar por #Orden ID..." />
                 </div>
-
-                @if (Model.PilotoId.HasValue)
-                {
-                    <input type="hidden" name="pilotoId" value="@Model.PilotoId" />
-                }
 
                 <button class="d-none" type="submit"></button>
             </form>
+
         </div>
     </div>
 

@@ -582,29 +582,11 @@ namespace Login.Controllers
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         // ==========================
         // ÓRDENES (Gestor)
         // ==========================
         [HttpGet]
-        public async Task<IActionResult> Ordenes(int? tiendaId, int? pilotoId, string? estado, int? numeroOrdenA, string? ok = null, string? error = null)
+        public async Task<IActionResult> Ordenes(int? tiendaId, int? pilotoId, string? estado, int? numeroOrdenA, DateTime? fecha, string? ok = null, string? error = null)
         {
             int clienteAppId;
             try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
@@ -616,6 +598,7 @@ namespace Login.Controllers
                 PilotoId = pilotoId,
                 Estado = estado,
                 NumeroOrdenA = numeroOrdenA,
+                Fecha = fecha,
                 Ok = ok,
                 Error = error
             };
@@ -631,6 +614,8 @@ namespace Login.Controllers
                 .OrderBy(p => p.Nombre)
                 .Select(p => new SelectListItem { Value = p.Id.ToString(), Text = p.Nombre })
                 .ToListAsync();
+
+                 vm.Pilotos.Insert(0, new SelectListItem { Value = "", Text = "Todos" });
 
             vm.Estados = new()
             {
@@ -658,6 +643,14 @@ namespace Login.Controllers
 
             if (!string.IsNullOrWhiteSpace(estado) && System.Enum.TryParse<EstadoOrden>(estado, out var est))
                 q = q.Where(o => o.Estado == est);
+
+            if (fecha.HasValue)
+            {
+                var d0 = fecha.Value.Date;
+                var d1 = d0.AddDays(1);
+                q = q.Where(o => o.CreatedAt >= d0 && o.CreatedAt < d1);
+            }
+
 
 
 
@@ -696,44 +689,6 @@ namespace Login.Controllers
             .FirstOrDefault()
     })
     .ToListAsync();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            //vm.Ordenes = await q
-            //    .OrderByDescending(o => o.CreatedAt)
-            //    .Take(200)
-            //    .Select(o => new OrdenRowVm
-            //    {
-            //        OrdenId = o.Id,
-            //        ClienteAppId = o.ClienteAppId,
-            //        TiendaId = o.TiendaId,
-            //        TiendaNombre = o.Tienda.Nombre,
-            //        NumeroOrdenA = o.NumeroOrdenA,
-            //        Estado = o.Estado.ToString(),
-            //        PilotoId = o.PilotoId,
-            //        PilotoNombre = o.Piloto != null ? o.Piloto.Nombre : null,
-            //        CreatedAt = o.CreatedAt,
-            //        CodigoB = o.Codigos
-            //            .Where(c => c.Tipo == TipoCodigo.B_Recoleccion)
-            //            .Select(c => c.Codigo)
-            //            .FirstOrDefault()
-            //    })
-            //    .ToListAsync();
-
 
 
 
@@ -784,5 +739,209 @@ namespace Login.Controllers
                 return RedirectToAction(nameof(Ordenes), new { error = ex.Message });
             }
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+        [HttpGet]
+        public async Task<IActionResult> Estadisticas(DateTime? desde, DateTime? hasta, int? tiendaId, int? pilotoId)
+        {
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (Exception ex) { return RedirectToAction(nameof(Ordenes), new { error = ex.Message }); }
+
+            // ✅ defaults: últimos 7 días (incluye hoy)
+            var to = (hasta ?? DateTime.UtcNow).Date.AddDays(1);  // exclusivo
+            var from = (desde ?? DateTime.UtcNow.AddDays(-6)).Date; // inclusive
+
+            var vm = new EstadisticasGestorVm
+            {
+                Desde = from.Date,
+                Hasta = to.AddDays(-1).Date,
+                TiendaId = tiendaId,
+                PilotoId = pilotoId
+            };
+
+            // Dropdowns
+            vm.Tiendas = await _db.Tiendas
+                .AsNoTracking()
+                .Where(t => t.ClienteAppId == clienteAppId)
+                .OrderBy(t => t.Nombre)
+                .Select(t => new SelectListItem { Value = t.Id.ToString(), Text = t.Nombre })
+                .ToListAsync();
+            vm.Tiendas.Insert(0, new SelectListItem { Value = "", Text = "Todas las Tiendas" });
+
+            vm.Pilotos = await _db.Pilotos
+                .AsNoTracking()
+                .Where(p => p.ClienteAppId == clienteAppId)
+                .OrderBy(p => p.Nombre)
+                .Select(p => new SelectListItem { Value = p.Id.ToString(), Text = p.Nombre })
+                .ToListAsync();
+            vm.Pilotos.Insert(0, new SelectListItem { Value = "", Text = "Todos" });
+
+            // Base query (rango + tenant)
+            var q = _db.OrdenesEntrega
+                .AsNoTracking()
+                .Where(o => o.ClienteAppId == clienteAppId
+                         && o.CreatedAt >= from
+                         && o.CreatedAt < to);
+
+            if (tiendaId.HasValue) q = q.Where(o => o.TiendaId == tiendaId.Value);
+            if (pilotoId.HasValue) q = q.Where(o => o.PilotoId == pilotoId.Value);
+
+            // =========
+            // Cards: totales por estado
+            // =========
+            var total = await q.CountAsync();
+
+            var entregadas = await q.CountAsync(o => o.Estado == EstadoOrden.Entregada);
+            var incidentes = await q.CountAsync(o => o.Estado == EstadoOrden.Incidente);
+
+            var pendientes = await q.CountAsync(o =>
+                o.Estado == EstadoOrden.Creada ||
+                o.Estado == EstadoOrden.Asignada ||
+                o.Estado == EstadoOrden.Recolectada);
+
+            vm.Cards = new EstadisticasCardsVm
+            {
+                Total = total,
+                Entregadas = entregadas,
+                Pendientes = pendientes,
+                Incidentes = incidentes,
+                PorcentajeEntrega = total == 0 ? 0 : (int)Math.Round((entregadas * 100.0) / total)
+            };
+
+            // =========
+            // Serie: Ordenes por día
+            // =========
+            var rawDia = await q
+                .GroupBy(o => o.CreatedAt.Date)
+                .Select(g => new { Dia = g.Key, Total = g.Count(), Entregadas = g.Count(x => x.Estado == EstadoOrden.Entregada), Incidentes = g.Count(x => x.Estado == EstadoOrden.Incidente) })
+                .ToListAsync();
+
+            // Rellenar días faltantes
+            var dias = Enumerable.Range(0, (to.Date - from.Date).Days)
+                .Select(i => from.Date.AddDays(i))
+                .ToList();
+
+            vm.PorDia = dias.Select(d =>
+            {
+                var hit = rawDia.FirstOrDefault(x => x.Dia == d);
+                return new OrdenesPorDiaVm
+                {
+                    Dia = d,
+                    Total = hit?.Total ?? 0,
+                    Entregadas = hit?.Entregadas ?? 0,
+                    Incidentes = hit?.Incidentes ?? 0
+                };
+            }).ToList();
+
+            // =========
+            // Rankings: Pilotos y Tiendas
+            // =========
+            vm.TopPilotos =
+      await (from o in q
+             where o.PilotoId != null
+             join p in _db.Pilotos.AsNoTracking() on o.PilotoId equals p.Id
+             group o by new { p.Id, p.Nombre } into g
+             select new RankingPilotoVm
+             {
+                 PilotoId = g.Key.Id,
+                 Nombre = g.Key.Nombre,
+                 Total = g.Count(),
+                 Entregadas = g.Count(x => x.Estado == EstadoOrden.Entregada),
+                 Incidentes = g.Count(x => x.Estado == EstadoOrden.Incidente),
+
+                 // ✅ Average traducible: int? -> Average() => double? -> ?? 0
+                 PromedioMinutosEntrega = (int)Math.Round(
+                     g.Where(x => x.EntregadaAt != null)
+                      .Select(x => (int?)EF.Functions.DateDiffMinute(x.CreatedAt, x.EntregadaAt!.Value))
+                      .Average() ?? 0
+                 )
+             })
+            .OrderByDescending(x => x.Entregadas)
+            .ThenBy(x => x.Incidentes)
+            .Take(8)
+            .ToListAsync();
+
+
+            vm.TopTiendas =
+       await (from o in q
+              join t in _db.Tiendas.AsNoTracking() on o.TiendaId equals t.Id
+              group o by new { t.Id, t.Nombre } into g
+              select new RankingTiendaVm
+              {
+                  TiendaId = g.Key.Id,
+                  Nombre = g.Key.Nombre,
+                  Total = g.Count(),
+                  Entregadas = g.Count(x => x.Estado == EstadoOrden.Entregada),
+                  Incidentes = g.Count(x => x.Estado == EstadoOrden.Incidente)
+              })
+             .OrderByDescending(x => x.Total)
+             .Take(8)
+             .ToListAsync();
+
+
+            // =========
+            // Tiempos (promedios)
+            // =========
+            // Created -> Assigned
+            // =========
+            // Tiempos (promedios) - versión traducible a SQL
+            // =========
+            vm.Tiempos = new TiemposProcesoVm
+            {
+                MinCreadaAsignada =
+                    await q.Where(o => o.AssignedAt != null)
+                        .Select(o => (int?)EF.Functions.DateDiffMinute(o.CreatedAt, o.AssignedAt!.Value))
+                        .AverageAsync() ?? 0,
+
+                MinAsignadaRecolectada =
+                    await q.Where(o => o.AssignedAt != null && o.RecolectadaAt != null)
+                        .Select(o => (int?)EF.Functions.DateDiffMinute(o.AssignedAt!.Value, o.RecolectadaAt!.Value))
+                        .AverageAsync() ?? 0,
+
+                MinRecolectadaEntregada =
+                    await q.Where(o => o.RecolectadaAt != null && o.EntregadaAt != null)
+                        .Select(o => (int?)EF.Functions.DateDiffMinute(o.RecolectadaAt!.Value, o.EntregadaAt!.Value))
+                        .AverageAsync() ?? 0,
+
+                MinTotalCreadaEntregada =
+                    await q.Where(o => o.EntregadaAt != null)
+                        .Select(o => (int?)EF.Functions.DateDiffMinute(o.CreatedAt, o.EntregadaAt!.Value))
+                        .AverageAsync() ?? 0
+            };
+
+            vm.Tiempos.RoundAll();
+
+
+            // redondeo final
+            vm.Tiempos.RoundAll();
+
+            return View(vm);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
 }

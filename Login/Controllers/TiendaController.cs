@@ -54,7 +54,7 @@ namespace Login.Controllers
         }
 
         // ==========================
-        // 0) Seleccionar Tienda
+        // 0) Esta vista solo la utilizo para mandar un mensaje 
         // ==========================
         [HttpGet]
         public async Task<IActionResult> SeleccionarTienda(string? ok = null, string? error = null)
