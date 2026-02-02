@@ -403,13 +403,24 @@ body {
 }
 
 .sa-modal {
-    width: 720px;
-    max-width: 100%;
-    background: #fff;
-    border-radius: 18px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 30px 80px rgba(2,6,23,.25);
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
+
+.sa-modal-body {
+    overflow-y: auto;
+    max-height: calc(90vh - 140px); /* ajusta si el header/footer son más altos */
+}
+
+
+
+
+
+
+
+
 
 .sa-modal-head {
     display: flex;

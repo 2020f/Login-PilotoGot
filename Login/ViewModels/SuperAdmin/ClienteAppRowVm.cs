@@ -14,5 +14,11 @@
 
         public int TiendasCount { get; set; }
         public int PilotosCount { get; set; }
+
+        public string? Email { get; set; }
+        public DateTime? FechaFinPlan { get; set; }
+        public DateTime? ProximoCobro { get; set; }
+        public bool? EsTrial { get; set; }
+
     }
 }

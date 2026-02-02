@@ -19,8 +19,102 @@ namespace Login.Domain.Entities
 
 
 
+
+
+
+        // =========================
+        // Contacto / Identidad fiscal
+        // =========================
+
+        [EmailAddress, MaxLength(150)]
+        public string? Email { get; set; }
+
+        [MaxLength(20)]
+        public string? RNC { get; set; }
+
+        [MaxLength(120)]
+        public string? ContactoResponsable { get; set; }
+
+
+        // =========================
+        // Suscripción / Cobros
+        // =========================
+
+        public DateTime? FechaInicioPlan { get; set; }
+        public DateTime? FechaFinPlan { get; set; }
+
+        public DateTime? UltimoPago { get; set; }
+        public DateTime? ProximoCobro { get; set; }
+
+        public bool? EsTrial { get; set; }
+
+
+        // =========================
+        // Límites del sistema
+        // =========================
+
+        public int? MaxUsuarios { get; set; }
+        public int? MaxOrdenesMes { get; set; }
+        public int? MaxPilotos { get; set; }
+
+
+        // =========================
+        // Estado / Notas
+        // =========================
+
+        public bool? Activo { get; set; }
+
+        [MaxLength(500)]
+        public string? Observaciones { get; set; }
+
+
+        // =========================
+        // Auditoría
+        // =========================
+
+        public DateTime? UpdatedAt { get; set; }
+
+        [MaxLength(100)]
+        public string? UpdatedBy { get; set; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         public int PlanId { get; set; }
-        public Plan Plan { get; set; } = null!;
+        public Plan Plan { get; set; } = null!;      
 
         public EstadoClienteApp Estado { get; set; } = EstadoClienteApp.Activo;
 

@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Login.Data;
 using Login.Domain.Entities;
@@ -128,16 +129,27 @@ namespace Login.Controllers
 
 
 
-
-
-
-
-
-
-
         // =========================
         // CLIENTE APP (TENANTS)
         // =========================
+
+
+
+
+
+
+
+
+        // Helper mínimo para auditoría (no cambia tu lógica)
+        private string GetAuditUser()
+        {
+            var email = User?.Claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            if (!string.IsNullOrWhiteSpace(email)) return email;
+
+            if (!string.IsNullOrWhiteSpace(User?.Identity?.Name)) return User.Identity!.Name!;
+
+            return "system";
+        }
 
         [HttpGet]
         public async Task<IActionResult> Clientes(string? ok = null, string? error = null)
@@ -184,16 +196,10 @@ namespace Login.Controllers
                 Clientes = clientes
             };
 
-
             ViewBag.Planes = await _db.Planes.AsNoTracking()
-             .Where(p => p.Activo)
-             .OrderBy(p => p.Nombre)
-            .ToListAsync();
-
-
-
-
-
+                .Where(p => p.Activo)
+                .OrderBy(p => p.Nombre)
+                .ToListAsync();
 
             return View(vm);
         }
@@ -235,15 +241,38 @@ namespace Login.Controllers
                 Ubicacion = string.IsNullOrWhiteSpace(input.Ubicacion) ? null : input.Ubicacion.Trim(),
                 Telefono = string.IsNullOrWhiteSpace(input.Telefono) ? null : input.Telefono.Trim(),
 
-                PlanId = plan.Id
+                PlanId = plan.Id,
                 // GestorIdentityUserId queda null hasta crear gestor
+
+                // =========================
+                // NUEVOS CAMPOS (nullable)
+                // =========================
+                Email = string.IsNullOrWhiteSpace(input.Email) ? null : input.Email.Trim(),
+                RNC = string.IsNullOrWhiteSpace(input.RNC) ? null : input.RNC.Trim(),
+                ContactoResponsable = string.IsNullOrWhiteSpace(input.ContactoResponsable) ? null : input.ContactoResponsable.Trim(),
+
+                FechaInicioPlan = input.FechaInicioPlan ?? DateTime.UtcNow, // ✅ si viene null -> hoy
+                FechaFinPlan = input.FechaFinPlan,
+
+                UltimoPago = input.UltimoPago,
+                ProximoCobro = input.ProximoCobro,
+
+                EsTrial = input.EsTrial,
+
+                MaxUsuarios = input.MaxUsuarios,
+                MaxOrdenesMes = input.MaxOrdenesMes,
+                MaxPilotos = input.MaxPilotos,
+
+                Observaciones = string.IsNullOrWhiteSpace(input.Observaciones) ? null : input.Observaciones.Trim(),
+
+                // Auditoría (no cambia lógica, solo deja rastro)
+                UpdatedAt = DateTime.UtcNow,
+                UpdatedBy = GetAuditUser()
             });
 
             await _db.SaveChangesAsync();
             return RedirectToAction(nameof(Clientes), new { ok = "ClienteApp creado ✅ (falta crear su gestor)" });
         }
-
-
 
         [HttpGet]
         public async Task<IActionResult> EditarCliente(int id)
@@ -254,13 +283,10 @@ namespace Login.Controllers
             if (cliente is null)
                 return RedirectToAction(nameof(Clientes), new { error = "ClienteApp no existe." });
 
-
-
-
             ViewBag.Planes = await _db.Planes.AsNoTracking()
-        .Where(p => p.Activo)
-        .OrderBy(p => p.Nombre)
-        .ToListAsync();
+                .Where(p => p.Activo)
+                .OrderBy(p => p.Nombre)
+                .ToListAsync();
 
             var vm = new ClienteAppEditVm
             {
@@ -269,41 +295,32 @@ namespace Login.Controllers
                 Ubicacion = cliente.Ubicacion,
                 Telefono = cliente.Telefono,
                 PlanId = cliente.PlanId,
-                Estado = cliente.Estado
+                Estado = cliente.Estado,
+
+                // =========================
+                // NUEVOS CAMPOS
+                // =========================
+                Email = cliente.Email,
+                RNC = cliente.RNC,
+                ContactoResponsable = cliente.ContactoResponsable,
+
+                FechaInicioPlan = cliente.FechaInicioPlan,
+                FechaFinPlan = cliente.FechaFinPlan,
+
+                UltimoPago = cliente.UltimoPago,
+                ProximoCobro = cliente.ProximoCobro,
+
+                EsTrial = cliente.EsTrial ?? false,
+
+                MaxUsuarios = cliente.MaxUsuarios,
+                MaxOrdenesMes = cliente.MaxOrdenesMes,
+                MaxPilotos = cliente.MaxPilotos,
+
+                Observaciones = cliente.Observaciones
             };
 
             return View(vm);
-
-
-
-
-
-
-
-
-            //ViewBag.Planes = await _db.Planes.AsNoTracking()
-            //    .Where(p => p.Activo)
-            //    .OrderBy(p => p.Nombre)
-            //    .ToListAsync();
-
-            //var vm = new ClienteAppEditVm
-            //{
-            //    Id = cliente.Id,
-            //    NombreComercial = cliente.NombreComercial,
-            //    PlanId = cliente.PlanId,
-            //    Estado = cliente.Estado
-            //};
-
-            //return View(vm);
         }
-
-
-
-
-
-
-
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -334,6 +351,32 @@ namespace Login.Controllers
             cliente.PlanId = input.PlanId;
             cliente.Estado = input.Estado;
 
+            // =========================
+            // NUEVOS CAMPOS (guardar)
+            // =========================
+            cliente.Email = string.IsNullOrWhiteSpace(input.Email) ? null : input.Email.Trim();
+            cliente.RNC = string.IsNullOrWhiteSpace(input.RNC) ? null : input.RNC.Trim();
+            cliente.ContactoResponsable = string.IsNullOrWhiteSpace(input.ContactoResponsable) ? null : input.ContactoResponsable.Trim();
+
+            // ✅ si viene null -> hoy, pero sin destruir lo que ya exista
+            cliente.FechaInicioPlan = input.FechaInicioPlan ?? cliente.FechaInicioPlan ?? DateTime.UtcNow;
+            cliente.FechaFinPlan = input.FechaFinPlan;
+
+            cliente.UltimoPago = input.UltimoPago;
+            cliente.ProximoCobro = input.ProximoCobro;
+
+            cliente.EsTrial = input.EsTrial;
+
+            cliente.MaxUsuarios = input.MaxUsuarios;
+            cliente.MaxOrdenesMes = input.MaxOrdenesMes;
+            cliente.MaxPilotos = input.MaxPilotos;
+
+            cliente.Observaciones = string.IsNullOrWhiteSpace(input.Observaciones) ? null : input.Observaciones.Trim();
+
+            // Auditoría automática
+            cliente.UpdatedAt = DateTime.UtcNow;
+            cliente.UpdatedBy = GetAuditUser();
+
             await _db.SaveChangesAsync();
             return RedirectToAction(nameof(Clientes), new { ok = "ClienteApp actualizado ✅" });
         }
@@ -351,9 +394,144 @@ namespace Login.Controllers
 
 
 
+        //[HttpGet]
+        //public async Task<IActionResult> Clientes(string? ok = null, string? error = null)
+        //{
+        //    // Listado con conteos + email del gestor si existe
+        //    var clientes = await _db.ClientesApp.AsNoTracking()
+        //        .Include(c => c.Plan)
+        //        .Select(c => new ClienteAppRowVm
+        //        {
+        //            Id = c.Id,
+        //            NombreComercial = c.NombreComercial,
+        //            PlanNombre = c.Plan.Nombre,
+        //            Activo = c.Plan.Activo, // si quieres puedes cambiarlo por otra lógica
+        //            Estado = c.Estado.ToString(),
+        //            GestorEmail = null, // se completa abajo
+        //            MaxTiendas = c.Plan.MaxTiendas,
+        //            MaxPilotos = c.Plan.MaxPilotos,
+
+        //            TiendasCount = c.Tiendas.Count,
+        //            PilotosCount = c.Pilotos.Count
+        //        })
+        //        .OrderByDescending(x => x.Id)
+        //        .ToListAsync();
+
+        //    // Resolver email del gestor (Identity está aparte)
+        //    var gestorIds = await _db.ClientesApp.AsNoTracking()
+        //        .Where(c => c.GestorIdentityUserId != null)
+        //        .Select(c => new { c.Id, c.GestorIdentityUserId })
+        //        .ToListAsync();
+
+        //    foreach (var item in gestorIds)
+        //    {
+        //        var row = clientes.FirstOrDefault(x => x.Id == item.Id);
+        //        if (row == null) continue;
+
+        //        var u = await _userManager.FindByIdAsync(item.GestorIdentityUserId!);
+        //        row.GestorEmail = u?.Email;
+        //    }
+
+        //    var vm = new ClientesIndexVm
+        //    {
+        //        Ok = ok,
+        //        Error = error,
+        //        Clientes = clientes
+        //    };
+
+
+        //    ViewBag.Planes = await _db.Planes.AsNoTracking()
+        //     .Where(p => p.Activo)
+        //     .OrderBy(p => p.Nombre)
+        //    .ToListAsync();
 
 
 
+
+
+
+        //    return View(vm);
+        //}
+
+        //[HttpGet]
+        //public async Task<IActionResult> CrearCliente()
+        //{
+        //    // Para el dropdown de planes
+        //    ViewBag.Planes = await _db.Planes.AsNoTracking()
+        //        .Where(p => p.Activo)
+        //        .OrderBy(p => p.Nombre)
+        //        .ToListAsync();
+
+        //    return View(new ClienteAppCreateVm());
+        //}
+
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> CrearCliente(ClienteAppCreateVm input)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        ViewBag.Planes = await _db.Planes.AsNoTracking()
+        //            .Where(p => p.Activo)
+        //            .OrderBy(p => p.Nombre)
+        //            .ToListAsync();
+
+        //        return View(input);
+        //    }
+
+        //    var plan = await _db.Planes.SingleOrDefaultAsync(p => p.Id == input.PlanId && p.Activo);
+        //    if (plan is null)
+        //        return RedirectToAction(nameof(Clientes), new { error = "Plan inválido o inactivo." });
+
+        //    _db.ClientesApp.Add(new ClienteApp
+        //    {
+        //        NombreComercial = input.NombreComercial.Trim(),
+
+        //        Ubicacion = string.IsNullOrWhiteSpace(input.Ubicacion) ? null : input.Ubicacion.Trim(),
+        //        Telefono = string.IsNullOrWhiteSpace(input.Telefono) ? null : input.Telefono.Trim(),
+
+        //        PlanId = plan.Id
+        //        // GestorIdentityUserId queda null hasta crear gestor
+        //    });
+
+        //    await _db.SaveChangesAsync();
+        //    return RedirectToAction(nameof(Clientes), new { ok = "ClienteApp creado ✅ (falta crear su gestor)" });
+        //}
+
+
+
+        //[HttpGet]
+        //public async Task<IActionResult> EditarCliente(int id)
+        //{
+        //    var cliente = await _db.ClientesApp.AsNoTracking()
+        //        .SingleOrDefaultAsync(c => c.Id == id);
+
+        //    if (cliente is null)
+        //        return RedirectToAction(nameof(Clientes), new { error = "ClienteApp no existe." });
+
+
+
+
+        //    ViewBag.Planes = await _db.Planes.AsNoTracking()
+        //.Where(p => p.Activo)
+        //.OrderBy(p => p.Nombre)
+        //.ToListAsync();
+
+        //    var vm = new ClienteAppEditVm
+        //    {
+        //        Id = cliente.Id,
+        //        NombreComercial = cliente.NombreComercial,
+        //        Ubicacion = cliente.Ubicacion,
+        //        Telefono = cliente.Telefono,
+        //        PlanId = cliente.PlanId,
+        //        Estado = cliente.Estado
+        //    };
+
+        //    return View(vm);
+
+
+
+        //}
 
 
 
@@ -381,33 +559,20 @@ namespace Login.Controllers
         //    if (cliente is null)
         //        return RedirectToAction(nameof(Clientes), new { error = "ClienteApp no existe." });
 
-        //    var plan = await _db.Planes.AsNoTracking().SingleOrDefaultAsync(p => p.Id == input.PlanId && p.Activo);
+        //    var plan = await _db.Planes.AsNoTracking()
+        //        .SingleOrDefaultAsync(p => p.Id == input.PlanId && p.Activo);
         //    if (plan is null)
         //        return RedirectToAction(nameof(Clientes), new { error = "Plan inválido o inactivo." });
 
         //    cliente.NombreComercial = input.NombreComercial.Trim();
+        //    cliente.Ubicacion = string.IsNullOrWhiteSpace(input.Ubicacion) ? null : input.Ubicacion.Trim();
+        //    cliente.Telefono = string.IsNullOrWhiteSpace(input.Telefono) ? null : input.Telefono.Trim();
         //    cliente.PlanId = input.PlanId;
         //    cliente.Estado = input.Estado;
 
         //    await _db.SaveChangesAsync();
         //    return RedirectToAction(nameof(Clientes), new { ok = "ClienteApp actualizado ✅" });
         //}
-
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> CambiarEstadoCliente(int id, EstadoClienteApp estado)
-        //{
-        //    var cliente = await _db.ClientesApp.SingleOrDefaultAsync(c => c.Id == id);
-        //    if (cliente is null)
-        //        return RedirectToAction(nameof(Clientes), new { error = "ClienteApp no existe." });
-
-        //    cliente.Estado = estado;
-        //    await _db.SaveChangesAsync();
-
-        //    return RedirectToAction(nameof(Clientes), new { ok = $"Estado actualizado a {estado} ✅" });
-        //}
-
-
 
 
 

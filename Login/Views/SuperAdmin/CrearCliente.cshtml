@@ -35,6 +35,268 @@
             <div class="sa-modal-body">
                 <div style="display:grid; gap:14px;">
 
+                    <!-- =========================
+                         DATOS PRINCIPALES
+                    ========================== -->
+                    <div>
+                        <div class="sa-sub" style="font-weight:800; color:#334155;">Nombre de la Empresa</div>
+                        <input class="sa-input" asp-for="NombreComercial"
+                               placeholder="Ej. Delivery Express S.R.L."
+                               style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                        <span asp-validation-for="NombreComercial" class="sa-sub" style="color:#e11d48;"></span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                        <div>
+                            <div class="sa-sub" style="font-weight:800; color:#334155;">Ubicación</div>
+                            <input class="sa-input" asp-for="Ubicacion"
+                                   placeholder="Ej. Santo Domingo, RD"
+                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                            <span asp-validation-for="Ubicacion" class="sa-sub" style="color:#e11d48;"></span>
+                        </div>
+
+                        <div>
+                            <div class="sa-sub" style="font-weight:800; color:#334155;">Teléfono</div>
+                            <input class="sa-input" asp-for="Telefono"
+                                   placeholder="Ej. 809-555-1234"
+                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                            <span asp-validation-for="Telefono" class="sa-sub" style="color:#e11d48;"></span>
+                        </div>
+                    </div>
+
+                    <!-- =========================
+                         CONTACTO / FISCAL
+                    ========================== -->
+                    <div class="sa-card sa-card-pad" style="background:#ffffff;">
+                        <div class="sa-sub" style="font-weight:900; color:#0f172a; margin-bottom:10px;">
+                            Contacto y datos fiscales (opcional)
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                            <div>
+                                <div class="sa-sub" style="font-weight:800; color:#334155;">Email</div>
+                                <input class="sa-input" asp-for="Email"
+                                       placeholder="Ej. admin@empresa.com"
+                                       style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                                <span asp-validation-for="Email" class="sa-sub" style="color:#e11d48;"></span>
+                            </div>
+
+                            <div>
+                                <div class="sa-sub" style="font-weight:800; color:#334155;">RNC</div>
+                                <input class="sa-input" asp-for="RNC"
+                                       placeholder="Ej. 1-31-12345-6"
+                                       style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                                <span asp-validation-for="RNC" class="sa-sub" style="color:#e11d48;"></span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:12px;">
+                            <div class="sa-sub" style="font-weight:800; color:#334155;">Contacto Responsable</div>
+                            <input class="sa-input" asp-for="ContactoResponsable"
+                                   placeholder="Ej. Juan Pérez (Encargado)"
+                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                            <span asp-validation-for="ContactoResponsable" class="sa-sub" style="color:#e11d48;"></span>
+                        </div>
+                    </div>
+
+                    <!-- =========================
+                         SUSCRIPCIÓN (OPCIONAL)
+                    ========================== -->
+                    <div class="sa-card sa-card-pad" style="background:#ffffff;">
+                        <div class="sa-sub" style="font-weight:900; color:#0f172a; margin-bottom:10px;">
+                            Configuración de suscripción (opcional)
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                            <div>
+                                <div class="sa-sub" style="font-weight:800; color:#334155;">Fecha Inicio Plan</div>
+                                <input class="sa-input" asp-for="FechaInicioPlan" type="date"
+                                       style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                                <span asp-validation-for="FechaInicioPlan" class="sa-sub" style="color:#e11d48;"></span>
+                                <div class="sa-sub" style="margin-top:6px; color:#64748b;">
+                                    Si lo dejas vacío, el sistema pondrá la fecha de hoy.
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="sa-sub" style="font-weight:800; color:#334155;">Fecha Fin Plan</div>
+                                <input class="sa-input" asp-for="FechaFinPlan" type="date"
+                                       style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                                <span asp-validation-for="FechaFinPlan" class="sa-sub" style="color:#e11d48;"></span>
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px;">
+                            <div>
+                                <div class="sa-sub" style="font-weight:800; color:#334155;">Último Pago</div>
+                                <input class="sa-input" asp-for="UltimoPago" type="date"
+                                       style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                                <span asp-validation-for="UltimoPago" class="sa-sub" style="color:#e11d48;"></span>
+                            </div>
+
+                            <div>
+                                <div class="sa-sub" style="font-weight:800; color:#334155;">Próximo Cobro</div>
+                                <input class="sa-input" asp-for="ProximoCobro" type="date"
+                                       style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+                                <span asp-validation-for="ProximoCobro" class="sa-sub" style="color:#e11d48;"></span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:12px; display:flex; align-items:center; gap:10px;">
+                            <input asp-for="EsTrial" type="checkbox" style="width:18px; height:18px;" />
+                            <div class="sa-sub" style="font-weight:800; color:#334155;">Es Trial (Prueba)</div>
+                            <span asp-validation-for="EsTrial" class="sa-sub" style="color:#e11d48;"></span>
+                        </div>
+                    </div>
+
+                    <!-- =========================
+                         OBSERVACIONES
+                    ========================== -->
+                    <div class="sa-card sa-card-pad" style="background:#ffffff;">
+                        <div class="sa-sub" style="font-weight:900; color:#0f172a; margin-bottom:10px;">
+                            Observaciones (opcional)
+                        </div>
+
+                        <textarea class="sa-input" asp-for="Observaciones"
+                                  placeholder="Notas internas: condiciones especiales, acuerdos, etc."
+                                  rows="3"
+                                  style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0; resize:vertical;"></textarea>
+                        <span asp-validation-for="Observaciones" class="sa-sub" style="color:#e11d48;"></span>
+                    </div>
+
+                    <!-- =========================
+                         PLAN (AL FINAL)
+                    ========================== -->
+                    <div>
+                        <div class="sa-sub" style="font-weight:800; color:#334155; margin-bottom:8px;">
+                            Seleccionar Plan de Suscripción
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+                            @foreach (var p in (IEnumerable<Login.Domain.Entities.Plan>)ViewBag.Planes)
+                            {
+                                <label class="sa-card sa-card-pad" style="cursor:pointer;">
+                                    <input type="radio" name="PlanId" value="@p.Id" style="margin-right:8px;"
+                                    @(Model.PlanId == p.Id ? "checked" : "") />
+                                    <div style="font-weight:900;">@p.Nombre</div>
+                                    <div class="sa-sub">@p.MaxTiendas Tiendas<br />@p.MaxPilotos Pilotos</div>
+                                </label>
+                            }
+                        </div>
+
+                        <span asp-validation-for="PlanId" class="sa-sub" style="color:#e11d48;"></span>
+                    </div>
+
+                    <div class="sa-card sa-card-pad" style="background:#f8fafc;">
+                        <div class="sa-sub">Luego de crear el cliente, podrás crear su Gestor desde la tabla.</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="sa-modal-foot">
+                <a class="sa-btn" href="/SuperAdmin/Clientes">Cancelar</a>
+                <button class="sa-btn sa-btn-primary" type="submit">💾 Guardar Cliente</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/superadmin/crearcliente.js" asp-append-version="true"></script>
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@* 
+@model Login.ViewModels.SuperAdmin.ClienteAppCreateVm
+@{
+    Layout = "_LayoutSuperAdmin";
+    ViewData["Title"] = "Registrar Nuevo Cliente SaaS";
+    ViewData["PageTitle"] = "Registrar Nuevo Cliente SaaS";
+}
+
+<div class="sa-modal-backdrop" id="saModalCrearCliente">
+    <div class="sa-modal" role="dialog" aria-modal="true" aria-labelledby="saModalTitle">
+        <div class="sa-modal-head">
+            <div>
+                <h3 id="saModalTitle">Registrar Nuevo Cliente SaaS</h3>
+                <p>Crear una instancia para una nueva empresa de delivery.</p>
+            </div>
+
+            <a class="sa-modal-close" href="/SuperAdmin/Clientes" title="Cerrar">×</a>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="sa-card sa-card-pad" style="margin: 0 18px 12px; border-color:#fecdd3;">
+                <div class="sa-sub" style="color:#b91c1c; font-weight:800;">Revisa lo siguiente:</div>
+                <ul style="margin:8px 0 0 18px; color:#b91c1c;">
+                    @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <form method="post" action="/SuperAdmin/CrearCliente">
+            @Html.AntiForgeryToken()
+
+            <div class="sa-modal-body">
+                <div style="display:grid; gap:14px;">
+
                     <div>
                         <div class="sa-sub" style="font-weight:800; color:#334155;">Nombre de la Empresa</div>
                         <input class="sa-input" asp-for="NombreComercial"
@@ -100,3 +362,4 @@
     <partial name="_ValidationScriptsPartial" />
     <script src="~/js/superadmin/crearcliente.js" asp-append-version="true"></script>
 }
+ *@
