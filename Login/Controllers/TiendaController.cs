@@ -452,8 +452,12 @@ namespace Login.Controllers
                         OrdenId = o.Id,
                         NumeroOrdenA = o.NumeroOrdenA,
                         Estado = o.Estado.ToString(),
+                        EstadoNum = (int)o.Estado,
                         UsuarioFinal = o.UsuarioFinal.Nombre,
-                        CreatedAt = o.CreatedAt
+                        CreatedAt = o.CreatedAt,
+                        AssignedAt = o.AssignedAt,
+                        RecolectadaAt = o.RecolectadaAt,
+                        EntregadaAt = o.EntregadaAt
                     })
                     .ToListAsync()
             };
