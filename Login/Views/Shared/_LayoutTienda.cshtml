@@ -1,53 +1,56 @@
-﻿@{
-    var title = ViewData["Title"] as string ?? "PilotGo - Tienda";
+@{
+    var title = ViewData["Title"] as string ?? "PilotGo";
 }
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@title</title>
-
+    <title>@title — PilotGo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="~/css/tienda.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
 </head>
 <body class="tp-body">
-    <div class="tp-shell">
-        <aside class="tp-sidebar tp-sidebar-hover" id="tpSidebar">
+<div class="tp-shell">
 
+    <aside class="tp-sidebar" id="tpSidebar">
+        <partial name="_TiendaSidebar" />
+        <div class="tp-sidebar-foot">
+            <partial name="_TiendaUserBadge" />
+            <form asp-area="Identity" asp-page="/Account/Logout"
+                  asp-route-returnUrl="/Identity/Account/Login"
+                  method="post" class="tp-logout-form">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="tp-logout-btn">
+                    <span class="tp-item-ico">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                    </span>
+                    <span class="tp-item-lbl">Cerrar sesión</span>
+                </button>
+            </form>
+        </div>
+    </aside>
 
-            <partial name="_TiendaSidebar" />
+    <main class="tp-main">
+        <header class="tp-topbar">
+            <partial name="_TiendaTopbar" />
+        </header>
+        <section class="tp-content">
+            @RenderBody()
+        </section>
+    </main>
 
-            <div class="tp-sidebar-footer">
-                <partial name="_TiendaUserBadge" />
+</div>
 
-                <!-- ✅ Cerrar sesión -->
-                <form asp-area="Identity"
-                      asp-page="/Account/Logout"
-                      method="post"
-                      class="tp-logout-form">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="tp-logout-btn-full" title="Cerrar sesión">
-                        <span class="tp-logout-ico">⏻</span>
-                        <span>Cerrar sesión</span>
-                    </button>
-                </form>
-            </div>
-        </aside>
+<div id="tpModalHost"></div>
 
-        <main class="tp-main">
-            <header class="tp-topbar">
-                <partial name="_TiendaTopbar" />
-            </header>
-
-            <!-- ✅ Importante: contenido sin scroll aquí -->
-            <section class="tp-content">
-                @RenderBody()
-            </section>
-        </main>
-    </div>
-
-    <script src="~/js/tienda.js" asp-append-version="true"></script>
-    @RenderSection("Scripts", required: false)
+<script src="~/js/tienda.js" asp-append-version="true"></script>
+@RenderSection("Scripts", required: false)
 </body>
 </html>

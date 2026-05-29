@@ -1,33 +1,51 @@
-﻿@model Login.ViewModels.Tienda.UsuarioFinalDeleteVm
+@model Login.ViewModels.Tienda.UsuarioFinalDeleteVm
 @{
     Layout = "_LayoutTienda";
-    ViewData["Title"] = "Eliminar Usuario";
-    ViewData["PageTitle"] = "Eliminar Usuario";
+    ViewData["Title"] = "Eliminar Destinatario";
+    ViewData["PageTitle"] = "Eliminar Destinatario";
 }
 
 <div class="tp-page">
+    <div class="tp-scroll">
+        <div class="tp-form-page">
+            <div class="tp-form-center">
+                <div class="tp-card tp-card-pad tp-danger-card">
+                    <div class="tp-card-head">
+                        <div class="tp-card-title">¿Eliminar destinatario?</div>
+                        <div class="tp-card-sub">Esta acción no se puede deshacer. Si tiene órdenes asociadas, no se permitirá la eliminación.</div>
+                    </div>
 
-    <div class="tp-card tp-card-pad tp-danger-card">
-        <div class="tp-h2">¿Eliminar usuario final?</div>
-        <div class="tp-sub">Esto NO se puede deshacer. Si tiene órdenes, el sistema no lo dejará borrar.</div>
+                    <div class="tp-kv">
+                        <div class="tp-kv-row">
+                            <span class="tp-kv-key">Nombre</span>
+                            <span class="tp-kv-val">@Model.Nombre</span>
+                        </div>
+                        <div class="tp-kv-row">
+                            <span class="tp-kv-key">Teléfono</span>
+                            <span class="tp-kv-val">@Model.Telefono</span>
+                        </div>
+                        <div class="tp-kv-row">
+                            <span class="tp-kv-key">Dirección</span>
+                            <span class="tp-kv-val">@Model.DireccionUbicacion</span>
+                        </div>
+                    </div>
 
-        <div class="tp-divider"></div>
-
-        <div class="tp-kv">
-            <div><b>Nombre:</b> @Model.Nombre</div>
-            <div><b>Teléfono:</b> @Model.Telefono</div>
-            <div><b>Dirección:</b> @Model.DireccionUbicacion</div>
-        </div>
-
-        <div class="tp-form-actions">
-            <form method="post" asp-action="EliminarUsuarioFinalConfirmado" style="margin:0;">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="id" value="@Model.Id" />
-                <button class="tp-btn tp-btn-danger" type="submit">Sí, eliminar</button>
-            </form>
-
-            <a class="tp-btn tp-btn-ghost" asp-action="UsuariosFinales">Cancelar</a>
+                    <div class="tp-form-actions">
+                        <form method="post" asp-action="EliminarUsuarioFinalConfirmado" style="margin:0;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button class="tp-btn tp-btn-danger-solid" type="submit">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                                    <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                                </svg>
+                                Sí, eliminar
+                            </button>
+                        </form>
+                        <a class="tp-btn tp-btn-ghost" asp-action="UsuariosFinales">Cancelar</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-
 </div>

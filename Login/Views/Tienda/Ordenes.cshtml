@@ -1,4 +1,4 @@
-﻿@model Login.ViewModels.Tienda.OrdenesTiendaVm
+@model Login.ViewModels.Tienda.OrdenesTiendaVm
 @{
     Layout = "_LayoutTienda";
     ViewData["Title"] = "Vista General";
@@ -6,180 +6,170 @@
 
     var ordenes = Model?.Ordenes ?? new List<Login.ViewModels.Tienda.OrdenTiendaRowVm>();
 
-    int total = ordenes.Count;
+    int enProceso  = ordenes.Count(x => x.EstadoNum == 2);
+    int enRuta     = ordenes.Count(x => x.EstadoNum == 3);
+    int entregados = ordenes.Count(x => x.EstadoNum == 4 && x.CreatedAt.Date == DateTime.UtcNow.Date);
 
-    int enProceso = ordenes.Count(x =>
-        (x.Estado ?? "").ToLower().Contains("recolect") ||
-        (x.Estado ?? "").ToLower().Contains("proceso"));
-
-    int enRuta = ordenes.Count(x =>
-        (x.Estado ?? "").ToLower().Contains("ruta"));
-
-    int entregadosHoy = ordenes.Count(x =>
-        (x.Estado ?? "").ToLower().Contains("entreg") &&
-        x.CreatedAt.Date == DateTime.UtcNow.Date
-    );
+    string Pc(int n) => n switch { 2 => "st-2", 3 => "st-3", 4 => "st-4", 5 => "st-5", _ => "st-1" };
+    string Pt(int n) => n switch { 1 => "Pendiente", 2 => "Asignada", 3 => "En ruta", 4 => "Entregada", 5 => "Incidente", _ => "—" };
 }
 
 <div class="tp-page">
 
-    <!-- ✅ ZONA FIJA (NO SCROLL) -->
     <div class="tp-sticky">
 
         @if (ViewBag.Ok != null)
         {
             <div class="tp-alert tp-alert-ok">
-                <span class="tp-alert-icon">✅</span>
+                <span class="tp-alert-ico">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </span>
                 <div>@ViewBag.Ok</div>
             </div>
         }
-
         @if (ViewBag.Error != null)
         {
             <div class="tp-alert tp-alert-bad">
-                <span class="tp-alert-icon">⚠️</span>
+                <span class="tp-alert-ico">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </span>
                 <div>@ViewBag.Error</div>
             </div>
         }
 
-        <div class="tp-cards">
-            <div class="tp-card tp-card-stat">
-                <div class="tp-card-stat-head">
-                    <div class="tp-card-stat-title">EN PROCESO / RECOLECTANDO</div>
-                    <div class="tp-chip tp-chip-warn">⏳</div>
+        <div class="tp-stats">
+            <div class="tp-stat">
+                <div class="tp-stat-ico amber">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
                 </div>
-                <div class="tp-card-stat-value">@enProceso</div>
+                <div>
+                    <div class="tp-stat-val">@enProceso</div>
+                    <div class="tp-stat-lbl">Asignadas</div>
+                </div>
             </div>
-
-            <div class="tp-card tp-card-stat">
-                <div class="tp-card-stat-head">
-                    <div class="tp-card-stat-title">EN RUTA</div>
-                    <div class="tp-chip tp-chip-blue">🛵</div>
+            <div class="tp-stat">
+                <div class="tp-stat-ico blue">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                        <rect x="1" y="3" width="15" height="13" rx="1"/>
+                        <path d="M16 8h4l3 5v3h-7V8z"/>
+                        <circle cx="5.5" cy="18.5" r="2.5"/>
+                        <circle cx="18.5" cy="18.5" r="2.5"/>
+                    </svg>
                 </div>
-                <div class="tp-card-stat-value">@enRuta</div>
+                <div>
+                    <div class="tp-stat-val">@enRuta</div>
+                    <div class="tp-stat-lbl">En ruta</div>
+                </div>
             </div>
-
-            <div class="tp-card tp-card-stat">
-                <div class="tp-card-stat-head">
-                    <div class="tp-card-stat-title">ENTREGADOS HOY</div>
-                    <div class="tp-chip tp-chip-ok">✔</div>
+            <div class="tp-stat">
+                <div class="tp-stat-ico green">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
                 </div>
-                <div class="tp-card-stat-value">@entregadosHoy</div>
+                <div>
+                    <div class="tp-stat-val">@entregados</div>
+                    <div class="tp-stat-lbl">Entregadas hoy</div>
+                </div>
             </div>
         </div>
 
         <div class="tp-section-head">
             <div>
-                <h2 class="tp-h2">Envíos Activos</h2>
-                <div class="tp-sub">Seguimiento por orden (A) y estado: Recolectando → En ruta → Entregado.</div>
+                <div class="tp-section-title">Órdenes activas</div>
+                <div class="tp-section-sub">Seguimiento en tiempo real de cada envío</div>
             </div>
-
-            <div class="tp-actions">
-                <a class="tp-btn tp-btn-ghost" asp-action="CrearOrden">＋ Nueva Orden</a>
-                <a class="tp-link" asp-action="Ordenes">Ver todos</a>
-            </div>
+            <a class="tp-btn tp-btn-primary tp-btn-sm" asp-action="CrearOrden">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                Nueva orden
+            </a>
         </div>
-
     </div>
 
-    <!-- ✅ SOLO AQUÍ SE SCROLLEA -->
     <div class="tp-scroll">
         <div class="tp-list">
             @if (!ordenes.Any())
             {
                 <div class="tp-empty">
-                    <div class="tp-empty-title">No hay envíos todavía.</div>
-                    <div class="tp-empty-sub">Crea una orden y aquí verás el seguimiento.</div>
-                    <a class="tp-btn tp-btn-primary" asp-action="CrearOrden">Crear primera orden</a>
+                    <div class="tp-empty-ico">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                            <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                        </svg>
+                    </div>
+                    <div class="tp-empty-title">Sin órdenes aún</div>
+                    <div class="tp-empty-sub">Crea la primera orden para comenzar el seguimiento.</div>
+                    <a class="tp-btn tp-btn-primary" asp-action="CrearOrden">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                        Crear orden
+                    </a>
                 </div>
             }
             else
             {
                 foreach (var o in ordenes)
                 {
-                    var estado = (o.Estado ?? "").Trim();
-                    var s = estado.ToLower();
-
-                    var pillClass = "tp-pill tp-pill-gray";
-                    var leftBarClass = "tp-leftbar tp-leftbar-gray";
-                    var pillText = estado;
-
-                    if (s.Contains("recolect") || s.Contains("proceso"))
-                    {
-                        pillClass = "tp-pill tp-pill-warn";
-                        leftBarClass = "tp-leftbar tp-leftbar-warn";
-                        pillText = "Recolectando / En espera";
-                    }
-                    else if (s.Contains("ruta"))
-                    {
-                        pillClass = "tp-pill tp-pill-blue";
-                        leftBarClass = "tp-leftbar tp-leftbar-blue";
-                        pillText = "En ruta";
-                    }
-                    else if (s.Contains("entreg"))
-                    {
-                        pillClass = "tp-pill tp-pill-ok";
-                        leftBarClass = "tp-leftbar tp-leftbar-ok";
-                        pillText = "Entregado";
-                    }
-
-                    <div class="tp-card tp-card-order">
-                        <div class="@leftBarClass"></div>
-
-                        <div class="tp-order-body">
-                            <div class="tp-order-top">
-                                <div class="tp-order-meta">
-                                    <div class="tp-order-code">#ORD-@o.NumeroOrdenA</div>
-                                    <span class="@pillClass">@pillText</span>
-                                </div>
-
-                                <div class="tp-order-time">
-                                    @o.CreatedAt.ToLocalTime().ToString("hh:mm tt")
-                                </div>
+                    var pc = Pc(o.EstadoNum);
+                    <div class="tp-ocard @pc">
+                        <div class="tp-ocard-body">
+                            <div class="tp-ocard-top">
+                                <span class="tp-ocard-id">#@o.NumeroOrdenA</span>
+                                <span class="tp-ocard-time">@o.CreatedAt.ToLocalTime().ToString("dd/MM hh:mm tt")</span>
                             </div>
-
-                            <div class="tp-order-title">@o.UsuarioFinal</div>
-
-                            <div class="tp-order-sub">
-                                Creada: @o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt")
-                            </div>
+                            <div class="tp-ocard-name">@o.UsuarioFinal</div>
 
                             @if (o.EstadoNum >= 2)
                             {
                                 @* EstadoNum: 2=Asignada(33%), 3=Recolectada(67%), 4+=Entregada(100%) *@
-                                var pct = o.EstadoNum >= 4 ? 100
-                                        : o.EstadoNum >= 3 ? 67
-                                        : 33;
-
-                                <div class="tp-tracking">
-                                    <div class="tp-tracking-bar-wrap">
-                                        <div class="tp-tracking-bar-fill" style="width:@(pct)%"></div>
+                                var pct = o.EstadoNum >= 4 ? "p100" : o.EstadoNum >= 3 ? "p67" : "p33";
+                                <div class="tp-track">
+                                    <div class="tp-track-bar">
+                                        <div class="tp-track-fill @pct"></div>
                                     </div>
-                                    <div class="tp-tracking-steps">
-                                        <div class="tp-tracking-step @(o.EstadoNum >= 2 ? "tp-step-done" : "tp-step-pending")">
-                                            <span class="tp-step-icon">🛵</span>
-                                            <span class="tp-step-label">Asignado</span>
-                                            <span class="tp-step-time">@(o.AssignedAt.HasValue ? o.AssignedAt.Value.ToLocalTime().ToString("hh:mm tt") : "—")</span>
+                                    <div class="tp-track-steps">
+                                        <div class="tp-track-step s-assign @(o.EstadoNum >= 2 ? "done" : "")">
+                                            <div class="tp-track-ico">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                    <circle cx="12" cy="8" r="4"/>
+                                                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                                                </svg>
+                                            </div>
+                                            <div class="tp-track-lbl">Asignado</div>
+                                            <div class="tp-track-time">@(o.AssignedAt.HasValue ? o.AssignedAt.Value.ToLocalTime().ToString("hh:mm tt") : "—")</div>
                                         </div>
-                                        <div class="tp-tracking-step @(o.EstadoNum >= 3 ? "tp-step-done" : "tp-step-pending")">
-                                            <span class="tp-step-icon">📦</span>
-                                            <span class="tp-step-label">Recogido</span>
-                                            <span class="tp-step-time">@(o.RecolectadaAt.HasValue ? o.RecolectadaAt.Value.ToLocalTime().ToString("hh:mm tt") : "—")</span>
+                                        <div class="tp-track-step s-pick @(o.EstadoNum >= 3 ? "done" : "")">
+                                            <div class="tp-track-ico">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                                </svg>
+                                            </div>
+                                            <div class="tp-track-lbl">Recogido</div>
+                                            <div class="tp-track-time">@(o.RecolectadaAt.HasValue ? o.RecolectadaAt.Value.ToLocalTime().ToString("hh:mm tt") : "—")</div>
                                         </div>
-                                        <div class="tp-tracking-step @(o.EstadoNum >= 4 ? "tp-step-done" : "tp-step-pending")">
-                                            <span class="tp-step-icon">✅</span>
-                                            <span class="tp-step-label">Entregado</span>
-                                            <span class="tp-step-time">@(o.EntregadaAt.HasValue ? o.EntregadaAt.Value.ToLocalTime().ToString("hh:mm tt") : "—")</span>
+                                        <div class="tp-track-step s-done @(o.EstadoNum >= 4 ? "done" : "")">
+                                            <div class="tp-track-ico">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                                                </svg>
+                                            </div>
+                                            <div class="tp-track-lbl">Entregado</div>
+                                            <div class="tp-track-time">@(o.EntregadaAt.HasValue ? o.EntregadaAt.Value.ToLocalTime().ToString("hh:mm tt") : "—")</div>
                                         </div>
                                     </div>
                                 </div>
                             }
                         </div>
-
-                        <div class="tp-order-actions">
-                            <a href="javascript:void(0)" data-open-qr data-orden-id="@o.OrdenId">
-                                Ver QR y Códigos →
-                            </a>
+                        <div class="tp-ocard-side">
+                            <span class="tp-pill @pc">@Pt(o.EstadoNum)</span>
+                            <button class="tp-qr-btn" type="button" data-open-qr data-orden-id="@o.OrdenId">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h1M17 14v1M20 17v1M17 20h1M20 20v1"/>
+                                </svg>
+                                Ver QR
+                            </button>
                         </div>
                     </div>
                 }
@@ -187,70 +177,5 @@
         </div>
     </div>
 </div>
-
-<style>
-    .tp-tracking {
-        margin-top: 10px;
-        padding-top: 10px;
-        border-top: 1px solid rgba(255,255,255,.06);
-    }
-
-    .tp-tracking-bar-wrap {
-        background: #374151;
-        border-radius: 4px;
-        height: 5px;
-        overflow: hidden;
-        margin-bottom: 8px;
-    }
-
-    .tp-tracking-bar-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #3b82f6, #60a5fa);
-        border-radius: 4px;
-        transition: width .4s ease;
-    }
-
-    .tp-tracking-steps {
-        display: flex;
-        justify-content: space-between;
-    }
-
-    .tp-tracking-step {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2px;
-        flex: 1;
-    }
-
-    .tp-step-icon {
-        font-size: 13px;
-    }
-
-    .tp-step-label {
-        font-size: 8px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .4px;
-    }
-
-    .tp-step-time {
-        font-size: 8px;
-    }
-
-    .tp-step-done .tp-step-label,
-    .tp-step-done .tp-step-time {
-        color: #60a5fa;
-    }
-
-    .tp-step-pending {
-        opacity: .38;
-    }
-
-    .tp-step-pending .tp-step-label,
-    .tp-step-pending .tp-step-time {
-        color: #9ca3af;
-    }
-</style>
 
 <div id="tpModalHost"></div>

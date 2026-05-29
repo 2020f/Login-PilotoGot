@@ -1,55 +1,61 @@
-﻿@model Login.ViewModels.Tienda.UsuarioFinalCreateVm
+@model Login.ViewModels.Tienda.UsuarioFinalCreateVm
 
 <div class="tp-modal-backdrop" id="tpModalUsuarioFinal" style="display:none;">
     <div class="tp-modal">
         <div class="tp-modal-head">
             <div>
-                <div class="tp-modal-title">Registrar Usuario Final (Cliente)</div>
-                <div class="tp-modal-sub">Completa los datos del destinatario.</div>
+                <div class="tp-modal-title">Nuevo destinatario</div>
+                <div class="tp-modal-sub">Completa los datos del cliente final.</div>
             </div>
-            <button class="tp-modal-close" type="button" data-tp-close>×</button>
+            <button class="tp-modal-close" type="button" data-tp-close aria-label="Cerrar">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
         </div>
 
         <form method="post" asp-action="CrearUsuarioFinal" class="tp-modal-body">
             @Html.AntiForgeryToken()
 
-            <div class="tp-form">
-                <div class="tp-field">
-                    <label class="tp-label">NOMBRE COMPLETO</label>
-                    <input class="tp-input" asp-for="Nombre" placeholder="Ej. Juan Pérez" />
-                    <span class="tp-val" asp-validation-for="Nombre"></span>
-                </div>
+            <div class="tp-field">
+                <label class="tp-label">Nombre completo</label>
+                <input class="tp-input" asp-for="Nombre" placeholder="Ej. Juan Pérez" />
+                <span class="tp-val" asp-validation-for="Nombre"></span>
+            </div>
 
-                <div class="tp-field">
-                    <label class="tp-label">TELÉFONO</label>
-                    <input class="tp-input" asp-for="Telefono" placeholder="+1 (809) 000-0000" />
-                    <span class="tp-val" asp-validation-for="Telefono"></span>
-                </div>
+            <div class="tp-field">
+                <label class="tp-label">Teléfono</label>
+                <input class="tp-input" asp-for="Telefono" placeholder="+1 (809) 000-0000" />
+                <span class="tp-val" asp-validation-for="Telefono"></span>
+            </div>
 
-                <div class="tp-box tp-box-blue">
-                    <div class="tp-box-title">📍 UBICACIÓN DE ENTREGA (OBLIGATORIO)</div>
+            <div class="tp-field">
+                <label class="tp-label">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:inline;vertical-align:middle;margin-right:3px;">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    Dirección de entrega
+                </label>
+                <input class="tp-input" asp-for="DireccionUbicacion"
+                       placeholder="Calle, número, referencia..." />
+                <span class="tp-val" asp-validation-for="DireccionUbicacion"></span>
+            </div>
 
-                    <input class="tp-input" asp-for="DireccionUbicacion"
-                           placeholder="Dirección escrita (Calle, Casa, Referencia)" />
-                    <span class="tp-val" asp-validation-for="DireccionUbicacion"></span>
-
-                    <div class="tp-map-mock">
-                        <div class="tp-map-btn">Haga clic para cargar el Pin GPS</div>
-                        <div class="tp-pin">📍</div>
-                    </div>
-                </div>
-
-                <div class="tp-field">
-                    <label class="tp-label">NOTAS (OPCIONAL)</label>
-                    <textarea class="tp-textarea" asp-for="Notas" rows="3"
-                              placeholder="Ej: puerta azul, llamar al llegar..."></textarea>
-                    <span class="tp-val" asp-validation-for="Notas"></span>
-                </div>
+            <div class="tp-field">
+                <label class="tp-label">Notas (opcional)</label>
+                <textarea class="tp-textarea" asp-for="Notas" rows="2"
+                          placeholder="Ej. puerta azul, llamar al llegar..."></textarea>
             </div>
 
             <div class="tp-modal-foot">
                 <button class="tp-btn tp-btn-ghost" type="button" data-tp-close>Cancelar</button>
-                <button class="tp-btn tp-btn-dark" type="submit">💾 Guardar Usuario</button>
+                <button class="tp-btn tp-btn-primary" type="submit">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    Guardar
+                </button>
             </div>
         </form>
     </div>

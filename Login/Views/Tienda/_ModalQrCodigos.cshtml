@@ -1,68 +1,83 @@
-﻿@model Login.ViewModels.Tienda.QrCodigosVm
+@model Login.ViewModels.Tienda.QrCodigosVm
 
 <div class="pg-overlay" id="pgQrOverlay" role="dialog" aria-modal="true">
-    <div class="pg-modal-wrap">
+    <div class="qr-modal">
 
-        <div class="qr-modal">
+        <div class="qr-head">
+            <div>
+                <div class="qr-head-id">Orden de entrega</div>
+                <div class="qr-head-num">#@Model.NumeroOrdenA</div>
+            </div>
+            <button type="button" class="qr-close" aria-label="Cerrar">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
 
-            <!-- HEADER -->
-            <div class="qr-header">
-                <div class="qr-title">
-                    ORDEN DE ENTREGA (A)
-                    <h2>#ORD-@Model.NumeroOrdenA</h2>
+        <div class="qr-steps">
+            <div class="qr-step @(Model.Estado is "Creada" or "Asignada" or "Recolectada" ? "active" : "")">Recolectando</div>
+            <div class="qr-step @(Model.Estado == "Recolectada" ? "active" : "")">En ruta</div>
+            <div class="qr-step @(Model.Estado == "Entregada" ? "active" : "")">Entregado</div>
+        </div>
+
+        <div class="qr-body">
+            <div class="qr-col">
+                <div class="qr-tag b">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                    </svg>
+                    B — Piloto
                 </div>
-
-                <button type="button" class="qr-close" aria-label="Cerrar">✕</button>
+                <div class="qr-col-desc">El piloto escanea este QR para iniciar y confirmar la recolección.</div>
+                <div class="qr-img-box">
+                    <img src="/Qr/Generar?codigo=@Model.CodigoB" alt="QR Piloto" />
+                </div>
             </div>
 
-            <!-- PROGRESO -->
-            <div class="qr-steps">
-                <div class="step @(Model.Estado == "Recolectada" || Model.Estado == "Asignada" || Model.Estado == "Creada" ? "active" : "")">
-                    Recolectando
+            <div class="qr-col">
+                <div class="qr-tag c">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    C — Cliente
                 </div>
-
-                <div class="step @(Model.Estado == "Recolectada" || Model.Estado == "Asignada" ? "" : "") @(Model.Estado == "Asignada" ? "active" : "")">
-                    En Ruta
-                </div>
-
-                <div class="step @(Model.Estado == "Entregada" ? "active" : "")">
-                    Entregado
-                </div>
-            </div>
-
-            <!-- CUERPO (2 columnas reales) -->
-            <div class="qr-body">
-
-                <!-- PILOTO -->
-                <div class="qr-card">
-                    <h4><span class="tag">B</span> Para el Piloto</h4>
-                    <p>El piloto debe escanear esto para iniciar la ruta.</p>
-
-                    <div class="qr-box">
-                        <img src="/Qr/Generar?codigo=@Model.CodigoB" alt="QR Piloto" />
+                <div class="qr-col-desc">Entregar este código al destinatario para confirmar la entrega.</div>
+                <div class="qr-code-box">
+                    <div class="qr-code-val">@Model.CodigoC</div>
+                    <div class="qr-code-hint">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        Código de seguridad único
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- CLIENTE FINAL -->
-                <div class="qr-card">
-                    <h4><span class="tag blue">C</span> Para Usuario Final</h4>
-                    <p>Entregar este código al usuario final para recibir el paquete.</p>
-
-                    <div class="codigo-final">
-                        @Model.CodigoC
-                    </div>
-
-                    <small>🔒 Código de seguridad único</small>
+        <div class="qr-foot">
+            <div class="qr-foot-item">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                <div>
+                    <span class="qr-foot-lbl">Destino</span>
+                    @Model.DireccionUbicacion
                 </div>
-
             </div>
-
-            <!-- FOOTER -->
-            <div class="qr-footer">
-                <strong>Destino:</strong> @Model.DireccionUbicacion <br />
-                <strong>Descripción:</strong> @Model.Descripcion
-            </div>
-
+            @if (!string.IsNullOrWhiteSpace(Model.Descripcion))
+            {
+                <div class="qr-foot-item">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <div>
+                        <span class="qr-foot-lbl">Nota</span>
+                        @Model.Descripcion
+                    </div>
+                </div>
+            }
         </div>
 
     </div>

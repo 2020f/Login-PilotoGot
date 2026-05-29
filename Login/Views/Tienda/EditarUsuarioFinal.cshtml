@@ -1,72 +1,84 @@
-﻿@model Login.ViewModels.Tienda.UsuarioFinalEditVm
+@model Login.ViewModels.Tienda.UsuarioFinalEditVm
 @{
     Layout = "_LayoutTienda";
-    ViewData["Title"] = "Editar Usuario Final";
-    ViewData["PageTitle"] = "Editar Usuario Final";
+    ViewData["Title"] = "Editar Destinatario";
+    ViewData["PageTitle"] = "Editar Destinatario";
 }
 
 <div class="tp-page">
+    <div class="tp-scroll">
+        <div class="tp-form-page">
+            <div class="tp-form-center">
 
-    @if (!string.IsNullOrWhiteSpace(ViewBag.Ok as string))
-    {
-        <div class="tp-alert tp-alert-ok"><span class="tp-alert-icon">✅</span><div>@ViewBag.Ok</div></div>
-    }
-    @if (!string.IsNullOrWhiteSpace(ViewBag.Error as string))
-    {
-        <div class="tp-alert tp-alert-bad"><span class="tp-alert-icon">⚠️</span><div>@ViewBag.Error</div></div>
-    }
+                @if (!string.IsNullOrWhiteSpace(ViewBag.Ok as string))
+                {
+                    <div class="tp-alert tp-alert-ok">
+                        <span class="tp-alert-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+                        <div>@ViewBag.Ok</div>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(ViewBag.Error as string))
+                {
+                    <div class="tp-alert tp-alert-bad">
+                        <span class="tp-alert-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+                        <div>@ViewBag.Error</div>
+                    </div>
+                }
 
-    <div class="tp-card tp-card-pad tp-form-card">
-        <div class="tp-form-head">
-            <div class="tp-h2">Editar Usuario</div>
-            <div class="tp-sub">Actualiza datos del destinatario.</div>
+                <div class="tp-card tp-card-pad">
+                    <div class="tp-card-head">
+                        <div class="tp-card-title">Editar destinatario</div>
+                        <div class="tp-card-sub">Actualiza los datos del cliente final.</div>
+                    </div>
+
+                    <form method="post" asp-action="EditarUsuarioFinal">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="Id" />
+
+                        <div class="tp-grid-2">
+                            <div class="tp-field">
+                                <label class="tp-label">Nombre completo</label>
+                                <input class="tp-input" asp-for="Nombre" />
+                                <span class="tp-val" asp-validation-for="Nombre"></span>
+                            </div>
+                            <div class="tp-field">
+                                <label class="tp-label">Teléfono</label>
+                                <input class="tp-input" asp-for="Telefono" />
+                                <span class="tp-val" asp-validation-for="Telefono"></span>
+                            </div>
+                        </div>
+
+                        <div class="tp-field">
+                            <label class="tp-label">Dirección / Ubicación</label>
+                            <input class="tp-input" asp-for="DireccionUbicacion" />
+                            <span class="tp-val" asp-validation-for="DireccionUbicacion"></span>
+                        </div>
+
+                        <div class="tp-field">
+                            <label class="tp-label">Notas (opcional)</label>
+                            <textarea class="tp-textarea" asp-for="Notas" rows="3"></textarea>
+                        </div>
+
+                        <div class="tp-field">
+                            <label class="tp-label">Estado</label>
+                            <select class="tp-select" asp-for="Activo">
+                                <option value="true">Activo</option>
+                                <option value="false">Inactivo</option>
+                            </select>
+                        </div>
+
+                        <div class="tp-form-actions">
+                            <button class="tp-btn tp-btn-primary" type="submit">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                Guardar
+                            </button>
+                            <a class="tp-btn tp-btn-ghost" asp-action="UsuariosFinales">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-
-        <form method="post" asp-action="EditarUsuarioFinal" class="tp-form">
-            @Html.AntiForgeryToken()
-            <input type="hidden" asp-for="Id" />
-
-            <div class="tp-grid tp-grid-2">
-                <div class="tp-field">
-                    <label class="tp-label">Nombre</label>
-                    <input class="tp-input" asp-for="Nombre" />
-                    <span class="tp-val" asp-validation-for="Nombre"></span>
-                </div>
-
-                <div class="tp-field">
-                    <label class="tp-label">Teléfono</label>
-                    <input class="tp-input" asp-for="Telefono" />
-                    <span class="tp-val" asp-validation-for="Telefono"></span>
-                </div>
-            </div>
-
-            <div class="tp-field">
-                <label class="tp-label">Dirección / Ubicación</label>
-                <input class="tp-input" asp-for="DireccionUbicacion" />
-                <span class="tp-val" asp-validation-for="DireccionUbicacion"></span>
-            </div>
-
-            <div class="tp-field">
-                <label class="tp-label">Notas</label>
-                <textarea class="tp-textarea" asp-for="Notas" rows="3"></textarea>
-                <span class="tp-val" asp-validation-for="Notas"></span>
-            </div>
-
-            <div class="tp-field">
-                <label class="tp-label">Activo</label>
-                <select class="tp-select" asp-for="Activo">
-                    <option value="true">Sí</option>
-                    <option value="false">No</option>
-                </select>
-            </div>
-
-            <div class="tp-form-actions">
-                <button class="tp-btn tp-btn-dark" type="submit">Guardar</button>
-                <a class="tp-btn tp-btn-ghost" asp-action="UsuariosFinales">Volver</a>
-            </div>
-        </form>
     </div>
-
 </div>
 
 @section Scripts {

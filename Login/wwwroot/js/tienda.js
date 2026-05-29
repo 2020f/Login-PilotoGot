@@ -1,134 +1,113 @@
-﻿(function () {
-    // Helper modal (lo usaremos en parciales)
-    window.tpModal = {
-        open: (id) => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.style.display = "flex";
-            document.body.style.overflow = "hidden";
-        },
-        close: (id) => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.style.display = "none";
-            document.body.style.overflow = "";
-        }
-    };
-
-    // Cerrar por data-tp-close
-    document.addEventListener("click", (e) => {
-        const btn = e.target.closest("[data-tp-close]");
-        if (!btn) return;
-
-        const modalId = btn.getAttribute("data-tp-close");
-        if (modalId) window.tpModal.close(modalId);
-    });
-})();
-
-
 (function () {
-    // ===== Modales =====
-    function openModal(sel) {
-        const el = document.querySelector(sel);
-        if (!el) return;
-        el.style.display = "grid";
-        document.body.style.overflow = "hidden";
-    }
+  'use strict';
 
-    function closeModal(el) {
-        if (!el) return;
-        el.style.display = "none";
-        document.body.style.overflow = "";
-    }
+  /* ── Sidebar toggle ─────────────────────────────────── */
+  const sidebar = document.getElementById('tpSidebar');
+  const toggleBtn = document.getElementById('tpToggle');
+  const STORAGE_KEY = 'tp_sidebar_collapsed';
 
-    document.addEventListener("click", function (e) {
-        const openBtn = e.target.closest("[data-tp-open]");
-        if (openBtn) {
-            const sel = openBtn.getAttribute("data-tp-open");
-            openModal(sel);
-            return;
-        }
+  function applyCollapsed(collapsed) {
+    if (!sidebar) return;
+    sidebar.classList.toggle('collapsed', collapsed);
+    try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch (_) {}
+  }
 
-        const closeBtn = e.target.closest("[data-tp-close]");
-        if (closeBtn) {
-            const modal = closeBtn.closest(".tp-modal-backdrop");
-            closeModal(modal);
-            return;
-        }
+  if (sidebar) {
+    const saved = (() => { try { return localStorage.getItem(STORAGE_KEY); } catch (_) { return null; } })();
+    if (saved === '1') sidebar.classList.add('collapsed');
+  }
 
-        // click fuera del modal -> cerrar
-        const backdrop = e.target.classList.contains("tp-modal-backdrop") ? e.target : null;
-        if (backdrop) closeModal(backdrop);
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      applyCollapsed(!sidebar.classList.contains('collapsed'));
     });
+  }
 
-    document.addEventListener("keydown", function (e) {
-        if (e.key === "Escape") {
-            document.querySelectorAll(".tp-modal-backdrop").forEach(m => closeModal(m));
-        }
-    });
+  /* ── Modal system ────────────────────────────────────── */
+  function openModal(el) {
+    if (!el) return;
+    el.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
 
-    // ===== Buscador Usuarios =====
-    const search = document.getElementById("tpUsuariosSearch");
-    const grid = document.getElementById("tpUsuariosGrid");
+  function closeModal(el) {
+    if (!el) return;
+    el.style.display = 'none';
+    document.body.style.overflow = '';
+  }
 
-    if (search && grid) {
-        search.addEventListener("input", function () {
-            const q = (search.value || "").toLowerCase().trim();
-            const cards = grid.querySelectorAll("[data-search]");
-            let shown = 0;
+  function closeAllModals() {
+    document.querySelectorAll('.tp-modal-backdrop').forEach(closeModal);
+  }
 
-            cards.forEach(c => {
-                const hay = (c.getAttribute("data-search") || "");
-                const ok = hay.includes(q);
-                c.style.display = ok ? "" : "none";
-                if (ok) shown++;
-            });
-        });
+  document.addEventListener('click', function (e) {
+    // Open
+    const openBtn = e.target.closest('[data-tp-open]');
+    if (openBtn) {
+      const sel = openBtn.getAttribute('data-tp-open');
+      openModal(document.querySelector(sel));
+      return;
     }
-})();
 
+    // Close via button
+    const closeBtn = e.target.closest('[data-tp-close]');
+    if (closeBtn) {
+      const modal = closeBtn.closest('.tp-modal-backdrop');
+      closeModal(modal);
+      return;
+    }
 
-document.addEventListener("click", async (e) => {
-    const link = e.target.closest("[data-open-qr]");
+    // Close via backdrop click
+    if (e.target.classList.contains('tp-modal-backdrop')) {
+      closeModal(e.target);
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      closeAllModals();
+      document.getElementById('pgQrOverlay')?.remove();
+    }
+  });
+
+  /* ── Search / filter ─────────────────────────────────── */
+  const search = document.getElementById('tpSearch');
+  const grid = document.getElementById('tpGrid');
+  if (search && grid) {
+    search.addEventListener('input', function () {
+      const q = search.value.toLowerCase().trim();
+      grid.querySelectorAll('[data-search]').forEach(c => {
+        const match = (c.getAttribute('data-search') || '').includes(q);
+        c.style.display = match ? '' : 'none';
+      });
+    });
+  }
+
+  /* ── QR modal (AJAX) ─────────────────────────────────── */
+  document.addEventListener('click', async function (e) {
+    const link = e.target.closest('[data-open-qr]');
     if (!link) return;
 
-    const ordenId = link.getAttribute("data-orden-id");
-    const host = document.getElementById("tpModalHost");
+    const ordenId = link.getAttribute('data-orden-id');
+    const host = document.getElementById('tpModalHost');
     if (!host) return;
 
-    const res = await fetch(`/Tienda/QrCodigos?ordenId=${ordenId}`, {
-        headers: { "X-Requested-With": "XMLHttpRequest" }
-    });
-
-    if (!res.ok) {
-        alert("No se pudo abrir el modal.");
-        return;
+    try {
+      const res = await fetch(`/Tienda/QrCodigos?ordenId=${ordenId}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      if (!res.ok) { alert('No se pudo cargar el modal.'); return; }
+      host.innerHTML = await res.text();
+    } catch (_) {
+      alert('Error de red al cargar el modal.');
     }
+  });
 
-    host.innerHTML = await res.text();
-});
-
-document.addEventListener("click", (e) => {
-    const close = e.target.closest("[data-tp-close]");
-    if (!close) return;
-
-    const modal = e.target.closest("[data-tp-modal]");
-    if (modal) modal.remove();
-});
-
-
-document.addEventListener("click", (e) => {
-    if (e.target.closest(".qr-close")) {
-        document.getElementById("pgQrOverlay")?.remove();
+  /* ── QR modal close ──────────────────────────────────── */
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('.qr-close') || e.target.id === 'pgQrOverlay') {
+      document.getElementById('pgQrOverlay')?.remove();
     }
+  });
 
-    if (e.target.id === "pgQrOverlay") {
-        e.target.remove();
-    }
-});
-
-document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-        document.getElementById("pgQrOverlay")?.remove();
-    }
-});
+})();

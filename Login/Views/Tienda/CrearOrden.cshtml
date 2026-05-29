@@ -1,81 +1,102 @@
-﻿@model Login.ViewModels.Tienda.CrearOrdenVm
+@model Login.ViewModels.Tienda.CrearOrdenVm
 @{
     Layout = "_LayoutTienda";
     ViewData["Title"] = "Nueva Orden";
-    ViewData["PageTitle"] = "Generar Nueva Orden";
+    ViewData["PageTitle"] = "Nueva Orden";
 }
 
 <div class="tp-page">
+    <div class="tp-scroll">
+        <div class="tp-form-page">
+            <div class="tp-form-center">
 
-    @if (!string.IsNullOrWhiteSpace(Model.Ok))
-    {
-        <div class="tp-alert tp-alert-ok">
-            <span class="tp-alert-icon">✅</span>
-            <div>@Model.Ok</div>
-        </div>
-    }
-    @if (!string.IsNullOrWhiteSpace(Model.Error))
-    {
-        <div class="tp-alert tp-alert-bad">
-            <span class="tp-alert-icon">⚠️</span>
-            <div>@Model.Error</div>
-        </div>
-    }
+                @if (!string.IsNullOrWhiteSpace(Model.Ok))
+                {
+                    <div class="tp-alert tp-alert-ok">
+                        <span class="tp-alert-ico">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                        </span>
+                        <div>@Model.Ok</div>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Error))
+                {
+                    <div class="tp-alert tp-alert-bad">
+                        <span class="tp-alert-ico">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        </span>
+                        <div>@Model.Error</div>
+                    </div>
+                }
 
-    <div class="tp-center">
-        <div class="tp-card tp-card-pad tp-order-form">
-            <div class="tp-form-head">
-                <div class="tp-h2">Generar Orden de Entrega</div>
-                <div class="tp-sub">Complete los datos para solicitar un piloto. El QR se generará automáticamente.</div>
+                <div class="tp-card tp-card-pad">
+                    <div class="tp-card-head">
+                        <div class="tp-card-title">Generar orden de entrega</div>
+                        <div class="tp-card-sub">Se generará un código QR (B) y un código de confirmación (C) automáticamente.</div>
+                    </div>
+
+                    <form method="post" asp-action="CrearOrdenPost">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ClienteAppId" />
+                        <input type="hidden" asp-for="TiendaId" />
+
+                        <div class="tp-form-steps">
+                            <div class="tp-step-block">
+                                <div class="tp-step-label-num">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                                    Paso 1 — Destinatario
+                                </div>
+                                <div class="tp-select-row">
+                                    <select class="tp-select" asp-for="UsuarioFinalId" asp-items="Model.UsuariosFinales">
+                                        <option value="">Seleccione un destinatario...</option>
+                                    </select>
+                                    <button class="tp-link-btn" type="button" data-tp-open="#tpModalUsuarioFinal">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                        Nuevo
+                                    </button>
+                                </div>
+                                <span class="tp-val" asp-validation-for="UsuarioFinalId"></span>
+                            </div>
+
+                            <div class="tp-step-block">
+                                <div class="tp-step-label-num">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                    Paso 2 — Nota del paquete
+                                </div>
+                                <textarea class="tp-textarea" asp-for="NotaPedido" rows="3"
+                                          placeholder="Ej. Caja mediana frágil, contiene electrónicos..."></textarea>
+                                <span class="tp-step-hint">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                    Los datos de la tienda se adjuntan automáticamente.
+                                </span>
+                                <span class="tp-val" asp-validation-for="NotaPedido"></span>
+                            </div>
+                        </div>
+
+                        <div class="tp-form-foot">
+                            <div class="tp-form-foot-hint">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+                                </svg>
+                                QR (B) + Código (C) generados al crear
+                            </div>
+                            <button class="tp-btn tp-btn-primary" type="submit">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                                Crear orden
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
             </div>
-
-            <div class="tp-divider"></div>
-
-            <form method="post" asp-action="CrearOrdenPost" class="tp-form">
-                @Html.AntiForgeryToken()
-
-                <input type="hidden" asp-for="ClienteAppId" />
-                <input type="hidden" asp-for="TiendaId" />
-
-                <div class="tp-step">
-                    <div class="tp-step-title">1. Seleccionar Usuario Final (Destinatario)</div>
-                    <div class="tp-step-row">
-                        <select class="tp-select" asp-for="UsuarioFinalId" asp-items="Model.UsuariosFinales">
-                            <option value="">Seleccione un usuario de la lista...</option>
-                        </select>
-
-                        <button class="tp-link-btn" type="button" data-tp-open="#tpModalUsuarioFinal">
-                            + Crear Nuevo
-                        </button>
-                    </div>
-                    <span class="tp-val" asp-validation-for="UsuarioFinalId"></span>
-                </div>
-
-                <div class="tp-step">
-                    <div class="tp-step-title">2. Descripción del Paquete / Nota</div>
-                    <textarea class="tp-textarea" asp-for="NotaPedido" rows="4"
-                              placeholder="Ej. Caja mediana frágil, contiene electrónicos..."></textarea>
-                    <span class="tp-sub">ℹ️ Los datos de la tienda se adjuntarán automáticamente.</span>
-                    <span class="tp-val" asp-validation-for="NotaPedido"></span>
-                </div>
-
-                <div class="tp-order-foot">
-                    <div class="tp-sub">
-                        Se generará Código (B) QR y Código (C) Cliente
-                    </div>
-                    <button class="tp-btn tp-btn-primary tp-btn-lg" type="submit">
-                        🚀 Crear Orden
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
-
 </div>
 
 @await Html.PartialAsync("_ModalUsuarioFinalCreate", new Login.ViewModels.Tienda.UsuarioFinalCreateVm())
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/tienda.js" asp-append-version="true"></script>
 }
