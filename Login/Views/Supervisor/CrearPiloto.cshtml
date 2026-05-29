@@ -1,60 +1,62 @@
-﻿@model Login.ViewModels.Supervisor.PilotoCreateVm
+@model Login.ViewModels.Supervisor.PilotoCreateVm
 @{
     ViewData["Title"] = "Nuevo Piloto";
     Layout = "_LayoutGestor";
 }
 
-<div class="pg-card p-4">
-
-    <div class="d-flex align-items-start justify-content-between mb-3">
+<div class="pg-card pg-form-card" style="max-width:640px;">
+    <div class="pg-card-head-row">
         <div>
-            <div class="h4 fw-bold mb-1">Nuevo Piloto</div>
-            <div class="text-secondary fw-semibold">Crea el piloto y su usuario de acceso (rol Piloto).</div>
+            <div class="pg-card-title">Nuevo Piloto</div>
+            <div class="pg-card-sub">Crea el piloto y su usuario de acceso (rol Piloto).</div>
         </div>
-
-        <a asp-action="Pilotos" class="btn btn-outline-secondary fw-bold">
-            <i class="bi bi-arrow-left"></i> Volver
+        <a asp-action="Pilotos" class="pg-btn pg-btn-outline">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Volver
         </a>
     </div>
 
-    <form method="post" asp-action="CrearPiloto" class="row g-3">
+    <form method="post" asp-action="CrearPiloto">
         @Html.AntiForgeryToken()
 
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Nombre</label>
-            <input class="form-control" asp-for="Nombre" placeholder="Ej: Juan Perez" />
-            <span class="text-danger" asp-validation-for="Nombre"></span>
+        <div class="pg-grid-2">
+            <div class="pg-field">
+                <label class="pg-label">Nombre</label>
+                <input class="pg-input" asp-for="Nombre" placeholder="Ej: Juan Pérez" />
+                <span class="pg-val" asp-validation-for="Nombre"></span>
+            </div>
+            <div class="pg-field">
+                <label class="pg-label">Teléfono</label>
+                <input class="pg-input" asp-for="Telefono" placeholder="809-000-1111" />
+                <span class="pg-val" asp-validation-for="Telefono"></span>
+            </div>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Teléfono</label>
-            <input class="form-control" asp-for="Telefono" placeholder="809-000-1111" />
-            <span class="text-danger" asp-validation-for="Telefono"></span>
+        <div class="pg-grid-2" style="margin-top:12px;">
+            <div class="pg-field">
+                <label class="pg-label">Email (login del piloto)</label>
+                <input class="pg-input" asp-for="EmailPiloto" placeholder="piloto@correo.com" />
+                <span class="pg-val" asp-validation-for="EmailPiloto"></span>
+            </div>
+            <div class="pg-field">
+                <label class="pg-label">Password</label>
+                <input class="pg-input" asp-for="PasswordPiloto" type="password" placeholder="Mínimo 6 caracteres" />
+                <span class="pg-val" asp-validation-for="PasswordPiloto"></span>
+            </div>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Email (login del piloto)</label>
-            <input class="form-control" asp-for="EmailPiloto" placeholder="piloto@correo.com" />
-            <span class="text-danger" asp-validation-for="EmailPiloto"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Password</label>
-            <input class="form-control" asp-for="PasswordPiloto" type="password" placeholder="Mínimo 6 caracteres" />
-            <span class="text-danger" asp-validation-for="PasswordPiloto"></span>
-        </div>
-
-        <div class="col-12 d-flex gap-2 mt-2">
-            <button class="btn btn-dark fw-bold">
-                <i class="bi bi-check2-circle"></i> Crear piloto
+        <div class="pg-form-actions">
+            <button class="pg-btn pg-btn-primary" type="submit">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M20 6L9 17l-5-5"/>
+                </svg>
+                Crear piloto
             </button>
-
-            <a asp-action="Pilotos" class="btn btn-link fw-bold text-decoration-none text-secondary">
-                Cancelar
-            </a>
+            <a asp-action="Pilotos" class="pg-btn pg-btn-ghost">Cancelar</a>
         </div>
     </form>
-
 </div>
 
 @section Scripts {

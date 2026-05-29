@@ -1,41 +1,59 @@
-﻿@model Login.ViewModels.Gestor.AsignarTiendaUsuarioVm
+@model Login.ViewModels.Gestor.AsignarTiendaUsuarioVm
 @{
-    ViewData["Title"] = "Asignar Tienda a Usuario";
+    ViewData["Title"] = "Asignar Tienda";
+    Layout = "_LayoutGestor";
 }
-
-<h2>Asignar Tienda a Usuario (Cliente)</h2>
 
 @if (!string.IsNullOrWhiteSpace(Model.Ok))
 {
-    <div class="alert alert-success">@Model.Ok</div>
+    <div class="pg-alert pg-alert-ok" style="margin-bottom:12px;max-width:560px;">
+        <span class="pg-alert-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+        <div>@Model.Ok</div>
+    </div>
 }
 @if (!string.IsNullOrWhiteSpace(Model.Error))
 {
-    <div class="alert alert-danger">@Model.Error</div>
+    <div class="pg-alert pg-alert-bad" style="margin-bottom:12px;max-width:560px;">
+        <span class="pg-alert-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+        <div>@Model.Error</div>
+    </div>
 }
 
-<form method="post" asp-action="AsignarTiendaUsuario" class="row g-2">
-    @Html.AntiForgeryToken()
-
-    <div class="col-md-6">
-        <label class="form-label">Email del usuario (Cliente)</label>
-        <input class="form-control" asp-for="EmailUsuario" placeholder="cliente@correo.com" />
-        <span class="text-danger" asp-validation-for="EmailUsuario"></span>
+<div class="pg-card pg-form-card" style="max-width:560px;">
+    <div class="pg-card-head">
+        <div class="pg-card-title">Asignar Tienda a Usuario</div>
+        <div class="pg-card-sub">Vincula un usuario Cliente con una tienda específica.</div>
     </div>
 
-    <div class="col-md-6">
-        <label class="form-label">Tienda</label>
-        <select class="form-select" asp-for="TiendaId" asp-items="Model.Tiendas">
-            <option value="">-- Seleccione --</option>
-        </select>
-        <span class="text-danger" asp-validation-for="TiendaId"></span>
-    </div>
+    <form method="post" asp-action="AsignarTiendaUsuario">
+        @Html.AntiForgeryToken()
 
-    <div class="col-12 mt-2">
-        <button class="btn btn-success">Asignar</button>
-        <a class="btn btn-secondary" asp-action="UsuariosTienda">Ver asignaciones</a>
-    </div>
-</form>
+        <div class="pg-grid-2">
+            <div class="pg-field">
+                <label class="pg-label">Email del usuario (Cliente)</label>
+                <input class="pg-input" asp-for="EmailUsuario" placeholder="cliente@correo.com" />
+                <span class="pg-val" asp-validation-for="EmailUsuario"></span>
+            </div>
+            <div class="pg-field">
+                <label class="pg-label">Tienda</label>
+                <select class="pg-select" asp-for="TiendaId" asp-items="Model.Tiendas">
+                    <option value="">— Seleccione —</option>
+                </select>
+                <span class="pg-val" asp-validation-for="TiendaId"></span>
+            </div>
+        </div>
+
+        <div class="pg-form-actions">
+            <button class="pg-btn pg-btn-primary" type="submit">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M20 6L9 17l-5-5"/>
+                </svg>
+                Asignar
+            </button>
+            <a class="pg-btn pg-btn-ghost" asp-action="UsuariosTienda">Ver asignaciones</a>
+        </div>
+    </form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

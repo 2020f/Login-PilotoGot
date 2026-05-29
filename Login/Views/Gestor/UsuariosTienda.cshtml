@@ -1,37 +1,77 @@
-﻿@model Login.ViewModels.Gestor.UsuariosTiendaIndexVm
+@model Login.ViewModels.Gestor.UsuariosTiendaIndexVm
 @{
-    ViewData["Title"] = "Asignaciones Usuario-Tienda";
+    ViewData["Title"] = "Asignaciones";
+    Layout = "_LayoutGestor";
 }
-
-<h2>Asignaciones Usuario ↔ Tienda</h2>
 
 @if (!string.IsNullOrWhiteSpace(Model.Ok))
 {
-    <div class="alert alert-success">@Model.Ok</div>
+    <div class="pg-alert pg-alert-ok" style="margin-bottom:12px;">
+        <span class="pg-alert-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+        <div>@Model.Ok</div>
+    </div>
 }
 @if (!string.IsNullOrWhiteSpace(Model.Error))
 {
-    <div class="alert alert-danger">@Model.Error</div>
+    <div class="pg-alert pg-alert-bad" style="margin-bottom:12px;">
+        <span class="pg-alert-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+        <div>@Model.Error</div>
+    </div>
 }
 
-<a class="btn btn-primary mb-3" asp-action="AsignarTiendaUsuario">Nueva asignación</a>
+<div class="pg-toolbar">
+    <div class="pg-toolbar-left">
+        <div class="pg-toolbar-title">Asignaciones Usuario — Tienda</div>
+        <div class="pg-toolbar-sub">Usuarios vinculados a cada tienda.</div>
+    </div>
+    <a class="pg-btn pg-btn-primary" asp-action="AsignarTiendaUsuario">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Nueva asignación
+    </a>
+</div>
 
-<table class="table table-sm table-striped align-middle">
-    <thead>
-        <tr>
-            <th>Email Usuario</th>
-            <th>Tienda</th>
-            <th>Activo</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var a in Model.Asignaciones)
-        {
-            <tr>
-                <td>@a.EmailUsuario</td>
-                <td>@a.TiendaNombre</td>
-                <td>@(a.Activo ? "Sí" : "No")</td>
-            </tr>
-        }
-    </tbody>
-</table>
+<div class="pg-table-page">
+    <div class="pg-table-wrap">
+        <table class="pg-table">
+            <thead>
+                <tr>
+                    <th>Email Usuario</th>
+                    <th>Tienda</th>
+                    <th style="width:80px;">Activo</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Asignaciones.Any())
+                {
+                    <tr>
+                        <td colspan="3" style="text-align:center;color:var(--pg-muted);padding:28px;">
+                            No hay asignaciones todavía.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var a in Model.Asignaciones)
+                    {
+                        <tr>
+                            <td style="font-weight:500;">@a.EmailUsuario</td>
+                            <td>@a.TiendaNombre</td>
+                            <td>
+                                @if (a.Activo)
+                                {
+                                    <span style="color:#166534;font-weight:500;font-size:12.5px;">Sí</span>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--pg-muted);font-size:12.5px;">No</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,152 +1,156 @@
-﻿@using System.Security.Claims
+@using System.Security.Claims
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - PilotGo</title>
-
-    <!-- Bootstrap (base) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
-
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-
-    <!-- Estilo PilotGo (Gestor) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="~/css/gestor.css" asp-append-version="true" />
 </head>
 <body class="pg-body">
 
-    <div class="pg-app">
+<div class="pg-app">
 
-        <!-- SIDEBAR -->
-        
-        <aside class="pg-sidebar pg-sidebar-hover">
+    <!-- SIDEBAR -->
+    <aside class="pg-sidebar" id="pgSidebar">
 
-            <div class="pg-brand">
-                <div class="pg-brand-icon">
-                    <i class="bi bi-lightning-charge-fill"></i>
-                </div>
-                <div class="pg-brand-text">
-                    <div class="pg-brand-name">PilotGo</div>
-                    <div class="pg-brand-sub">GESTOR OPERATIVO</div>
-                </div>
+        <div class="pg-brand">
+            <div class="pg-brand-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+            </div>
+            <div class="pg-brand-text">
+                <div class="pg-brand-name">PilotGo</div>
+                <div class="pg-brand-sub">Gestor Operativo</div>
+            </div>
+        </div>
+
+        <div class="pg-org">
+            <div class="pg-org-avatar">OP</div>
+            <div class="pg-org-meta">
+                <div class="pg-org-name">Operaciones</div>
+                <div class="pg-org-sub">Delivery Express</div>
+            </div>
+        </div>
+
+        <nav class="pg-nav">
+            <div class="pg-nav-group">
+                <div class="pg-nav-title">Principal</div>
+
+                <a class="pg-nav-item" asp-controller="Supervisor" asp-action="Ordenes">
+                    <span class="pg-nav-ico">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+                        </svg>
+                    </span>
+                    <span>Despacho &amp; Órdenes</span>
+                </a>
+
+                <a class="pg-nav-item" asp-controller="Supervisor" asp-action="Estadisticas">
+                    <span class="pg-nav-ico">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <line x1="18" y1="20" x2="18" y2="10"/>
+                            <line x1="12" y1="20" x2="12" y2="4"/>
+                            <line x1="6" y1="20" x2="6" y2="14"/>
+                        </svg>
+                    </span>
+                    <span>Estadísticas</span>
+                </a>
             </div>
 
-            <!-- Perfil (demo) -->
-            <div class="pg-org">
-                <div class="pg-org-avatar">OP</div>
-                <div class="pg-org-meta">
-                    <div class="pg-org-name">Operaciones</div>
-                    <div class="pg-org-sub">Delivery Express S.R.L.</div>
-                </div>
+            <div class="pg-nav-group">
+                <div class="pg-nav-title">Administración</div>
+
+                <a class="pg-nav-item" asp-controller="Supervisor" asp-action="Pilotos">
+                    <span class="pg-nav-ico">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                        </svg>
+                    </span>
+                    <span>Pilotos (Flota)</span>
+                </a>
+
+                <a class="pg-nav-item" asp-controller="Supervisor" asp-action="Tiendas">
+                    <span class="pg-nav-ico">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                    </span>
+                    <span>Tiendas (Negocios)</span>
+                </a>
+
+                <span class="pg-nav-item pg-nav-disabled">
+                    <span class="pg-nav-ico">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </span>
+                    <span>Historial Global</span>
+                </span>
+            </div>
+        </nav>
+
+        <div class="pg-sidebar-foot">
+            <form asp-area="Identity" asp-page="/Account/Logout" method="post" style="margin:0;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="pg-logout-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    <span>Cerrar sesión</span>
+                </button>
+            </form>
+
+            <button class="pg-toggle" id="pgToggle" aria-label="Colapsar menú">
+                <svg class="pg-toggle-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <polyline points="15 18 9 12 15 6"/>
+                </svg>
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- MAIN -->
+    <main class="pg-main">
+
+        <header class="pg-topbar">
+            <div class="pg-page-title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M20.49 20.49A11.95 11.95 0 0 1 12 24a11.95 11.95 0 0 1-8.49-3.51A11.95 11.95 0 0 1 0 12c0-3.14 1.21-6.16 3.51-8.49A11.95 11.95 0 0 1 12 0c3.14 0 6.16 1.21 8.49 3.51A11.95 11.95 0 0 1 24 12a11.95 11.95 0 0 1-3.51 8.49z"/>
+                </svg>
+                <span>@ViewData["Title"]</span>
             </div>
 
-            <div class="pg-nav">
-
-                <div class="pg-nav-group">
-                    <div class="pg-nav-title">PRINCIPAL</div>
-
-                    <a class="pg-nav-item" asp-controller="Supervisor" asp-action="Ordenes">
-                        <span class="pg-nav-ico"><i class="bi bi-diagram-3"></i></span>
-                        <span>Despacho &amp; Órdenes</span>
-                    </a>
-
-                    <a class="pg-nav-item"
-                       asp-controller="Supervisor"
-                       asp-action="Estadisticas">
-                        <span class="pg-nav-ico"><i class="bi bi-bar-chart"></i></span>
-                        <span>Estadísticas</span>
-                    </a>
-
+            <div class="pg-topbar-right">
+                <div class="pg-pill">
+                    <span class="pg-dot"></span>
+                    <span>Sistema Operativo</span>
                 </div>
-
-                <div class="pg-nav-group">
-                    <div class="pg-nav-title">ADMINISTRACIÓN</div>
-
-                    <a class="pg-nav-item" asp-controller="Supervisor" asp-action="Pilotos">
-                        <span class="pg-nav-ico"><i class="bi bi-speedometer2"></i></span>
-                        <span>Pilotos (Flota)</span>
-                    </a>
-
-                    <a class="pg-nav-item" asp-controller="Supervisor" asp-action="Tiendas">
-                        <span class="pg-nav-ico"><i class="bi bi-shop"></i></span>
-                        <span>Tiendas (Negocios)</span>
-                    </a>
-
-                    <a class="pg-nav-item pg-nav-disabled" href="javascript:void(0)">
-                        <span class="pg-nav-ico"><i class="bi bi-clock-history"></i></span>
-                        <span>Historial Global</span>
-                    </a>
-                </div>
-
+                <button type="button" class="pg-icon-btn" aria-label="Notificaciones">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span class="pg-badge-dot"></span>
+                </button>
             </div>
+        </header>
 
-            
-            <div style="margin-top:18px;">
-                <form asp-area="Identity" asp-page="/Account/Logout" method="post">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="pg-logout-btn">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span>Cerrar sesión</span>
-                    </button>
-                </form>
-            </div>
-            
-        </aside>
+        <section class="pg-content">
+            @RenderBody()
+        </section>
 
-        <!-- MAIN -->
-        <main class="pg-main">
+    </main>
+</div>
 
-            <!-- TOPBAR -->
-            <header class="pg-topbar">
-                <div class="pg-topbar-left">
-                    <div class="pg-page-title">
-                        <i class="bi bi-broadcast-pin"></i>
-                        <span>@ViewData["Title"]</span>
-                    </div>
-                </div>
-
-                <div class="pg-topbar-right">
-                    <div class="pg-pill">
-                        <span class="pg-dot"></span>
-                        <span>Sistema Operativo</span>
-                    </div>
-
-
-
-
-
-
-                    <button type="button" class="pg-icon-btn" aria-label="Notificaciones">
-                        <i class="bi bi-bell"></i>
-                        <span class="pg-badge-dot"></span>
-                    </button>
-
-
-
-
-
-                    <!-- ✅ CERRAR SESIÓN -->
-                    <form asp-area="Identity" asp-page="/Account/Logout" method="post" class="pg-logout-form">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="pg-icon-btn" aria-label="Cerrar sesión" title="Cerrar sesión">
-                            <i class="bi bi-box-arrow-right"></i>
-                        </button>
-                    </form>
-                </div>
-            </header>
-
-            <!-- CONTENT -->
-            <section class="pg-content">
-                @RenderBody()
-            </section>
-
-        </main>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/gestor.js" asp-append-version="true"></script>
-    @RenderSection("Scripts", required: false)
+<script src="~/js/gestor.js" asp-append-version="true"></script>
+@RenderSection("Scripts", required: false)
 </body>
 </html>

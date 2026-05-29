@@ -1,56 +1,80 @@
-﻿(function () {
-    // ====== Active menu ======
+(function () {
+
+    // ====== Sidebar toggle ======
+    const sidebar = document.getElementById("pgSidebar");
+    const toggle  = document.getElementById("pgToggle");
+    const PG_KEY  = "pg_sidebar_collapsed";
+
+    if (sidebar && toggle) {
+        if (localStorage.getItem(PG_KEY) === "1") {
+            sidebar.classList.add("collapsed");
+        }
+
+        toggle.addEventListener("click", () => {
+            sidebar.classList.toggle("collapsed");
+            localStorage.setItem(PG_KEY, sidebar.classList.contains("collapsed") ? "1" : "0");
+        });
+    }
+
+    // ====== Active nav highlight ======
     const path = window.location.pathname.toLowerCase();
-    document.querySelectorAll(".pg-nav-item").forEach(a => {
+    document.querySelectorAll(".pg-nav-item[href]").forEach(a => {
         const href = (a.getAttribute("href") || "").toLowerCase();
-        // asp- helpers generan href final, esto lo detecta igual
         if (href && href !== "javascript:void(0)" && path.startsWith(href)) {
             a.classList.add("pg-active");
         }
     });
 
-    // ====== Asignar Piloto Modal (Ordenes) ======
-    const modalEl = document.getElementById("asignarPilotoModal");
-    if (!modalEl) return;
+    // ====== Custom pilot assign modal ======
+    const overlay   = document.getElementById("pgAssignOverlay");
+    if (!overlay) return;
 
-    const bsModal = new bootstrap.Modal(modalEl);
-
-    const inputCodigoB = document.getElementById("modalCodigoB");
-    const inputPilotoId = document.getElementById("modalPilotoId");
+    const inputCodigoB    = document.getElementById("modalCodigoB");
+    const inputPilotoId   = document.getElementById("modalPilotoId");
     const modalOrdenLabel = document.getElementById("modalOrdenLabel");
+    const pilotSearch     = document.getElementById("pilotSearch");
+    const pilotList       = document.getElementById("pilotList");
+    const closeBtn        = document.getElementById("pgAssignClose");
 
-    const search = document.getElementById("pilotSearch");
-    const list = document.getElementById("pilotList");
+    function openModal() { overlay.classList.add("open"); }
+    function closeModal() { overlay.classList.remove("open"); }
 
-    // abrir modal desde botón
+    // Open on assign buttons
     document.querySelectorAll("[data-open-assign]").forEach(btn => {
         btn.addEventListener("click", () => {
             const codigoB = btn.getAttribute("data-codigob") || "";
-            const ordenA = btn.getAttribute("data-ordena") || "";
+            const ordenA  = btn.getAttribute("data-ordena") || "";
 
-            inputCodigoB.value = codigoB;
-            inputPilotoId.value = "";
+            if (inputCodigoB)  inputCodigoB.value  = codigoB;
+            if (inputPilotoId) inputPilotoId.value  = "";
+            if (modalOrdenLabel) modalOrdenLabel.textContent = ordenA ? `ORD-${ordenA}` : "ORD-????";
 
-            modalOrdenLabel.textContent = ordenA ? `ORD-${ordenA}` : "ORD-????";
-
-            // reset filtro
-            if (search) search.value = "";
+            if (pilotSearch) pilotSearch.value = "";
             filterPilots("");
 
-            bsModal.show();
+            openModal();
         });
     });
 
-    // click piloto => set id y submit
-    if (list) {
-        list.addEventListener("click", (e) => {
+    // Close button
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+
+    // Close on backdrop click
+    overlay.addEventListener("click", e => {
+        if (e.target === overlay) closeModal();
+    });
+
+    // Close on Escape
+    document.addEventListener("keydown", e => {
+        if (e.key === "Escape" && overlay.classList.contains("open")) closeModal();
+    });
+
+    // Pilot pick → submit
+    if (pilotList) {
+        pilotList.addEventListener("click", e => {
             const item = e.target.closest("[data-piloto-id]");
             if (!item) return;
-
-            const id = item.getAttribute("data-piloto-id");
-            inputPilotoId.value = id;
-
-            // submit el form del modal
+            if (inputPilotoId) inputPilotoId.value = item.getAttribute("data-piloto-id");
             const form = document.getElementById("asignarPilotoForm");
             if (form) form.submit();
         });
@@ -64,34 +88,34 @@
         });
     }
 
-    if (search) {
-        search.addEventListener("input", () => filterPilots(search.value));
+    if (pilotSearch) {
+        pilotSearch.addEventListener("input", () => filterPilots(pilotSearch.value));
     }
+
 })();
 
 
-// ====== Auto-submit filtros (Ordenes) ======
-const filtrosForm = document.querySelector(".pg-filters form");
-if (filtrosForm) {
-    const selects = filtrosForm.querySelectorAll("select.pg-filter-select");
-    const numeroOrdenInput = filtrosForm.querySelector(".pg-search input");
+// ====== Auto-submit filter form (Ordenes) ======
+(function () {
+    const filtrosForm = document.querySelector(".pg-filters form");
+    if (!filtrosForm) return;
 
-    selects.forEach(s => {
+    filtrosForm.querySelectorAll("select.pg-filter-select").forEach(s => {
         s.addEventListener("change", () => filtrosForm.submit());
     });
 
-    // debounce para no spamear submit al escribir
-    let t = null;
-    if (numeroOrdenInput) {
-        numeroOrdenInput.addEventListener("input", () => {
-            clearTimeout(t);
-            t = setTimeout(() => filtrosForm.submit(), 450);
+    const numInput  = filtrosForm.querySelector(".pg-search-block input");
+    const dateInput = filtrosForm.querySelector('input[type="date"]');
+
+    let debounce = null;
+    if (numInput) {
+        numInput.addEventListener("input", () => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => filtrosForm.submit(), 450);
         });
     }
-}
 
-const fechaInput = filtrosForm.querySelector('input[type="date"]');
-
-if (fechaInput) {
-    fechaInput.addEventListener("change", () => filtrosForm.submit());
-}
+    if (dateInput) {
+        dateInput.addEventListener("change", () => filtrosForm.submit());
+    }
+})();

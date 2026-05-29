@@ -1,0 +1,147 @@
+<h2>Tracking en tarjeta de orden — ¿qué estilo prefieres?</h2>
+<p class="subtitle">Cada tarjeta mostrará el progreso: Piloto asignado → Recolección (código B) → Entregado</p>
+
+<div class="cards">
+
+  <!-- OPCIÓN A: Stepper horizontal con puntos y línea -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1a1f2e;border-radius:10px;padding:14px 16px;font-family:sans-serif;">
+        <!-- Cabecera de la tarjeta -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="color:#60a5fa;font-weight:700;font-size:15px;">#ORD-42</span>
+          <span style="background:#1d4ed8;color:#93c5fd;font-size:11px;padding:2px 8px;border-radius:20px;">En ruta</span>
+        </div>
+        <div style="color:#e2e8f0;font-size:13px;margin-bottom:12px;">Juan Pérez</div>
+
+        <!-- STEPPER HORIZONTAL -->
+        <div style="position:relative;display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+          <!-- Línea de fondo -->
+          <div style="position:absolute;top:50%;left:16px;right:16px;height:2px;background:#374151;transform:translateY(-50%);z-index:0;"></div>
+          <!-- Línea completada (hasta paso 2) -->
+          <div style="position:absolute;top:50%;left:16px;width:50%;height:2px;background:#3b82f6;transform:translateY(-50%);z-index:0;"></div>
+
+          <!-- Paso 1: Asignada ✓ -->
+          <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#3b82f6;display:flex;align-items:center;justify-content:center;font-size:13px;">✓</div>
+            <span style="color:#93c5fd;font-size:9px;font-weight:600;text-align:center;">PILOTO<br>ASIGNADO</span>
+            <span style="color:#6b7280;font-size:8px;">10:32 AM</span>
+          </div>
+
+          <!-- Paso 2: Recolectada ✓ -->
+          <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#3b82f6;display:flex;align-items:center;justify-content:center;font-size:13px;">✓</div>
+            <span style="color:#93c5fd;font-size:9px;font-weight:600;text-align:center;">CÓDIGO B<br>ESCANEADO</span>
+            <span style="color:#6b7280;font-size:8px;">10:45 AM</span>
+          </div>
+
+          <!-- Paso 3: Entregada (pendiente) -->
+          <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#374151;border:2px dashed #6b7280;display:flex;align-items:center;justify-content:center;font-size:13px;color:#6b7280;">⬝</div>
+            <span style="color:#6b7280;font-size:9px;font-weight:600;text-align:center;">ENTREGADO<br>(B+C)</span>
+            <span style="color:#4b5563;font-size:8px;">Pendiente</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Stepper horizontal</h3>
+      <p>Puntos conectados con línea de progreso. Muestra hora en cada paso completado.</p>
+    </div>
+  </div>
+
+  <!-- OPCIÓN B: Pills/chips lineales compactos -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1a1f2e;border-radius:10px;padding:14px 16px;font-family:sans-serif;">
+        <!-- Cabecera -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="color:#60a5fa;font-weight:700;font-size:15px;">#ORD-42</span>
+          <span style="background:#1d4ed8;color:#93c5fd;font-size:11px;padding:2px 8px;border-radius:20px;">En ruta</span>
+        </div>
+        <div style="color:#e2e8f0;font-size:13px;margin-bottom:12px;">Juan Pérez</div>
+
+        <!-- PILLS COMPACTOS -->
+        <div style="display:flex;gap:4px;align-items:center;flex-wrap:nowrap;overflow:hidden;">
+          <!-- Asignada ✓ -->
+          <div style="flex:1;background:#1e3a5f;border:1px solid #3b82f6;border-radius:6px;padding:5px 4px;text-align:center;">
+            <div style="font-size:14px;">🛵</div>
+            <div style="color:#60a5fa;font-size:8px;font-weight:700;margin-top:2px;">ASIGNADO</div>
+            <div style="color:#6b7280;font-size:7px;">10:32 AM</div>
+          </div>
+          <!-- Flecha -->
+          <div style="color:#374151;font-size:10px;">▶</div>
+          <!-- Recolectada ✓ -->
+          <div style="flex:1;background:#1e3a5f;border:1px solid #3b82f6;border-radius:6px;padding:5px 4px;text-align:center;">
+            <div style="font-size:14px;">📦</div>
+            <div style="color:#60a5fa;font-size:8px;font-weight:700;margin-top:2px;">CÓDIGO B</div>
+            <div style="color:#6b7280;font-size:7px;">10:45 AM</div>
+          </div>
+          <!-- Flecha -->
+          <div style="color:#374151;font-size:10px;">▶</div>
+          <!-- Entregada (pendiente) -->
+          <div style="flex:1;background:#111827;border:1px dashed #374151;border-radius:6px;padding:5px 4px;text-align:center;opacity:0.5;">
+            <div style="font-size:14px;">✅</div>
+            <div style="color:#6b7280;font-size:8px;font-weight:700;margin-top:2px;">ENTREGADO</div>
+            <div style="color:#4b5563;font-size:7px;">Pendiente</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Chips con iconos</h3>
+      <p>Cada etapa como bloque con ícono y hora. Muy visual y compacto.</p>
+    </div>
+  </div>
+
+  <!-- OPCIÓN C: Barra de progreso con etiquetas -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1a1f2e;border-radius:10px;padding:14px 16px;font-family:sans-serif;">
+        <!-- Cabecera -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="color:#60a5fa;font-weight:700;font-size:15px;">#ORD-42</span>
+          <span style="background:#1d4ed8;color:#93c5fd;font-size:11px;padding:2px 8px;border-radius:20px;">En ruta</span>
+        </div>
+        <div style="color:#e2e8f0;font-size:13px;margin-bottom:10px;">Juan Pérez</div>
+
+        <!-- BARRA DE PROGRESO -->
+        <div style="margin-bottom:6px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="color:#9ca3af;font-size:9px;text-transform:uppercase;letter-spacing:.5px;">Progreso de entrega</span>
+            <span style="color:#60a5fa;font-size:9px;font-weight:700;">67%</span>
+          </div>
+          <div style="background:#374151;border-radius:4px;height:6px;overflow:hidden;">
+            <div style="background:linear-gradient(90deg,#3b82f6,#60a5fa);width:67%;height:100%;border-radius:4px;"></div>
+          </div>
+        </div>
+
+        <!-- Etiquetas de hitos debajo de la barra -->
+        <div style="display:flex;justify-content:space-between;margin-top:6px;">
+          <div style="text-align:center;">
+            <div style="color:#60a5fa;font-size:8px;font-weight:700;">🛵 Asignado</div>
+            <div style="color:#6b7280;font-size:7px;">10:32 AM</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="color:#60a5fa;font-size:8px;font-weight:700;">📦 Recogido</div>
+            <div style="color:#6b7280;font-size:7px;">10:45 AM</div>
+          </div>
+          <div style="text-align:center;opacity:0.4;">
+            <div style="color:#6b7280;font-size:8px;font-weight:700;">✅ Entregado</div>
+            <div style="color:#4b5563;font-size:7px;">—</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Barra de progreso</h3>
+      <p>Barra visual con % y hitos con hora debajo. Clara de un vistazo.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">Haz clic en la opción que prefieras, o dime en el terminal si quieres combinar elementos de varias.</p>

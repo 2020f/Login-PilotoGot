@@ -1,38 +1,64 @@
-﻿@model Login.ViewModels.Gestor.TiendaCreateVm
-
-<h2>Crear Tienda</h2>
+@model Login.ViewModels.Gestor.TiendaCreateVm
+@{
+    ViewData["Title"] = "Crear Tienda";
+    Layout = "_LayoutGestor";
+}
 
 @if (ViewBag.Error != null)
 {
-    <div style="color:red">@ViewBag.Error</div>
+    <div class="pg-alert pg-alert-bad" style="margin-bottom:12px;max-width:560px;">
+        <span class="pg-alert-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+        <div>@ViewBag.Error</div>
+    </div>
 }
 
-<form asp-action="CrearTienda" method="post">
-    @Html.AntiForgeryToken()
-
-    <div>
-        <label asp-for="Nombre"></label><br />
-        <input asp-for="Nombre" />
-        <span asp-validation-for="Nombre" style="color:red"></span>
+<div class="pg-card pg-form-card" style="max-width:560px;">
+    <div class="pg-card-head-row">
+        <div>
+            <div class="pg-card-title">Crear Tienda</div>
+            <div class="pg-card-sub">Registra una nueva tienda en el sistema.</div>
+        </div>
+        <a asp-action="ListarTiendas" class="pg-btn pg-btn-outline">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Volver
+        </a>
     </div>
 
-    <div>
-        <label asp-for="Direccion"></label><br />
-        <input asp-for="Direccion" />
-        <span asp-validation-for="Direccion" style="color:red"></span>
-    </div>
+    <form asp-action="CrearTienda" method="post">
+        @Html.AntiForgeryToken()
 
-    <div>
-        <label asp-for="Telefono"></label><br />
-        <input asp-for="Telefono" />
-        <span asp-validation-for="Telefono" style="color:red"></span>
-    </div>
+        <div class="pg-field">
+            <label class="pg-label">Nombre</label>
+            <input class="pg-input" asp-for="Nombre" />
+            <span class="pg-val" asp-validation-for="Nombre"></span>
+        </div>
 
-    <br />
-    <button type="submit">Guardar</button>
-</form>
+        <div class="pg-field" style="margin-top:12px;">
+            <label class="pg-label">Dirección</label>
+            <input class="pg-input" asp-for="Direccion" />
+            <span class="pg-val" asp-validation-for="Direccion"></span>
+        </div>
 
-<p><a href="/Gestor/ListarTiendas">Volver</a></p>
+        <div class="pg-field" style="margin-top:12px;">
+            <label class="pg-label">Teléfono</label>
+            <input class="pg-input" asp-for="Telefono" />
+            <span class="pg-val" asp-validation-for="Telefono"></span>
+        </div>
+
+        <div class="pg-form-actions">
+            <button type="submit" class="pg-btn pg-btn-primary">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                </svg>
+                Guardar
+            </button>
+            <a class="pg-btn pg-btn-ghost" asp-action="ListarTiendas">Cancelar</a>
+        </div>
+    </form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

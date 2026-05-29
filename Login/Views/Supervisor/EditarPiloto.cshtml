@@ -1,82 +1,90 @@
-﻿@model Login.ViewModels.Supervisor.PilotoEditVm
+@model Login.ViewModels.Supervisor.PilotoEditVm
 @using Login.Domain.Enums
 @{
     ViewData["Title"] = "Editar Piloto";
     Layout = "_LayoutGestor";
 }
 
-<div class="pg-card p-4">
-
-    <div class="d-flex align-items-start justify-content-between mb-3">
+<div class="pg-card pg-form-card" style="max-width:640px;">
+    <div class="pg-card-head-row">
         <div>
-            <div class="h4 fw-bold mb-1">Editar Piloto</div>
-            <div class="text-secondary fw-semibold">Actualiza datos, estado y activación.</div>
+            <div class="pg-card-title">Editar Piloto</div>
+            <div class="pg-card-sub">Actualiza datos, estado y activación.</div>
         </div>
-
-        <a asp-action="Pilotos" class="btn btn-outline-secondary fw-bold">
-            <i class="bi bi-arrow-left"></i> Volver
+        <a asp-action="Pilotos" class="pg-btn pg-btn-outline">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Volver
         </a>
     </div>
 
     @if (!string.IsNullOrWhiteSpace(Model.EmailPiloto))
     {
-        <div class="pg-card p-3 mb-3" style="box-shadow:none;">
-            <div class="text-secondary fw-bold" style="font-size:12px; letter-spacing:1px;">EMAIL (LOGIN)</div>
-            <div class="fw-bold">@Model.EmailPiloto</div>
+        <div class="pg-info-block">
+            <div class="pg-info-lbl">Email de acceso</div>
+            <div class="pg-info-val">@Model.EmailPiloto</div>
         </div>
     }
 
-    <form method="post" asp-action="EditarPiloto" class="row g-3">
+    <form method="post" asp-action="EditarPiloto">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
 
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Nombre</label>
-            <input class="form-control" asp-for="Nombre" />
-            <span class="text-danger" asp-validation-for="Nombre"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Teléfono</label>
-            <input class="form-control" asp-for="Telefono" />
-            <span class="text-danger" asp-validation-for="Telefono"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Estado</label>
-            <select class="form-select" asp-for="Estado">
-                <option value="@EstadoPiloto.Disponible">Disponible</option>
-                <option value="@EstadoPiloto.Ocupado">Ocupado</option>
-                <option value="@EstadoPiloto.Inactivo">Inactivo</option>
-            </select>
-        </div>
-
-        <div class="col-md-6 d-flex align-items-end">
-            <div class="form-check">
-                <input class="form-check-input" asp-for="Activo" />
-                <label class="form-check-label fw-bold">Activo</label>
+        <div class="pg-grid-2">
+            <div class="pg-field">
+                <label class="pg-label">Nombre</label>
+                <input class="pg-input" asp-for="Nombre" />
+                <span class="pg-val" asp-validation-for="Nombre"></span>
+            </div>
+            <div class="pg-field">
+                <label class="pg-label">Teléfono</label>
+                <input class="pg-input" asp-for="Telefono" />
+                <span class="pg-val" asp-validation-for="Telefono"></span>
             </div>
         </div>
 
-        <div class="col-12 d-flex gap-2 mt-2">
-            <button class="btn btn-dark fw-bold">
-                <i class="bi bi-save2"></i> Guardar cambios
+        <div class="pg-grid-2" style="margin-top:12px;">
+            <div class="pg-field">
+                <label class="pg-label">Estado</label>
+                <select class="pg-select" asp-for="Estado">
+                    <option value="@EstadoPiloto.Disponible">Disponible</option>
+                    <option value="@EstadoPiloto.Ocupado">Ocupado</option>
+                    <option value="@EstadoPiloto.Inactivo">Inactivo</option>
+                </select>
+            </div>
+            <div class="pg-field" style="justify-content:flex-end;padding-bottom:2px;">
+                <label class="pg-check" style="margin-top:auto;">
+                    <input class="pg-check-input" type="checkbox" asp-for="Activo" />
+                    <span class="pg-check-label">Activo</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="pg-form-actions">
+            <button class="pg-btn pg-btn-primary" type="submit">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                </svg>
+                Guardar cambios
             </button>
 
-            <form method="post" asp-action="EliminarPiloto" class="d-inline">
+            <form method="post" asp-action="EliminarPiloto" style="display:inline;margin:0;">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.Id" />
-                <button class="btn btn-outline-danger fw-bold" type="submit">
-                    <i class="bi bi-trash"></i> Eliminar
+                <button class="pg-btn pg-btn-danger" type="submit">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                        <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                    </svg>
+                    Eliminar
                 </button>
             </form>
 
-            <a asp-action="Pilotos" class="btn btn-link fw-bold text-decoration-none text-secondary">
-                Cancelar
-            </a>
+            <a asp-action="Pilotos" class="pg-btn pg-btn-ghost">Cancelar</a>
         </div>
     </form>
-
 </div>
 
 @section Scripts {

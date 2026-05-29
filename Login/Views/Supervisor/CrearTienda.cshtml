@@ -1,77 +1,77 @@
-﻿@model Login.ViewModels.Tienda.TiendaCreateVm
+@model Login.ViewModels.Tienda.TiendaCreateVm
 @{
     ViewData["Title"] = "Nueva Tienda";
     Layout = "_LayoutGestor";
 }
 
-<div class="pg-card p-4">
-
-    <div class="d-flex align-items-start justify-content-between mb-3">
+<div class="pg-card pg-form-card" style="max-width:640px;">
+    <div class="pg-card-head-row">
         <div>
-            <div class="h4 fw-bold mb-1">Nueva Tienda</div>
-            <div class="text-secondary fw-semibold">Registra una tienda y crea su usuario de acceso (rol Cliente).</div>
+            <div class="pg-card-title">Nueva Tienda</div>
+            <div class="pg-card-sub">Registra la tienda y crea su usuario de acceso (rol Cliente).</div>
         </div>
-
-        <a asp-action="Tiendas" class="btn btn-outline-secondary fw-bold">
-            <i class="bi bi-arrow-left"></i> Volver
+        <a asp-action="Tiendas" class="pg-btn pg-btn-outline">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Volver
         </a>
     </div>
 
-    <form asp-action="CrearTienda" method="post" class="row g-3">
+    <form asp-action="CrearTienda" method="post">
         @Html.AntiForgeryToken()
 
-        <div class="col-12">
-            <div class="fw-bold mb-2">Datos de la tienda</div>
-            <div class="text-secondary fw-semibold" style="font-size:13px;">Estos datos se verán en despacho y en el listado de tiendas.</div>
+        <div style="font-size:12px;font-weight:600;color:var(--pg-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">
+            Datos de la tienda
         </div>
 
-        <div class="col-md-6">
-            <label asp-for="Nombre" class="form-label fw-bold"></label>
-            <input asp-for="Nombre" class="form-control" placeholder="Ej: Pizza Hut Los Prados" />
-            <span asp-validation-for="Nombre" class="text-danger"></span>
+        <div class="pg-grid-2">
+            <div class="pg-field">
+                <label class="pg-label">Nombre</label>
+                <input class="pg-input" asp-for="Nombre" placeholder="Ej: Pizza Hut Los Prados" />
+                <span class="pg-val" asp-validation-for="Nombre"></span>
+            </div>
+            <div class="pg-field">
+                <label class="pg-label">Teléfono</label>
+                <input class="pg-input" asp-for="Telefono" placeholder="809-555-0202" />
+                <span class="pg-val" asp-validation-for="Telefono"></span>
+            </div>
         </div>
 
-        <div class="col-md-6">
-            <label asp-for="Telefono" class="form-label fw-bold"></label>
-            <input asp-for="Telefono" class="form-control" placeholder="809-555-0202" />
-            <span asp-validation-for="Telefono" class="text-danger"></span>
+        <div class="pg-field" style="margin-top:12px;">
+            <label class="pg-label">Dirección</label>
+            <input class="pg-input" asp-for="Direccion" placeholder="Ej: Calle 5 #10" />
+            <span class="pg-val" asp-validation-for="Direccion"></span>
         </div>
 
-        <div class="col-12">
-            <label asp-for="Direccion" class="form-label fw-bold"></label>
-            <input asp-for="Direccion" class="form-control" placeholder="Ej: Calle 5 #10" />
-            <span asp-validation-for="Direccion" class="text-danger"></span>
+        <hr class="pg-section-sep" />
+
+        <div style="font-size:12px;font-weight:600;color:var(--pg-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">
+            Usuario de acceso — Interfaz Tienda
         </div>
 
-        <hr class="my-4" />
-
-        <div class="col-12">
-            <div class="fw-bold mb-2">Usuario de acceso (Interfaz Tienda)</div>
-            <div class="text-secondary fw-semibold" style="font-size:13px;">Este usuario se crea en Identity y se asigna al rol <b>Cliente</b>.</div>
+        <div class="pg-grid-2">
+            <div class="pg-field">
+                <label class="pg-label">Email</label>
+                <input class="pg-input" asp-for="EmailCliente" placeholder="correo@tienda.com" />
+                <span class="pg-val" asp-validation-for="EmailCliente"></span>
+            </div>
+            <div class="pg-field">
+                <label class="pg-label">Password</label>
+                <input class="pg-input" asp-for="PasswordCliente" type="password" placeholder="Mínimo 6 caracteres" />
+                <span class="pg-val" asp-validation-for="PasswordCliente"></span>
+            </div>
         </div>
 
-        <div class="col-md-6">
-            <label asp-for="EmailCliente" class="form-label fw-bold"></label>
-            <input asp-for="EmailCliente" class="form-control" placeholder="correo@tienda.com" />
-            <span asp-validation-for="EmailCliente" class="text-danger"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="PasswordCliente" class="form-label fw-bold"></label>
-            <input asp-for="PasswordCliente" type="password" class="form-control" placeholder="Mínimo 6 caracteres" />
-            <span asp-validation-for="PasswordCliente" class="text-danger"></span>
-        </div>
-
-        <div class="col-12 d-flex gap-2 mt-2">
-            <button type="submit" class="btn btn-dark fw-bold">
-                <i class="bi bi-check2-circle"></i> Crear tienda + usuario
+        <div class="pg-form-actions">
+            <button type="submit" class="pg-btn pg-btn-primary">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M20 6L9 17l-5-5"/>
+                </svg>
+                Crear tienda + usuario
             </button>
-
-            <a asp-action="Tiendas" class="btn btn-link fw-bold text-decoration-none text-secondary">
-                Cancelar
-            </a>
+            <a asp-action="Tiendas" class="pg-btn pg-btn-ghost">Cancelar</a>
         </div>
-
     </form>
 </div>
 

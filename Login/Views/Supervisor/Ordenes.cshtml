@@ -1,225 +1,255 @@
-﻿@model Login.ViewModels.Supervisor.OrdenesIndexVm
+@model Login.ViewModels.Supervisor.OrdenesIndexVm
 @{
     ViewData["Title"] = "Despacho en Vivo";
     Layout = "_LayoutGestor";
-}  
+}
 
 <div class="pg-page">
 
     @if (!string.IsNullOrWhiteSpace(Model.Ok))
     {
-        <div class="alert alert-success">@Model.Ok</div>
+        <div class="pg-alert pg-alert-ok">
+            <span class="pg-alert-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+            <div>@Model.Ok</div>
+        </div>
     }
     @if (!string.IsNullOrWhiteSpace(Model.Error))
     {
-        <div class="alert alert-danger">@Model.Error</div>
+        <div class="pg-alert pg-alert-bad">
+            <span class="pg-alert-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+            <div>@Model.Error</div>
+        </div>
     }
 
     <!-- FILTROS FIJOS -->
     <div class="pg-filters-sticky">
-        <div class="pg-card pg-filters mb-3">
-            <form method="get" asp-action="Ordenes" class="d-flex align-items-center gap-3 w-100">
+        <div class="pg-card pg-filters">
+            <form method="get" asp-action="Ordenes" style="display:flex;align-items:center;gap:10px;width:100%;flex-wrap:wrap;">
 
                 <div class="pg-filter-block">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
                     <select class="pg-filter-select" asp-for="TiendaId" asp-items="Model.Tiendas">
                         <option value="">Todas las Tiendas</option>
                     </select>
-                    <i class="bi bi-chevron-down text-secondary"></i>
                 </div>
 
                 <div class="pg-filter-block">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                    </svg>
                     <select class="pg-filter-select" asp-for="PilotoId" asp-items="Model.Pilotos"></select>
-                    <i class="bi bi-chevron-down text-secondary"></i>
                 </div>
 
                 <div class="pg-filter-block">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="10"/>
+                    </svg>
                     <select class="pg-filter-select" asp-for="Estado" asp-items="Model.Estados"></select>
-                    <i class="bi bi-chevron-down text-secondary"></i>
                 </div>
 
-                <!-- fecha -->
                 <div class="pg-filter-block">
-                    <input class="pg-filter-input"
-                           asp-for="Fecha"
-                           type="date" />
-                    <i class="bi bi-calendar3 text-secondary"></i>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <input class="pg-filter-input" asp-for="Fecha" type="date" />
                 </div>
 
-
-                <div class="pg-search">
-                    <i class="bi bi-search text-secondary"></i>
-                    <input asp-for="NumeroOrdenA" type="number" placeholder="Buscar por #Orden ID..." />
+                <div class="pg-search-block" style="margin-left:auto;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input asp-for="NumeroOrdenA" type="number" placeholder="Buscar #Orden ID..." />
                 </div>
 
-                <button class="d-none" type="submit"></button>
+                <button class="visually-hidden" type="submit" style="position:absolute;opacity:0;"></button>
             </form>
-
         </div>
     </div>
 
-    <!-- SOLO ESTO SCROLLEA -->
+    <!-- LISTA DE ÓRDENES -->
     <div class="pg-orders-scroll">
-        <div class="d-flex flex-column gap-3">
-            @foreach (var o in Model.Ordenes)
-            {
-                // ====== helpers seguros ======
-                var pilotoSafe = (o.PilotoNombre ?? "").Trim();
-                var pilotoInicial = !string.IsNullOrEmpty(pilotoSafe) ? pilotoSafe.Substring(0, 1).ToUpper() : "?";
+        @foreach (var o in Model.Ordenes)
+        {
+            var pilotoSafe   = (o.PilotoNombre ?? "").Trim();
+            var pilotoInicial = !string.IsNullOrEmpty(pilotoSafe) ? pilotoSafe.Substring(0, 1).ToUpper() : "?";
+            var pilotoTel    = string.IsNullOrWhiteSpace(o.PilotoTelefono) ? "—" : o.PilotoTelefono;
+            var tiendaDir    = string.IsNullOrWhiteSpace(o.TiendaDireccion) ? "—" : o.TiendaDireccion;
+            var tiendaTel    = string.IsNullOrWhiteSpace(o.TiendaTelefono) ? "—" : o.TiendaTelefono;
+            var notasTxt     = string.IsNullOrWhiteSpace(o.Notas) ? null : o.Notas;
 
-                var pilotoTel = string.IsNullOrWhiteSpace(o.PilotoTelefono) ? "—" : o.PilotoTelefono;
+            var estadoTxt = o.Estado ?? "";
+            var badgeClass = estadoTxt.Equals("Recolectada", StringComparison.OrdinalIgnoreCase) ? ""
+                : estadoTxt.Equals("Entregada", StringComparison.OrdinalIgnoreCase) ? "green"
+                : estadoTxt.Equals("Incidente", StringComparison.OrdinalIgnoreCase) ? "red"
+                : "gray";
 
-                var tiendaDir = string.IsNullOrWhiteSpace(o.TiendaDireccion) ? "—" : o.TiendaDireccion;
-                var tiendaTel = string.IsNullOrWhiteSpace(o.TiendaTelefono) ? "—" : o.TiendaTelefono;
-                var notasTxt = string.IsNullOrWhiteSpace(o.Notas) ? "—" : o.Notas;
+            <div class="pg-card pg-order">
 
-                <div class="pg-card pg-order">
+                <!-- LEFT -->
+                <div class="pg-order-left">
+                    <div class="pg-order-label">Orden ID</div>
+                    <div class="pg-order-id">ORD-@o.NumeroOrdenA</div>
 
-                    <!-- LEFT -->
-                    <div class="pg-order-left">
-                        <div class="pg-order-label">ORDEN ID (A)</div>
-                        <div class="pg-order-id">ORD-@o.NumeroOrdenA</div>
-
-                        @{
-                            var estadoTxt = o.Estado ?? "";
-
-                            // Ajusta si tus estados son "Asignada / Recolectada / Entregada..."
-                            var isRecolectando =
-                            estadoTxt.Contains("Recolect", System.StringComparison.OrdinalIgnoreCase) ||
-                            estadoTxt.Contains("Recolectada", System.StringComparison.OrdinalIgnoreCase);
-
-                            // si no es recolectando, badge gris como tu UI
-                            var badgeClass = isRecolectando ? "" : "gray";
-                        }
-
-                        <div class="pg-status @badgeClass">
-                            <i class="bi bi-box-seam"></i>
-                            <span>@(string.IsNullOrWhiteSpace(o.Estado) ? "En Proceso" : o.Estado)</span>
-                        </div>
-
-                        <div class="pg-time">
-                            <i class="bi bi-clock"></i>
-                            <span>@o.CreatedAt.ToLocalTime().ToString("hh:mm tt")</span>
-                        </div>
+                    <div class="pg-status @badgeClass" style="margin-top:10px;">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        </svg>
+                        <span>@(string.IsNullOrWhiteSpace(o.Estado) ? "En Proceso" : o.Estado)</span>
                     </div>
 
-                    <!-- MID -->
-                    <div class="pg-order-mid">
-                        <div class="pg-store">
-                            <div class="pg-store-ico">
-                                <i class="bi bi-shop"></i>
-                            </div>
+                    <div class="pg-time">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        <span>@o.CreatedAt.ToLocalTime().ToString("hh:mm tt")</span>
+                    </div>
+                </div>
 
-                            <div>
-                                <div class="pg-store-name">@o.TiendaNombre</div>
-
-                                <div class="pg-store-meta">
-                                    <span><i class="bi bi-geo-alt"></i> <span class="ms-1">@tiendaDir</span></span>
-                                    <span><i class="bi bi-telephone"></i> <span class="ms-1">@tiendaTel</span></span>
+                <!-- MID -->
+                <div class="pg-order-mid">
+                    <div class="pg-store">
+                        <div class="pg-store-ico">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="pg-store-name">@o.TiendaNombre</div>
+                            <div class="pg-store-meta">
+                                <div class="pg-store-meta-row">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                                    </svg>
+                                    @tiendaDir
+                                </div>
+                                <div class="pg-store-meta-row">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.27 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.46 6.46l.96-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                    </svg>
+                                    @tiendaTel
                                 </div>
                             </div>
                         </div>
+                    </div>
 
+                    @if (notasTxt != null)
+                    {
                         <div class="pg-note">
-                            <div class="pg-note-title">NOTA DE LA TIENDA:</div>
-                            <div class="pg-note-text">"@notasTxt"</div>
+                            <div class="pg-note-title">Nota de la tienda</div>
+                            <div class="pg-note-text">@notasTxt</div>
                         </div>
-                    </div>
-
-                    <!-- RIGHT -->
-                    <div class="pg-order-right">
-                        <div class="pg-right-title">PILOTO ASIGNADO</div>
-
-                        @if (!string.IsNullOrWhiteSpace(o.PilotoNombre))
-                        {
-                            <div class="pg-pilot-card">
-                                <div class="pg-pilot-left">
-                                    <div class="pg-avatar">@pilotoInicial</div>
-                                    <div>
-                                        <div class="pg-pilot-name">@o.PilotoNombre</div>
-                                        <div class="pg-pilot-phone">@pilotoTel</div>
-                                    </div>
-                                </div>
-
-                                <a class="pg-edit-ico" asp-action="Pilotos" title="Editar piloto">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                            </div>
-                        }
-                        else
-                        {
-                            <button type="button"
-                                    class="pg-assign-btn"
-                                    data-open-assign
-                                    data-codigob="@o.CodigoB"
-                                    data-ordena="@o.NumeroOrdenA">
-                                <i class="bi bi-person-plus"></i>
-                                <span>Asignar Piloto</span>
-                            </button>
-
-                            <div class="pg-attn">Requiere Atención</div>
-                        }
-                    </div>
+                    }
                 </div>
-            }
-        </div>
+
+                <!-- RIGHT -->
+                <div class="pg-order-right">
+                    <div class="pg-right-title">Piloto Asignado</div>
+
+                    @if (!string.IsNullOrWhiteSpace(o.PilotoNombre))
+                    {
+                        <div class="pg-pilot-card">
+                            <div class="pg-pilot-left">
+                                <div class="pg-avatar">@pilotoInicial</div>
+                                <div>
+                                    <div class="pg-pilot-name">@o.PilotoNombre</div>
+                                    <div class="pg-pilot-phone">@pilotoTel</div>
+                                </div>
+                            </div>
+                            <a class="pg-edit-ico" asp-action="Pilotos" title="Ver pilotos">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <button type="button"
+                                class="pg-assign-btn"
+                                data-open-assign
+                                data-codigob="@o.CodigoB"
+                                data-ordena="@o.NumeroOrdenA">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                                <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+                            </svg>
+                            <span>Asignar Piloto</span>
+                        </button>
+                        <div class="pg-attn">Requiere Atención</div>
+                    }
+                </div>
+            </div>
+        }
     </div>
 
 </div>
 
-<!-- MODAL -->
-<div class="modal fade pg-modal" id="asignarPilotoModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:540px;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div>
-                    <div class="pg-modal-title">Asignar Piloto</div>
-                    <div class="pg-modal-sub">
-                        Seleccione un piloto disponible para la orden <b id="modalOrdenLabel">ORD-0000</b>
-                    </div>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+<!-- MODAL ASIGNAR PILOTO (custom, sin Bootstrap) -->
+<div class="pg-overlay" id="pgAssignOverlay">
+    <div class="pg-dialog">
+        <div class="pg-dialog-head">
+            <div>
+                <div class="pg-dialog-title">Asignar Piloto</div>
+                <div class="pg-dialog-sub">Selecciona un piloto para <b id="modalOrdenLabel">ORD-0000</b></div>
+            </div>
+            <button class="pg-dialog-close" id="pgAssignClose" type="button" aria-label="Cerrar">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="pg-dialog-body">
+            <div class="pg-dialog-search">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input id="pilotSearch" type="text" placeholder="Buscar piloto por nombre..." />
             </div>
 
-            <div class="modal-body">
-                <div class="pg-modal-search">
-                    <i class="bi bi-search text-secondary"></i>
-                    <input id="pilotSearch" type="text" placeholder="Buscar piloto por nombre..." />
-                </div>
+            <form id="asignarPilotoForm" method="post" asp-action="AsignarPiloto">
+                @Html.AntiForgeryToken()
+                <input id="modalCodigoB" type="hidden" name="CodigoB" value="" />
+                <input id="modalPilotoId" type="hidden" name="PilotoId" value="" />
 
-                <form id="asignarPilotoForm" method="post" asp-action="AsignarPiloto" class="mt-3">
-                    @Html.AntiForgeryToken()
+                <div id="pilotList">
+                    @foreach (var p in Model.Pilotos)
+                    {
+                        var pText    = (p.Text ?? "").Trim();
+                        var pInicial = !string.IsNullOrEmpty(pText) ? pText.Substring(0, 1).ToUpper() : "?";
 
-                    <input id="modalCodigoB" type="hidden" name="CodigoB" value="" />
-                    <input id="modalPilotoId" type="hidden" name="PilotoId" value="" />
-
-                    <div id="pilotList">
-                        @foreach (var p in Model.Pilotos)
-                        {
-                            var pText = (p.Text ?? "").Trim();
-                            var pInicial = !string.IsNullOrEmpty(pText) ? pText.Substring(0, 1).ToUpper() : "?";
-
-                            <div class="pg-pilot-pick"
-                                 data-piloto-id="@p.Value"
-                                 data-filter="@p.Text">
-                                <div class="pg-pick-left">
-                                    <div class="pg-pick-avatar">@pInicial</div>
-                                    <div>
-                                        <div class="fw-bold">@p.Text</div>
-                                        <div class="text-secondary fw-semibold" style="font-size:13px;">—</div>
-                                    </div>
+                        <div class="pg-pilot-pick"
+                             data-piloto-id="@p.Value"
+                             data-filter="@p.Text">
+                            <div class="pg-pick-left">
+                                <div class="pg-pick-avatar">@pInicial</div>
+                                <div>
+                                    <div class="pg-pick-name">@p.Text</div>
+                                    <div class="pg-pick-meta">Disponible</div>
                                 </div>
-                                <i class="bi bi-chevron-right text-secondary"></i>
                             </div>
-                        }
-                    </div>
-                </form>
-            </div>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                        </div>
+                    }
+                </div>
+            </form>
+        </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-link text-secondary fw-bold" data-bs-dismiss="modal">
-                    Cancelar
-                </button>
-            </div>
+        <div class="pg-dialog-foot">
+            <button type="button" class="pg-btn pg-btn-ghost" id="pgAssignClose2">Cancelar</button>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.getElementById("pgAssignClose2")?.addEventListener("click", () => {
+            document.getElementById("pgAssignOverlay")?.classList.remove("open");
+        });
+    </script>
+}

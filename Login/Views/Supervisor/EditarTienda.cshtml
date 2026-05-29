@@ -1,104 +1,116 @@
-﻿@model Login.ViewModels.Tienda.TiendaEditVm
+@model Login.ViewModels.Tienda.TiendaEditVm
 @{
     ViewData["Title"] = "Editar Tienda";
     Layout = "_LayoutGestor";
 }
 
-@if (!string.IsNullOrWhiteSpace(ViewBag.Ok))
+@if (!string.IsNullOrWhiteSpace(ViewBag.Ok as string))
 {
-    <div class="alert alert-success">@ViewBag.Ok</div>
+    <div class="pg-alert pg-alert-ok" style="margin-bottom:12px;max-width:640px;">
+        <span class="pg-alert-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+        <div>@ViewBag.Ok</div>
+    </div>
 }
-@if (!string.IsNullOrWhiteSpace(ViewBag.Error))
+@if (!string.IsNullOrWhiteSpace(ViewBag.Error as string))
 {
-    <div class="alert alert-danger">@ViewBag.Error</div>
+    <div class="pg-alert pg-alert-bad" style="margin-bottom:12px;max-width:640px;">
+        <span class="pg-alert-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+        <div>@ViewBag.Error</div>
+    </div>
 }
 
-<div class="pg-card p-4">
-
-    <div class="d-flex align-items-start justify-content-between mb-3">
+<div class="pg-card pg-form-card" style="max-width:640px;">
+    <div class="pg-card-head-row">
         <div>
-            <div class="h4 fw-bold mb-1">Editar Tienda</div>
-            <div class="text-secondary fw-semibold">Actualiza datos y administra acceso del usuario principal.</div>
+            <div class="pg-card-title">Editar Tienda</div>
+            <div class="pg-card-sub">Actualiza datos y administra el acceso del usuario principal.</div>
         </div>
-
-        <a asp-action="Tiendas" class="btn btn-outline-secondary fw-bold">
-            <i class="bi bi-arrow-left"></i> Volver
+        <a asp-action="Tiendas" class="pg-btn pg-btn-outline">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Volver
         </a>
     </div>
 
     @if (!string.IsNullOrWhiteSpace(Model.EmailCliente))
     {
-        <div class="pg-card p-3 mb-3" style="box-shadow:none;">
-            <div class="text-secondary fw-bold" style="font-size:12px; letter-spacing:1px;">EMAIL (LOGIN TIENDA)</div>
-            <div class="fw-bold">@Model.EmailCliente</div>
+        <div class="pg-info-block">
+            <div class="pg-info-lbl">Email de acceso (tienda)</div>
+            <div class="pg-info-val">@Model.EmailCliente</div>
         </div>
     }
 
-    <form method="post" asp-action="EditarTienda" class="row g-3">
+    <form method="post" asp-action="EditarTienda">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
 
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Nombre</label>
-            <input class="form-control" asp-for="Nombre" />
-            <span class="text-danger" asp-validation-for="Nombre"></span>
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Teléfono</label>
-            <input class="form-control" asp-for="Telefono" />
-            <span class="text-danger" asp-validation-for="Telefono"></span>
-        </div>
-
-        <div class="col-12">
-            <label class="form-label fw-bold">Dirección</label>
-            <input class="form-control" asp-for="Direccion" />
-            <span class="text-danger" asp-validation-for="Direccion"></span>
-        </div>
-
-        <div class="col-12">
-            <div class="form-check">
-                <input class="form-check-input" asp-for="Activo" />
-                <label class="form-check-label fw-bold">Activo</label>
+        <div class="pg-grid-2">
+            <div class="pg-field">
+                <label class="pg-label">Nombre</label>
+                <input class="pg-input" asp-for="Nombre" />
+                <span class="pg-val" asp-validation-for="Nombre"></span>
+            </div>
+            <div class="pg-field">
+                <label class="pg-label">Teléfono</label>
+                <input class="pg-input" asp-for="Telefono" />
+                <span class="pg-val" asp-validation-for="Telefono"></span>
             </div>
         </div>
 
-        <div class="col-12 d-flex gap-2 mt-2">
-            <button class="btn btn-dark fw-bold">
-                <i class="bi bi-save2"></i> Guardar cambios
+        <div class="pg-field" style="margin-top:12px;">
+            <label class="pg-label">Dirección</label>
+            <input class="pg-input" asp-for="Direccion" />
+            <span class="pg-val" asp-validation-for="Direccion"></span>
+        </div>
+
+        <div style="margin-top:12px;">
+            <label class="pg-check">
+                <input class="pg-check-input" type="checkbox" asp-for="Activo" />
+                <span class="pg-check-label">Activo</span>
+            </label>
+        </div>
+
+        <div class="pg-form-actions">
+            <button class="pg-btn pg-btn-primary" type="submit">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                </svg>
+                Guardar cambios
             </button>
-            <a class="btn btn-link fw-bold text-decoration-none text-secondary" asp-action="Tiendas">Cancelar</a>
+            <a class="pg-btn pg-btn-ghost" asp-action="Tiendas">Cancelar</a>
         </div>
     </form>
 
-    <hr class="my-4" />
+    <hr class="pg-section-sep" />
 
-    <div class="h5 fw-bold mb-2">Reset Password (Tienda)</div>
-    <div class="text-secondary fw-semibold mb-3" style="font-size:13px;">
-        Cambia el password del usuario principal de la tienda (sin saber el actual).
-    </div>
+    <div class="pg-section-title">Reset Password</div>
+    <div class="pg-section-sub">Cambia el password del usuario principal de la tienda sin necesitar el actual.</div>
 
-    <form method="post" asp-action="ResetPasswordTienda" class="row g-2">
+    <form method="post" asp-action="ResetPasswordTienda">
         @Html.AntiForgeryToken()
         <input type="hidden" name="TiendaId" value="@Model.Id" />
 
-        <div class="col-md-6">
-            <input class="form-control" name="NuevoPassword" type="password" placeholder="Nuevo password (mín 6)" required />
+        <div class="pg-grid-2">
+            <div class="pg-field">
+                <label class="pg-label">Nuevo password</label>
+                <input class="pg-input" name="NuevoPassword" type="password" placeholder="Mínimo 6 caracteres" required />
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+                <button class="pg-btn pg-btn-warning" type="submit" style="width:100%;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    Resetear password
+                </button>
+            </div>
         </div>
 
-        <div class="col-md-6">
-            <button class="btn btn-warning fw-bold w-100">
-                <i class="bi bi-key"></i> Resetear password
-            </button>
-        </div>
-
-        <div class="col-12">
-            <small class="text-secondary fw-semibold">
-                Tip: si la tienda estaba lockeada, este reset también la desbloquea.
-            </small>
+        <div style="font-size:12px;color:var(--pg-muted);margin-top:8px;">
+            Si la tienda estaba bloqueada, este reset también la desbloquea.
         </div>
     </form>
-
 </div>
 
 @section Scripts {
