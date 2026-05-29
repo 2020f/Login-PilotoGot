@@ -146,6 +146,7 @@
 
                             @if (o.EstadoNum >= 2)
                             {
+                                @* EstadoNum: 2=Asignada(33%), 3=Recolectada(67%), 4+=Entregada(100%) *@
                                 var pct = o.EstadoNum >= 4 ? 100
                                         : o.EstadoNum >= 3 ? 67
                                         : 33;
