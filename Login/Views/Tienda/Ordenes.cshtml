@@ -143,6 +143,36 @@
                             <div class="tp-order-sub">
                                 Creada: @o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt")
                             </div>
+
+                            @if (o.EstadoNum >= 2)
+                            {
+                                var pct = o.EstadoNum >= 4 ? 100
+                                        : o.EstadoNum >= 3 ? 67
+                                        : 33;
+
+                                <div class="tp-tracking">
+                                    <div class="tp-tracking-bar-wrap">
+                                        <div class="tp-tracking-bar-fill" style="width:@(pct)%"></div>
+                                    </div>
+                                    <div class="tp-tracking-steps">
+                                        <div class="tp-tracking-step @(o.EstadoNum >= 2 ? "tp-step-done" : "tp-step-pending")">
+                                            <span class="tp-step-icon">🛵</span>
+                                            <span class="tp-step-label">Asignado</span>
+                                            <span class="tp-step-time">@(o.AssignedAt.HasValue ? o.AssignedAt.Value.ToLocalTime().ToString("hh:mm tt") : "—")</span>
+                                        </div>
+                                        <div class="tp-tracking-step @(o.EstadoNum >= 3 ? "tp-step-done" : "tp-step-pending")">
+                                            <span class="tp-step-icon">📦</span>
+                                            <span class="tp-step-label">Recogido</span>
+                                            <span class="tp-step-time">@(o.RecolectadaAt.HasValue ? o.RecolectadaAt.Value.ToLocalTime().ToString("hh:mm tt") : "—")</span>
+                                        </div>
+                                        <div class="tp-tracking-step @(o.EstadoNum >= 4 ? "tp-step-done" : "tp-step-pending")">
+                                            <span class="tp-step-icon">✅</span>
+                                            <span class="tp-step-label">Entregado</span>
+                                            <span class="tp-step-time">@(o.EntregadaAt.HasValue ? o.EntregadaAt.Value.ToLocalTime().ToString("hh:mm tt") : "—")</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
                         </div>
 
                         <div class="tp-order-actions">
@@ -156,5 +186,70 @@
         </div>
     </div>
 </div>
+
+<style>
+    .tp-tracking {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255,255,255,.06);
+    }
+
+    .tp-tracking-bar-wrap {
+        background: #374151;
+        border-radius: 4px;
+        height: 5px;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+
+    .tp-tracking-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        border-radius: 4px;
+        transition: width .4s ease;
+    }
+
+    .tp-tracking-steps {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .tp-tracking-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        flex: 1;
+    }
+
+    .tp-step-icon {
+        font-size: 13px;
+    }
+
+    .tp-step-label {
+        font-size: 8px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .tp-step-time {
+        font-size: 8px;
+    }
+
+    .tp-step-done .tp-step-label,
+    .tp-step-done .tp-step-time {
+        color: #60a5fa;
+    }
+
+    .tp-step-pending {
+        opacity: .38;
+    }
+
+    .tp-step-pending .tp-step-label,
+    .tp-step-pending .tp-step-time {
+        color: #9ca3af;
+    }
+</style>
 
 <div id="tpModalHost"></div>
