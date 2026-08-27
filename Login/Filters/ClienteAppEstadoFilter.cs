@@ -110,6 +110,21 @@ namespace Login.Filters
 
             if (estado != EstadoClienteApp.Activo)
             {
+                // Rutas API -> devolver 403 JSON (los móviles no entienden redirects)
+                var apiPath = context.HttpContext.Request.Path.Value?.ToLower() ?? "";
+                if (apiPath.StartsWith("/api/"))
+                {
+                    context.Result = new JsonResult(new
+                    {
+                        error = "Tenant no activo",
+                        motivo = estado.ToString()
+                    })
+                    {
+                        StatusCode = StatusCodes.Status403Forbidden
+                    };
+                    return;
+                }
+
                 context.Result = new RedirectToActionResult("Index", "Bloqueo", new { motivo = estado.ToString() });
                 return;
             }
