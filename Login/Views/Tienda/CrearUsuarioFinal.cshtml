@@ -29,6 +29,12 @@
     </div>
 
     <div class="col-12">
+        <label class="form-label">Ubicación exacta (Google Maps)</label>
+        <input class="form-control" asp-for="MapaLink" placeholder="https://maps.google.com/maps?q=..." />
+        <span class="text-danger" asp-validation-for="MapaLink"></span>
+    </div>
+
+    <div class="col-12">
         <label class="form-label">Notas</label>
         <textarea class="form-control" asp-for="Notas" rows="3"></textarea>
         <span class="text-danger" asp-validation-for="Notas"></span>

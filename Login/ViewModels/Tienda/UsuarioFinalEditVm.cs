@@ -13,6 +13,9 @@ namespace Login.ViewModels.Tienda
         [Required, MaxLength(250)]
         public string DireccionUbicacion { get; set; } = string.Empty;
 
+        [MaxLength(500)]
+        public string? MapaLink { get; set; }
+
         [Required, MaxLength(30)]
         public string Telefono { get; set; } = string.Empty;
 

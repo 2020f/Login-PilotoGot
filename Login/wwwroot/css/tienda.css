@@ -672,6 +672,12 @@ svg { display: block; flex-shrink: 0; }
 }
 .tp-ucard-loc svg { margin-top: 2px; flex-shrink: 0; color: var(--c-muted); }
 
+.tp-ucard-map {
+  font-size: 12px; font-weight: 500; color: var(--c-blue);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.tp-ucard-map:hover { text-decoration: underline; }
+
 .tp-ucard-actions {
   display: flex; gap: 6px;
   padding-top: 8px; border-top: 1px solid var(--c-border2);

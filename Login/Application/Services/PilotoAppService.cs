@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Login.Application.Interfaces;
@@ -25,26 +26,31 @@ namespace Login.Application.Services
             var piloto = await GetPilotoLogueadoAsync(identityUserId);
             if (piloto is null) return null;
 
-            return await _db.OrdenesEntrega
-                .AsNoTracking()
-                .Include(o => o.Tienda)
-                .Include(o => o.UsuarioFinal)
-                .Where(o => o.PilotoId == piloto.Id &&
-                            (o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada))
+            return await OrdenesActivasQuery(piloto.Id)
                 .OrderByDescending(o => o.AssignedAt ?? o.CreatedAt)
-                .Select(o => new OrdenPilotoDto(
-                    o.Id,
-                    o.NumeroOrdenA,
-                    o.Estado.ToString(),
-                    o.CreatedAt,
-                    o.Estado == EstadoOrden.Recolectada,
-                    o.Tienda.Nombre,
-                    o.Tienda.Direccion,
-                    o.Tienda.Telefono,
-                    o.NotaPedido,
-                    o.UsuarioFinal.Nombre,
-                    o.UsuarioFinal.DireccionUbicacion,
-                    o.UsuarioFinal.Telefono))
+                .Select(ToDto())
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<List<OrdenPilotoDto>> GetOrdenesAsync(string identityUserId)
+        {
+            var piloto = await GetPilotoLogueadoAsync(identityUserId);
+            if (piloto is null) return new List<OrdenPilotoDto>();
+
+            return await OrdenesActivasQuery(piloto.Id)
+                .OrderByDescending(o => o.AssignedAt ?? o.CreatedAt)
+                .Select(ToDto())
+                .ToListAsync();
+        }
+
+        public async Task<OrdenPilotoDto?> GetOrdenDetalleAsync(string identityUserId, int ordenId)
+        {
+            var piloto = await GetPilotoLogueadoAsync(identityUserId);
+            if (piloto is null) return null;
+
+            return await OrdenesActivasQuery(piloto.Id)
+                .Where(o => o.Id == ordenId)
+                .Select(ToDto())
                 .FirstOrDefaultAsync();
         }
 
@@ -94,6 +100,36 @@ namespace Login.Application.Services
                 throw new InvalidOperationException("No puedes cerrar: la orden no está recolectada o no es tuya.");
 
             await _ordenService.ConfirmarEntregaAsync(codigoB, codigoC, identityUserId, "Piloto");
+        }
+
+        // ---------- Helpers ----------
+
+        private IQueryable<OrdenEntrega> OrdenesActivasQuery(int pilotoId)
+        {
+            return _db.OrdenesEntrega
+                .AsNoTracking()
+                .Include(o => o.Tienda)
+                .Include(o => o.UsuarioFinal)
+                .Where(o => o.PilotoId == pilotoId &&
+                            (o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada));
+        }
+
+        private static System.Linq.Expressions.Expression<Func<OrdenEntrega, OrdenPilotoDto>> ToDto()
+        {
+            return o => new OrdenPilotoDto(
+                o.Id,
+                o.NumeroOrdenA,
+                o.Estado.ToString(),
+                o.CreatedAt,
+                o.Estado == EstadoOrden.Recolectada,
+                o.Tienda.Nombre,
+                o.Tienda.Direccion,
+                o.Tienda.Telefono,
+                o.NotaPedido,
+                o.UsuarioFinal.Nombre,
+                o.UsuarioFinal.DireccionUbicacion,
+                o.UsuarioFinal.MapaLink,
+                o.UsuarioFinal.Telefono);
         }
 
         private async Task<Piloto?> GetPilotoLogueadoAsync(string identityUserId)

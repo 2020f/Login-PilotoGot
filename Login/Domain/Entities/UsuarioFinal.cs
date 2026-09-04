@@ -15,6 +15,10 @@ namespace Login.Domain.Entities
         [Required, MaxLength(250)]
         public string DireccionUbicacion { get; set; } = string.Empty;
 
+        // Enlace exacto de Google Maps (ej. https://maps.google.com/maps?q=18.4812053,-69.9743033&z=17&hl=es)
+        [MaxLength(500)]
+        public string? MapaLink { get; set; }
+
         [Required, MaxLength(30)]
         public string Telefono { get; set; } = string.Empty;
 

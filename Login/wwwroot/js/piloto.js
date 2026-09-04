@@ -1,130 +1,172 @@
 ﻿(function () {
-    const btnAbrir = document.getElementById("btnAbrirValidacion");
-    const btnCerrar = document.getElementById("btnCerrarModal");
-    const modal = document.getElementById("modalValidacion");
-    const backdrop = document.getElementById("modalBackdrop");
+    'use strict';
 
-    if (!btnAbrir || !modal || !backdrop) return;
+    /* ── Validation modal (C + B) ─────────────────────── */
+    const btnAbrir = document.getElementById('btnAbrirValidacion');
+    const btnCerrar = document.getElementById('btnCerrarModal');
+    const modal = document.getElementById('modalValidacion');
+    const backdrop = document.getElementById('modalBackdrop');
 
-    // Input normal del Código C (alfanumérico 10-15)
-    const txtCodigoC = document.getElementById("txtCodigoC");
-    const chkC = document.getElementById("chkC");
+    const txtCodigoC = document.getElementById('txtCodigoC');
+    const chkC = document.getElementById('chkC');
+    const txtCodigoBFinal = document.getElementById('txtCodigoBFinal');
+    const btnFinalizar = document.getElementById('btnFinalizarEntrega');
 
-    const txtCodigoBFinal = document.getElementById("txtCodigoBFinal");
-    const btnScan = document.getElementById("btnHabilitadoScan");
-    const btnFinalizar = document.getElementById("btnFinalizarEntrega");
-
-    const formEntrega = document.getElementById("formConfirmarEntrega");
-    const hdB = document.getElementById("hdCodigoB");
-    const hdC = document.getElementById("hdCodigoC");
+    const formEntrega = document.getElementById('formConfirmarEntrega');
+    const hdB = document.getElementById('hdCodigoB');
+    const hdC = document.getElementById('hdCodigoC');
 
     function openModal() {
-        modal.classList.add("open");
-        backdrop.classList.add("open");
-        modal.setAttribute("aria-hidden", "false");
-        backdrop.setAttribute("aria-hidden", "false");
-
-        // reset
-        if (txtCodigoC) txtCodigoC.value = "";
-        setCheck(false);
-        lockStep2();
-        lockFinalize();
-
-        setTimeout(() => txtCodigoC?.focus(), 60);
+        if (!modal || !backdrop) return;
+        modal.classList.add('open');
+        backdrop.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        backdrop.setAttribute('aria-hidden', 'false');
+        resetModal();
+        setTimeout(() => txtCodigoC && txtCodigoC.focus(), 60);
     }
 
     function closeModal() {
-        modal.classList.remove("open");
-        backdrop.classList.remove("open");
-        modal.setAttribute("aria-hidden", "true");
-        backdrop.setAttribute("aria-hidden", "true");
+        if (!modal || !backdrop) return;
+        modal.classList.remove('open');
+        backdrop.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+        backdrop.setAttribute('aria-hidden', 'true');
+    }
+
+    function resetModal() {
+        if (txtCodigoC) txtCodigoC.value = '';
+        setCheck(false);
+        lockFinalize();
     }
 
     function setCheck(on) {
-        if (!chkC) return;
-        chkC.style.opacity = on ? "1" : ".2";
+        if (chkC) chkC.style.opacity = on ? '1' : '.2';
     }
 
-    // ✅ Ahora válido: letras + números, entre 10 y 15 caracteres
     function isCodigoCValid() {
-        const v = (txtCodigoC?.value || "").trim();
+        const v = (txtCodigoC && txtCodigoC.value || '').trim();
         return /^[A-Za-z0-9]{10,15}$/.test(v);
     }
 
-    function unlockStep2() {
-        if (txtCodigoBFinal) txtCodigoBFinal.disabled = false;
-        if (btnScan) btnScan.disabled = false;
-    }
-
-    function lockStep2() {
-        if (txtCodigoBFinal) {
-            txtCodigoBFinal.value = "";
-            txtCodigoBFinal.disabled = true;
-        }
-        if (btnScan) btnScan.disabled = true;
+    function isCodigoBValid() {
+        const b = (txtCodigoBFinal && txtCodigoBFinal.value || '').trim();
+        return b.length > 0;
     }
 
     function unlockFinalize() {
-        if (btnFinalizar) {
-            btnFinalizar.disabled = false;
-            btnFinalizar.classList.remove("pg-btn-lock");
-            btnFinalizar.classList.add("pg-btn-dark");
-            btnFinalizar.textContent = "🔒 Finalizar Entrega";
-        }
+        if (!btnFinalizar) return;
+        btnFinalizar.disabled = false;
     }
 
     function lockFinalize() {
         if (!btnFinalizar) return;
         btnFinalizar.disabled = true;
-        btnFinalizar.classList.add("pg-btn-lock");
-        btnFinalizar.classList.remove("pg-btn-dark");
     }
 
-    // Abrir / cerrar modal
-    btnAbrir.addEventListener("click", openModal);
-    btnCerrar?.addEventListener("click", closeModal);
-    backdrop.addEventListener("click", closeModal);
+    if (btnAbrir) btnAbrir.addEventListener('click', openModal);
+    if (btnCerrar) btnCerrar.addEventListener('click', closeModal);
+    if (backdrop) backdrop.addEventListener('click', closeModal);
 
-    // Código C behavior (alfanumérico, máximo 15)
-    txtCodigoC?.addEventListener("input", () => {
-        txtCodigoC.value = (txtCodigoC.value || "")
-            .replace(/[^A-Za-z0-9]/g, "") // solo letras y números
-            .slice(0, 15); // máximo 15
+    if (txtCodigoC) {
+        txtCodigoC.addEventListener('input', function () {
+            this.value = (this.value || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 15);
+            const ok = isCodigoCValid();
+            setCheck(ok);
+            if (ok && isCodigoBValid()) unlockFinalize();
+            else lockFinalize();
+        });
+    }
 
-        const ok = isCodigoCValid();
-        setCheck(ok);
+    if (txtCodigoBFinal) {
+        txtCodigoBFinal.addEventListener('input', function () {
+            this.value = (this.value || '').replace(/\s+/g, '');
+            if (isCodigoCValid() && isCodigoBValid()) unlockFinalize();
+            else lockFinalize();
+        });
+    }
 
-        if (ok) unlockStep2();
-        else {
-            lockStep2();
-            lockFinalize();
+    if (btnFinalizar) {
+        btnFinalizar.addEventListener('click', function () {
+            const c = (txtCodigoC && txtCodigoC.value || '').trim();
+            const b = (txtCodigoBFinal && txtCodigoBFinal.value || '').trim();
+            if (!/^[A-Za-z0-9]{10,15}$/.test(c)) return;
+            if (!b) return;
+            hdC.value = c;
+            hdB.value = b;
+            formEntrega.submit();
+        });
+    }
+
+    /* ── Navigation chooser (Navegar) ──────────────────── */
+    const navOverlay = document.getElementById('navOverlay');
+    const navSheet = document.getElementById('navSheet');
+    let navTarget = null;
+
+    function parseLatLng(link) {
+        if (!link) return null;
+        try {
+            const u = new URL(link);
+            const q = u.searchParams.get('q');
+            if (q && /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(q.trim())) {
+                return q.trim();
+            }
+        } catch (_) { /* ignore */ }
+        return null;
+    }
+
+    function openNavSheet(btn) {
+        navTarget = {
+            link: btn.getAttribute('data-nav-link') || '',
+            query: btn.getAttribute('data-nav-query') || ''
+        };
+        if (navSheet) navSheet.classList.add('open');
+        if (navOverlay) navOverlay.classList.add('open');
+    }
+
+    function closeNavSheet() {
+        if (navSheet) navSheet.classList.remove('open');
+        if (navOverlay) navOverlay.classList.remove('open');
+        navTarget = null;
+    }
+
+    document.addEventListener('click', function (e) {
+        const navBtn = e.target.closest('[data-nav]');
+        if (navBtn) {
+            openNavSheet(navBtn);
+            return;
+        }
+        if (e.target.closest('[data-gps]')) {
+            const gps = e.target.closest('[data-gps]').getAttribute('data-gps');
+            if (navTarget) navigate(gps, navTarget);
+            closeNavSheet();
+            return;
+        }
+        if (e.target === navOverlay) {
+            closeNavSheet();
         }
     });
 
-    // "Escanear QR de Cierre"
-    btnScan?.addEventListener("click", () => {
-        if (!txtCodigoBFinal) return;
-        txtCodigoBFinal.focus();
-    });
+    function navigate(gps, target) {
+        const latlng = parseLatLng(target.link);
+        const query = target.query || target.link;
 
-    // Cuando se escribe/pega B final
-    txtCodigoBFinal?.addEventListener("input", () => {
-        const b = (txtCodigoBFinal.value || "").trim();
-        if (b.length > 0 && isCodigoCValid()) unlockFinalize();
-        else lockFinalize();
-    });
+        let url = '';
 
-    // Finalizar -> submit real a tu action ConfirmarEntrega
-    btnFinalizar?.addEventListener("click", () => {
-        const c = (txtCodigoC?.value || "").trim();
-        const b = (txtCodigoBFinal?.value || "").trim();
+        if (gps === 'google') {
+            url = latlng
+                ? 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(latlng)
+                : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query);
+        } else if (gps === 'waze') {
+            url = latlng
+                ? 'https://waze.com/ul?ll=' + encodeURIComponent(latlng) + '&navigate=yes'
+                : 'https://waze.com/ul?q=' + encodeURIComponent(query) + '&navigate=yes';
+        } else if (gps === 'apple') {
+            url = latlng
+                ? 'https://maps.apple.com/?daddr=' + encodeURIComponent(latlng)
+                : 'https://maps.apple.com/?q=' + encodeURIComponent(query);
+        }
 
-        if (!/^[A-Za-z0-9]{10,15}$/.test(c)) return;
-        if (!b) return;
-
-        hdC.value = c;  // CodigoC
-        hdB.value = b;  // CodigoB
-
-        formEntrega.submit();
-    });
+        if (url) window.location.href = url;
+    }
 })();

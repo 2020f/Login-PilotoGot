@@ -19,8 +19,8 @@ namespace Login.Controllers.Api
         }
 
         public sealed record CrearOrdenRequest(int UsuarioFinalId, string? NotaPedido);
-        public sealed record CrearUsuarioFinalRequest(string Nombre, string DireccionUbicacion, string Telefono, string? Notas);
-        public sealed record EditarUsuarioFinalRequest(string Nombre, string DireccionUbicacion, string Telefono, string? Notas, bool Activo);
+        public sealed record CrearUsuarioFinalRequest(string Nombre, string DireccionUbicacion, string Telefono, string? Notas, string? MapaLink);
+        public sealed record EditarUsuarioFinalRequest(string Nombre, string DireccionUbicacion, string Telefono, string? Notas, string? MapaLink, bool Activo);
         public sealed record SetTiendaActivaRequest(int TiendaId);
 
         private string GetUserId()
@@ -56,11 +56,11 @@ namespace Login.Controllers.Api
 
         [HttpPost("usuarios-finales")]
         public async Task<IActionResult> CrearUsuarioFinal([FromBody] CrearUsuarioFinalRequest request)
-            => await RunAsync(() => _svc.CrearUsuarioFinalAsync(GetUserId(), request.Nombre, request.DireccionUbicacion, request.Telefono, request.Notas));
+            => await RunAsync(() => _svc.CrearUsuarioFinalAsync(GetUserId(), request.Nombre, request.DireccionUbicacion, request.Telefono, request.Notas, request.MapaLink));
 
         [HttpPut("usuarios-finales/{id:int}")]
         public async Task<IActionResult> EditarUsuarioFinal(int id, [FromBody] EditarUsuarioFinalRequest request)
-            => await RunAsync(() => _svc.EditarUsuarioFinalAsync(GetUserId(), id, request.Nombre, request.DireccionUbicacion, request.Telefono, request.Notas, request.Activo));
+            => await RunAsync(() => _svc.EditarUsuarioFinalAsync(GetUserId(), id, request.Nombre, request.DireccionUbicacion, request.Telefono, request.Notas, request.MapaLink, request.Activo));
 
         [HttpDelete("usuarios-finales/{id:int}")]
         public async Task<IActionResult> EliminarUsuarioFinal(int id)

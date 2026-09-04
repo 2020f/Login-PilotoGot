@@ -28,6 +28,14 @@ namespace Login.Controllers.Api
         public async Task<IActionResult> MiOrden()
             => await RunAsync(() => _svc.GetOrdenActualAsync(GetUserId()));
 
+        [HttpGet("mis-ordenes")]
+        public async Task<IActionResult> MisOrdenes()
+            => await RunAsync(() => _svc.GetOrdenesAsync(GetUserId()));
+
+        [HttpGet("ordenes/{ordenId:int}")]
+        public async Task<IActionResult> OrdenDetalle(int ordenId)
+            => await RunAsync(() => _svc.GetOrdenDetalleAsync(GetUserId(), ordenId));
+
         [HttpPost("confirmar-recolecta")]
         public async Task<IActionResult> ConfirmarRecolecta([FromBody] ConfirmarRecolectaRequest request)
             => await RunAsync(async () =>

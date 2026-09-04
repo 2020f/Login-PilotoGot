@@ -19,8 +19,8 @@ namespace Login.Application.Interfaces
         // Usuarios finales (destinatarios)
         Task<List<UsuarioFinalDto>> GetUsuariosFinalesAsync(string identityUserId);
         Task<UsuarioFinalDto> GetUsuarioFinalAsync(string identityUserId, int id);
-        Task<UsuarioFinalDto> CrearUsuarioFinalAsync(string identityUserId, string nombre, string direccionUbicacion, string telefono, string? notas);
-        Task<UsuarioFinalDto> EditarUsuarioFinalAsync(string identityUserId, int id, string nombre, string direccionUbicacion, string telefono, string? notas, bool activo);
+        Task<UsuarioFinalDto> CrearUsuarioFinalAsync(string identityUserId, string nombre, string direccionUbicacion, string telefono, string? notas, string? mapaLink);
+        Task<UsuarioFinalDto> EditarUsuarioFinalAsync(string identityUserId, int id, string nombre, string direccionUbicacion, string telefono, string? notas, string? mapaLink, bool activo);
         Task EliminarUsuarioFinalAsync(string identityUserId, int id);
 
         // Órdenes
@@ -36,6 +36,7 @@ namespace Login.Application.Interfaces
         int Id,
         string Nombre,
         string DireccionUbicacion,
+        string? MapaLink,
         string Telefono,
         string? Notas,
         bool Activo,
@@ -60,5 +61,6 @@ namespace Login.Application.Interfaces
         string CodigoC,
         string UsuarioFinalNombre,
         string DireccionUbicacion,
+        string? MapaLink,
         string? Descripcion);
 }

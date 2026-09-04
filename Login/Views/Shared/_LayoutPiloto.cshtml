@@ -2,62 +2,49 @@
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>@ViewData["Title"] - PilotGo</title>
-
     <link rel="stylesheet" href="~/css/piloto.css" asp-append-version="true" />
+    @RenderSection("Styles", required: false)
 </head>
-<body>
+<body class="pg-body">
 
-    <!-- App Shell -->
     <div class="pg-app">
 
-        <!-- TopBar (ÚNICO) -->
         <header class="pg-topbar">
             <div class="pg-top-left">
-                <div class="pg-logo">🚴</div>
-                <span class="pg-title">PilotGo</span>
+                <div class="pg-logo">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="3" width="15" height="13" rx="2"/>
+                        <path d="M16 8h4l3 5v3h-7V8z"/>
+                        <circle cx="5.5" cy="18.5" r="2.5"/>
+                        <circle cx="18.5" cy="18.5" r="2.5"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="pg-title">PilotGo</div>
+                    <div class="pg-subtitle">Repartidor</div>
+                </div>
             </div>
 
             <div class="pg-top-right">
-                <span class="pg-online" aria-hidden="true"></span>
-                <span class="pg-user">Piloto</span>
-
-                <!-- Cerrar sesión (Identity) -->
-                <form asp-area="Identity"
-                      asp-page="/Account/Logout"
-                      method="post"
-                      class="pg-logout-form">
+                <span class="pg-online"><span class="pg-online-dot"></span>En línea</span>
+                <form asp-area="Identity" asp-page="/Account/Logout" method="post" class="pg-logout-form">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="pg-logout-btn" title="Cerrar sesión" aria-label="Cerrar sesión">
-                        ⎋
+                    <button type="submit" class="pg-logout" title="Cerrar sesión" aria-label="Cerrar sesión">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
                     </button>
                 </form>
             </div>
         </header>
 
-        <!-- Body -->
-        <main class="pg-container">
+        <main class="pg-main">
             @RenderBody()
         </main>
-
-        <!-- Bottom Navigation -->
-        <nav class="pg-bottom">
-            <button class="pg-nav-btn active" type="button">
-                <span class="pg-nav-ico">🧾</span>
-                <span class="pg-nav-text">Orden</span>
-            </button>
-
-            <button class="pg-nav-btn" type="button">
-                <span class="pg-nav-ico">📍</span>
-                <span class="pg-nav-text">Ruta</span>
-            </button>
-
-            <button class="pg-nav-btn" type="button">
-                <span class="pg-nav-ico">👤</span>
-                <span class="pg-nav-text">Perfil</span>
-            </button>
-        </nav>
 
     </div>
 

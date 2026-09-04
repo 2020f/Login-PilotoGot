@@ -12,6 +12,12 @@ namespace Login.Application.Interfaces
         /// <summary>Devuelve la orden activa del piloto (Asignada o Recolectada), o null.</summary>
         Task<OrdenPilotoDto?> GetOrdenActualAsync(string identityUserId);
 
+        /// <summary>Devuelve todas las órdenes activas del piloto (Asignada + Recolectada).</summary>
+        Task<List<OrdenPilotoDto>> GetOrdenesAsync(string identityUserId);
+
+        /// <summary>Devuelve el detalle de una orden específica (valida propiedad).</summary>
+        Task<OrdenPilotoDto?> GetOrdenDetalleAsync(string identityUserId, int ordenId);
+
         /// <summary>Confirma la recolecta con el código B (valida que la orden sea del piloto).</summary>
         Task ConfirmarRecolectaAsync(string identityUserId, string codigoB);
 
@@ -31,5 +37,6 @@ namespace Login.Application.Interfaces
         string? NotaPedido,
         string UsuarioFinalNombre,
         string UsuarioFinalDireccion,
+        string? UsuarioFinalMapaLink,
         string UsuarioFinalTelefono);
 }

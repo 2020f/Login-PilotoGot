@@ -1,0 +1,302 @@
+@model Login.ViewModels.Piloto.MisOrdenesIndexVm
+@using Microsoft.AspNetCore.WebUtilities
+@{
+    Layout = "_LayoutPiloto";
+    ViewData["Title"] = "Detalle de orden";
+
+    var o = Model.Ordenes.FirstOrDefault();
+
+    bool IsUrl(string? s) =>
+        !string.IsNullOrWhiteSpace(s) && s.Trim().StartsWith("http", StringComparison.OrdinalIgnoreCase);
+
+    string? EffectiveLink(string? mapaLink, string address)
+    {
+        if (!string.IsNullOrWhiteSpace(mapaLink)) return mapaLink.Trim();
+        if (IsUrl(address)) return address.Trim();
+        return null;
+    }
+
+    string? ExtractQuery(string url)
+    {
+        try
+        {
+            var uri = new Uri(url);
+            var q = QueryHelpers.ParseQuery(uri.Query);
+            if (q.TryGetValue("q", out var vals) && vals.Count > 0 && !string.IsNullOrWhiteSpace(vals[0]))
+                return vals[0];
+            return null;
+        }
+        catch { return null; }
+    }
+
+    string MapEmbed(string? link, string address)
+    {
+        var eff = EffectiveLink(link, address);
+        if (eff is not null)
+        {
+            var q = ExtractQuery(eff);
+            if (q is not null)
+                return "https://maps.google.com/maps?q=" + Uri.EscapeDataString(q) + "&z=17&hl=es&output=embed";
+            return eff + "&output=embed";
+        }
+        return "https://maps.google.com/maps?q=" + Uri.EscapeDataString(address) + "&z=17&hl=es&output=embed";
+    }
+}
+
+@if (o is null)
+{
+    <div class="pg-empty">
+        <div class="pg-empty-title">Orden no encontrada</div>
+        <a class="pg-btn pg-btn-primary" asp-action="Index">Volver</a>
+    </div>
+}
+else
+{
+    @if (!string.IsNullOrWhiteSpace(Model.Ok))
+    {
+        <div class="pg-toast pg-toast-ok">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span>@Model.Ok</span>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="pg-toast pg-toast-err">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>@Model.Error</span>
+        </div>
+    }
+
+    <a class="pg-back" asp-action="Index">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Mis órdenes
+    </a>
+
+    <div class="pg-card">
+        <div class="pg-order-head">
+            <div>
+                <div class="pg-order-kicker">Orden de entrega</div>
+                <div class="pg-order-id">#@o.NumeroOrdenA</div>
+            </div>
+            <span class="pg-pill @(o.PuedeVerDestinoFinal ? "pg-pill-route" : "pg-pill-pick")">
+                @(o.PuedeVerDestinoFinal ? "En ruta" : "Recolectando")
+            </span>
+        </div>
+    </div>
+
+    @if (!o.PuedeVerDestinoFinal)
+    {
+        @* ===== Estado ASIGNADA: recoger en tienda ===== *@
+        <div class="pg-card">
+            <div class="pg-block">
+                <div class="pg-avatar store">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                </div>
+                <div class="pg-block-body">
+                    <div class="pg-block-kicker">Recoger en tienda</div>
+                    <div class="pg-block-title">@o.TiendaNombre</div>
+                    <div class="pg-block-sub">@o.TiendaDireccion</div>
+                    <a class="pg-phone" href="tel:@o.TiendaTelefono">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.27 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.46 6.46l.96-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        @o.TiendaTelefono
+                    </a>
+                </div>
+            </div>
+
+            <div class="pg-actions">
+                <a class="pg-btn pg-btn-light" href="tel:@o.TiendaTelefono">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.27 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.46 6.46l.96-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    Llamar
+                </a>
+                <button class="pg-btn pg-btn-primary" type="button" data-nav data-nav-query="@o.TiendaDireccion">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                    Navegar
+                </button>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(o.NotaPedido))
+        {
+            <div class="pg-note">
+                <div class="pg-note-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Nota del pedido
+                </div>
+                <div class="pg-note-body">@o.NotaPedido</div>
+            </div>
+        }
+
+        <form method="post" asp-action="ConfirmarRecolecta" class="pg-card pg-form">
+            @Html.AntiForgeryToken()
+
+            <label class="pg-input-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M21 14v.01"/><path d="M14 21v.01"/><path d="M21 21v.01"/></svg>
+                Escanea / pega código B
+            </label>
+            <input class="pg-input" name="CodigoB" placeholder="Código B (QR de tienda)" required autocomplete="off" />
+            <button class="pg-btn pg-btn-dark pg-btn-wide" type="submit">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                Confirmar recolección
+            </button>
+            <div class="pg-hint">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                Escanea el código B con la app para desbloquear el destino.
+            </div>
+        </form>
+    }
+    else
+    {
+        @* ===== Estado RECOLECTADA: entregar a cliente final ===== *@
+        <div class="pg-card">
+            <div class="pg-block">
+                <div class="pg-avatar client">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="7" r="4"/><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/>
+                    </svg>
+                </div>
+                <div class="pg-block-body">
+                    <div class="pg-block-kicker">Entregar a cliente final</div>
+                    <div class="pg-block-title">@o.UsuarioFinalNombre</div>
+                    @if (!IsUrl(o.UsuarioFinalDireccion))
+                    {
+                        <div class="pg-block-sub">@o.UsuarioFinalDireccion</div>
+                    }
+                    <a class="pg-phone" href="tel:@o.UsuarioFinalTelefono">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.27 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.46 6.46l.96-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        @o.UsuarioFinalTelefono
+                    </a>
+                </div>
+            </div>
+
+            <div class="pg-map">
+                <iframe src="@MapEmbed(o.UsuarioFinalMapaLink, o.UsuarioFinalDireccion)"
+                        loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                        allowfullscreen title="Ubicación del cliente final"></iframe>
+            </div>
+
+            <div class="pg-actions">
+                <a class="pg-btn pg-btn-light" href="tel:@o.UsuarioFinalTelefono">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.27 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.46 6.46l.96-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    Llamar
+                </a>
+                <button class="pg-btn pg-btn-primary" type="button"
+                        data-nav
+                        data-nav-link="@EffectiveLink(o.UsuarioFinalMapaLink, o.UsuarioFinalDireccion)"
+                        data-nav-query="@o.UsuarioFinalDireccion">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                    Navegar
+                </button>
+            </div>
+        </div>
+
+        <div class="pg-center-hint">¿Llegaste al destino?</div>
+
+        <button class="pg-btn pg-btn-green pg-btn-wide" type="button" id="btnAbrirValidacion">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Validar entrega
+        </button>
+        <div class="pg-subhint">Requiere Código (C) + Código (B) del paquete</div>
+
+        <form method="post" asp-action="ConfirmarEntrega" id="formConfirmarEntrega" style="display:none;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="CodigoB" id="hdCodigoB" />
+            <input type="hidden" name="CodigoC" id="hdCodigoC" />
+        </form>
+
+        <div class="pg-overlay" id="modalBackdrop" aria-hidden="true"></div>
+
+        <section class="pg-modal" id="modalValidacion" aria-hidden="true" role="dialog" aria-label="Validación de entrega">
+            <header class="pg-modal-head">
+                <div class="pg-modal-title">
+                    <div class="pg-modal-ico">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <div>
+                        <div class="pg-modal-h1">Validar entrega</div>
+                        <div class="pg-modal-sub">Verificación de doble código</div>
+                    </div>
+                </div>
+                <button class="pg-modal-close" type="button" id="btnCerrarModal" aria-label="Cerrar">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </header>
+
+            <div class="pg-modal-body">
+                <div class="pg-step">
+                    <div class="pg-step-num">1</div>
+                    <div>
+                        <div class="pg-step-title">Código del cliente (C)</div>
+                        <div class="pg-step-sub">Pide el código de confirmación al destinatario.</div>
+                    </div>
+                    <span class="pg-check" id="chkC" aria-hidden="true">✓</span>
+                </div>
+
+                <input class="pg-input" id="txtCodigoC" inputmode="text" maxlength="15"
+                       placeholder="Código C" autocomplete="one-time-code" />
+
+                <div class="pg-modal-divider"></div>
+
+                <div class="pg-step">
+                    <div class="pg-step-num">2</div>
+                    <div>
+                        <div class="pg-step-title">Código del paquete (B)</div>
+                        <div class="pg-step-sub">Escanea o pega de nuevo el código B del paquete.</div>
+                    </div>
+                </div>
+
+                <input class="pg-input" id="txtCodigoBFinal" placeholder="Código B (QR de cierre)" disabled />
+
+                <div class="pg-scanbox">
+                    <button class="pg-btn pg-btn-dark pg-btn-wide" id="btnFinalizarEntrega" type="button" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Finalizar entrega
+                    </button>
+                </div>
+            </div>
+        </section>
+    }
+}
+
+<div class="pg-overlay" id="navOverlay" aria-hidden="true"></div>
+<section class="pg-sheet" id="navSheet" aria-hidden="true" role="dialog" aria-label="Elegir navegación">
+    <div class="pg-sheet-handle"></div>
+    <div class="pg-sheet-title">Navegar con</div>
+    <div class="pg-sheet-sub">Elige tu aplicación de GPS favorita</div>
+
+    <button class="pg-sheet-option" type="button" data-gps="google">
+        <span class="pg-sheet-ico gm">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 0 0 20"/><path d="M2 12h20"/></svg>
+        </span>
+        <span>
+            <span class="pg-sheet-opt-title">Google Maps</span>
+            <span class="pg-sheet-opt-sub">Abre la ruta en Google Maps</span>
+        </span>
+    </button>
+
+    <button class="pg-sheet-option" type="button" data-gps="waze">
+        <span class="pg-sheet-ico waze">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </span>
+        <span>
+            <span class="pg-sheet-opt-title">Waze</span>
+            <span class="pg-sheet-opt-sub">Abre la ruta en Waze</span>
+        </span>
+    </button>
+
+    <button class="pg-sheet-option" type="button" data-gps="apple">
+        <span class="pg-sheet-ico apple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 0 0 20"/></svg>
+        </span>
+        <span>
+            <span class="pg-sheet-opt-title">Apple Maps</span>
+            <span class="pg-sheet-opt-sub">Abre la ruta en Apple Maps</span>
+        </span>
+    </button>
+</section>
+
+@section Scripts {
+    <script src="~/js/piloto.js" asp-append-version="true"></script>
+}

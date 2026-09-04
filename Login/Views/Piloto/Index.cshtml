@@ -1,300 +1,85 @@
 ﻿@model Login.ViewModels.Piloto.MisOrdenesIndexVm
 @{
-    ViewData["Title"] = "PilotGo - Piloto";
-}
-
-@{
     Layout = "_LayoutPiloto";
+    ViewData["Title"] = "Mis órdenes";
 }
 
+@if (!string.IsNullOrWhiteSpace(Model.Ok))
+{
+    <div class="pg-toast pg-toast-ok">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        <span>@Model.Ok</span>
+    </div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="pg-toast pg-toast-err">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>@Model.Error</span>
+    </div>
+}
 
-<link rel="stylesheet" href="~/css/piloto.css" asp-append-version="true" />
+<div class="pg-head">
+    <div class="pg-head-title">Mis órdenes</div>
+    <div class="pg-head-sub">@Model.Ordenes.Count orden(es) activa(s)</div>
+</div>
 
-<div class="pg-shell">
-    <!-- Topbar -->
-    <header class="pg-topbar">
-        <div class="pg-brand">
-            <div class="pg-logo">↘</div>
-            <div class="pg-brand-text">
-                <div class="pg-brand-name">PilotGo</div>
-            </div>
+@if (Model.Ordenes.Count == 0)
+{
+    <div class="pg-empty">
+        <div class="pg-empty-ico">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="3" width="15" height="13" rx="2"/>
+                <path d="M16 8h4l3 5v3h-7V8z"/>
+                <circle cx="5.5" cy="18.5" r="2.5"/>
+                <circle cx="18.5" cy="18.5" r="2.5"/>
+            </svg>
         </div>
+        <div class="pg-empty-title">Sin órdenes asignadas</div>
+        <div class="pg-empty-sub">Cuando un gestor te asigne una entrega, aparecerá aquí.</div>
+    </div>
+}
+else
+{
+    foreach (var o in Model.Ordenes)
+    {
+        var enRuta = o.PuedeVerDestinoFinal;
 
-        <div class="pg-topbar-right">
-            <span class="pg-status-dot"></span>
-            <span class="pg-status-text">En línea</span>
-            <button class="pg-bell" type="button" aria-label="Notificaciones">
-                <span class="pg-bell-dot"></span>
-                🔔
-            </button>
-        </div>
-    </header>
-
-    <!-- Content -->
-    <main class="pg-main">
-
-        <!-- Alerts (ok / error) -->
-        @if (!string.IsNullOrWhiteSpace(Model.Ok))
-        {
-            <div class="pg-toast pg-toast-ok">
-                <div class="pg-toast-title">Listo</div>
-                <div class="pg-toast-msg">@Model.Ok</div>
-            </div>
-        }
-        @if (!string.IsNullOrWhiteSpace(Model.Error))
-        {
-            <div class="pg-toast pg-toast-err">
-                <div class="pg-toast-title">Ojo</div>
-                <div class="pg-toast-msg">@Model.Error</div>
-            </div>
-        }
-
-        @if (Model.Ordenes.Count == 0)
-        {
-            <section class="pg-card">
-                <div class="pg-card-body">
-                    <div class="pg-empty">
-                        <div class="pg-empty-title">Sin órdenes</div>
-                        <div class="pg-empty-sub">No tienes órdenes asignadas ahora mismo.</div>
-                    </div>
-                </div>
-            </section>
-        }
-        else
-        {
-            var o = Model.Ordenes[0];
-
-            <section class="pg-panel">
-                <div class="pg-panel-handle"></div>
-
-                <!-- Header de orden -->
-                <div class="pg-order-head">
-                    <div>
-                        <div class="pg-order-kicker">ORDEN ACTUAL</div>
-                        <div class="pg-order-id">ORD-@o.NumeroOrdenA</div>
-
-                        <div class="pg-order-meta">
-                            <span class="pg-chip pg-chip-id">ID ORDEN (A)</span>
-
-                            @if (!o.PuedeVerDestinoFinal)
-                            {
-                                <span class="pg-chip pg-chip-verified pg-muted">QR Verificado</span>
-                            }
-                            else
-                            {
-                                <span class="pg-chip pg-chip-verified">QR Verificado</span>
-                            }
-                        </div>
-                    </div>
-
-                    @if (!o.PuedeVerDestinoFinal)
-                    {
-                        <span class="pg-pill pg-pill-warn">📦 Recolectando</span>
-                    }
-                    else
-                    {
-                        <div class="pg-pill-stack">
-                            <span class="pg-pill pg-pill-blue">🚴 En Ruta</span>
-                            <div class="pg-eta">ETA: 12 min</div>
-                        </div>
-                    }
-                </div>
-
-                <div class="pg-divider"></div>
-
-                @* ======================
-                   1) Estado ASIGNADA (antes del scan B)
-                   ====================== *@
-                @if (!o.PuedeVerDestinoFinal)
+        <a class="pg-ocard" asp-action="Detalle" asp-route-id="@o.OrdenId">
+            <div class="pg-ocard-icon @(enRuta ? "is-route" : "")">
+                @if (enRuta)
                 {
-                    <div class="pg-card pg-soft">
-                        <div class="pg-card-body">
-                            <div class="pg-row">
-                                <div class="pg-avatar">🏪</div>
-                                <div class="pg-grow">
-                                    <div class="pg-card-kicker">IR A TIENDA</div>
-                                    <div class="pg-card-title">@o.TiendaNombre</div>
-                                    <div class="pg-card-sub">@o.TiendaDireccion</div>
-                                </div>
-                            </div>
-
-                            <div class="pg-actions">
-                                <a class="pg-btn pg-btn-light" href="tel:@o.TiendaTelefono">
-                                    📞 Llamar
-                                </a>
-
-                                <a class="pg-btn pg-btn-light"
-                                   target="_blank"
-                                   href="https://waze.com/ul?q=@Uri.EscapeDataString(o.TiendaDireccion)">
-                                    △ Waze
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    @if (!string.IsNullOrWhiteSpace(o.NotaPedido))
-                    {
-                        <div class="pg-note">
-                            <div class="pg-note-title">📝 Nota del pedido</div>
-                            <div class="pg-note-body">@o.NotaPedido</div>
-                        </div>
-                    }
-
-                    <div class="pg-loading">
-                        <span class="pg-spinner"></span>
-                        <span>Buscando paquetes...</span>
-                    </div>
-
-                    <!-- Form ConfirmarRecolecta (misma lógica) -->
-                    <form method="post" asp-action="ConfirmarRecolecta" class="pg-form">
-                        @Html.AntiForgeryToken()
-
-                        <input class="pg-input"
-                               name="CodigoB"
-                               placeholder="Escanea / pega Código B (QR de tienda)"
-                               required />
-
-                        <button class="pg-btn pg-btn-dark pg-btn-wide" type="submit">
-                            ⛶ Escanear QR de Orden
-                        </button>
-                    </form>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
                 }
                 else
                 {
-                    @* ======================
-                       2) Estado RECOLECTADA (destino final desbloqueado)
-                       ====================== *@
-
-                    <div class="pg-card pg-soft pg-left-accent">
-                        <div class="pg-card-body">
-                            <div class="pg-row">
-                                <div class="pg-avatar">📍</div>
-                                <div class="pg-grow">
-                                    <div class="pg-card-kicker">ENTREGAR A CLIENTE FINAL</div>
-                                    <div class="pg-card-title">@o.UsuarioFinalNombre</div>
-                                    <div class="pg-card-sub">@o.UsuarioFinalDireccion</div>
-                                    <div class="pg-badge-mini">Entrada por el Lobby</div>
-                                    <div class="pg-phone">@o.UsuarioFinalTelefono</div>
-                                </div>
-
-                                <button class="pg-more" type="button" aria-label="Más">
-                                    ⋮
-                                </button>
-                            </div>
-
-                            <div class="pg-actions">
-                                <a class="pg-btn pg-btn-light" href="tel:@o.UsuarioFinalTelefono">
-                                    📞 Llamar
-                                </a>
-
-                                <a class="pg-btn pg-btn-primary"
-                                   target="_blank"
-                                   href="https://waze.com/ul?q=@Uri.EscapeDataString(o.UsuarioFinalDireccion)">
-                                    △ Ir con Waze
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pg-center-hint">¿LLEGASTE AL DESTINO?</div>
-
-                    <!-- Botón que abre modal (NO cambia tu lógica) -->
-                    <button class="pg-btn pg-btn-green pg-btn-wide"
-                            type="button"
-                            id="btnAbrirValidacion">
-                        🛡 Validar Entrega
-                    </button>
-
-                    <div class="pg-subhint">
-                        🔒 Requiere Código (C) + Escaneo QR Final (B)
-                    </div>
-
-                    <!-- Form real ConfirmarEntrega (se envía desde el modal) -->
-                    <form method="post" asp-action="ConfirmarEntrega" id="formConfirmarEntrega" class="pg-hidden">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="CodigoB" id="hdCodigoB" />
-                        <input type="hidden" name="CodigoC" id="hdCodigoC" />
-                    </form>
-
-                    <!-- Modal Validación Segura -->
-                    <div class="pg-modal-backdrop" id="modalBackdrop" aria-hidden="true"></div>
-
-                    <section class="pg-modal" id="modalValidacion" aria-hidden="true" role="dialog" aria-label="Validación Segura">
-                        <header class="pg-modal-head">
-                            <div class="pg-modal-title">
-                                <div class="pg-shield">🛡</div>
-                                <div>
-                                    <div class="pg-modal-h1">Validación Segura</div>
-                                    <div class="pg-modal-sub">Doble factor de autenticación</div>
-                                </div>
-                            </div>
-
-                            <button class="pg-modal-close" type="button" id="btnCerrarModal" aria-label="Cerrar">✕</button>
-                        </header>
-
-                        <div class="pg-modal-body">
-                            <!-- Step 1 -->
-                            <div class="pg-step">
-                                <div class="pg-step-left">
-                                    <div class="pg-step-num">1</div>
-                                    <div>
-                                        <div class="pg-step-title">Código del Cliente (C)</div>
-                                        <div class="pg-step-sub">Solicite el código de 6 dígitos al cliente.</div>
-                                    </div>
-                                </div>
-                                <div class="pg-step-right">
-                                    <span class="pg-check" id="chkC" aria-hidden="true">✓</span>
-                                </div>
-                            </div>
-
-                            <div class="pg-c-input">
-                                <input class="pg-input"
-                                       id="txtCodigoC"
-                                       inputmode="numeric"
-                                       maxlength="20"
-                                       placeholder="Código C (20 dígitos)"
-                                       autocomplete="one-time-code" />
-                                <small class="pg-help">Ej: 957f5360</small>
-                            </div>
-
-                            <div class="pg-modal-divider"></div>
-
-                            <!-- Step 2 -->
-                            <div class="pg-step">
-                                <div class="pg-step-left">
-                                    <div class="pg-step-num">2</div>
-                                    <div>
-                                        <div class="pg-step-title">Validación QR Final</div>
-                                        <div class="pg-step-sub">Escanee nuevamente el QR de la orden para cerrar.</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="pg-scanbox">
-                                <input class="pg-input"
-                                       id="txtCodigoBFinal"
-                                       placeholder="Escanear / pegar QR de cierre (Código B)"
-                                       disabled />
-                                <button class="pg-btn pg-btn-light pg-btn-wide"
-                                        id="btnHabilitadoScan"
-                                        type="button"
-                                        disabled>
-                                    ⛶ Escanear QR de Cierre
-                                </button>
-                            </div>
-
-                            <button class="pg-btn pg-btn-lock pg-btn-wide"
-                                    id="btnFinalizarEntrega"
-                                    type="button"
-                                    disabled>
-                                🔒 Finalizar Entrega
-                            </button>
-                        </div>
-                    </section>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    </svg>
                 }
-            </section>
-        }
-    </main>
-</div>
+            </div>
 
-<script src="~/js/piloto.js" asp-append-version="true"></script>
+            <div class="pg-ocard-body">
+                <div class="pg-ocard-top">
+                    <span class="pg-ocard-id">#@o.NumeroOrdenA</span>
+                    <span class="pg-pill @(enRuta ? "pg-pill-route" : "pg-pill-pick")">
+                        @(enRuta ? "En ruta" : "Recolectando")
+                    </span>
+                </div>
+                <div class="pg-ocard-title">
+                    @(enRuta ? o.UsuarioFinalNombre : o.TiendaNombre)
+                </div>
+                <div class="pg-ocard-sub">
+                    @(enRuta ? "Entregar a destino" : "Recoger en tienda")
+                </div>
+            </div>
+
+            <div class="pg-ocard-chev">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+        </a>
+    }
+}

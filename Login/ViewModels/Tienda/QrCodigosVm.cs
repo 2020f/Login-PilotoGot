@@ -11,6 +11,7 @@
 
         public string UsuarioFinalNombre { get; set; } = "";
         public string DireccionUbicacion { get; set; } = "";
+        public string? MapaLink { get; set; }
         public string? Descripcion { get; set; }
     }
 }

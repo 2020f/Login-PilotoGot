@@ -126,6 +126,7 @@ namespace Login.Controllers
                         Id = u.Id,
                         Nombre = u.Nombre,
                         DireccionUbicacion = u.DireccionUbicacion,
+                        MapaLink = u.MapaLink,
                         Telefono = u.Telefono,
                         Activo = u.Activo,
                         CreatedAt = u.CreatedAt
@@ -159,6 +160,7 @@ namespace Login.Controllers
                 Nombre = input.Nombre.Trim(),
                 DireccionUbicacion = input.DireccionUbicacion.Trim(),
                 Telefono = input.Telefono.Trim(),
+                MapaLink = string.IsNullOrWhiteSpace(input.MapaLink) ? null : input.MapaLink.Trim(),
                 Notas = string.IsNullOrWhiteSpace(input.Notas) ? null : input.Notas.Trim(),
                 Activo = true
             };
@@ -196,6 +198,7 @@ namespace Login.Controllers
                 Id = u.Id,
                 Nombre = u.Nombre,
                 DireccionUbicacion = u.DireccionUbicacion,
+                MapaLink = u.MapaLink,
                 Telefono = u.Telefono,
                 Notas = u.Notas,
                 Activo = u.Activo
@@ -223,6 +226,7 @@ namespace Login.Controllers
             u.Nombre = input.Nombre.Trim();
             u.DireccionUbicacion = input.DireccionUbicacion.Trim();
             u.Telefono = input.Telefono.Trim();
+            u.MapaLink = string.IsNullOrWhiteSpace(input.MapaLink) ? null : input.MapaLink.Trim();
             u.Notas = string.IsNullOrWhiteSpace(input.Notas) ? null : input.Notas.Trim();
             u.Activo = input.Activo;
 
@@ -414,6 +418,7 @@ namespace Login.Controllers
 
             UsuarioFinalNombre = orden.UsuarioFinal.Nombre,
             DireccionUbicacion = orden.UsuarioFinal.DireccionUbicacion,
+            MapaLink = orden.UsuarioFinal.MapaLink,
             Descripcion = orden.NotaPedido
         };
 

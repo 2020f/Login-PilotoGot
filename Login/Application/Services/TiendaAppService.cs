@@ -58,7 +58,7 @@ namespace Login.Application.Services
             return await _db.UsuariosFinales.AsNoTracking()
                 .Where(u => u.TiendaId == tienda.Id)
                 .OrderByDescending(u => u.CreatedAt)
-                .Select(u => new UsuarioFinalDto(u.Id, u.Nombre, u.DireccionUbicacion, u.Telefono, u.Notas, u.Activo, u.CreatedAt))
+                .Select(u => new UsuarioFinalDto(u.Id, u.Nombre, u.DireccionUbicacion, u.MapaLink, u.Telefono, u.Notas, u.Activo, u.CreatedAt))
                 .ToListAsync();
         }
 
@@ -72,10 +72,10 @@ namespace Login.Application.Services
             if (u is null)
                 throw new InvalidOperationException("Usuario final no encontrado o no es de tu tienda.");
 
-            return new UsuarioFinalDto(u.Id, u.Nombre, u.DireccionUbicacion, u.Telefono, u.Notas, u.Activo, u.CreatedAt);
+            return new UsuarioFinalDto(u.Id, u.Nombre, u.DireccionUbicacion, u.MapaLink, u.Telefono, u.Notas, u.Activo, u.CreatedAt);
         }
 
-        public async Task<UsuarioFinalDto> CrearUsuarioFinalAsync(string identityUserId, string nombre, string direccionUbicacion, string telefono, string? notas)
+        public async Task<UsuarioFinalDto> CrearUsuarioFinalAsync(string identityUserId, string nombre, string direccionUbicacion, string telefono, string? notas, string? mapaLink)
         {
             var tienda = await GetTiendaActivaEntityAsync(identityUserId);
 
@@ -85,6 +85,7 @@ namespace Login.Application.Services
                 Nombre = nombre.Trim(),
                 DireccionUbicacion = direccionUbicacion.Trim(),
                 Telefono = telefono.Trim(),
+                MapaLink = string.IsNullOrWhiteSpace(mapaLink) ? null : mapaLink.Trim(),
                 Notas = string.IsNullOrWhiteSpace(notas) ? null : notas.Trim(),
                 Activo = true
             };
@@ -92,10 +93,10 @@ namespace Login.Application.Services
             _db.UsuariosFinales.Add(uf);
             await _db.SaveChangesAsync();
 
-            return new UsuarioFinalDto(uf.Id, uf.Nombre, uf.DireccionUbicacion, uf.Telefono, uf.Notas, uf.Activo, uf.CreatedAt);
+            return new UsuarioFinalDto(uf.Id, uf.Nombre, uf.DireccionUbicacion, uf.MapaLink, uf.Telefono, uf.Notas, uf.Activo, uf.CreatedAt);
         }
 
-        public async Task<UsuarioFinalDto> EditarUsuarioFinalAsync(string identityUserId, int id, string nombre, string direccionUbicacion, string telefono, string? notas, bool activo)
+        public async Task<UsuarioFinalDto> EditarUsuarioFinalAsync(string identityUserId, int id, string nombre, string direccionUbicacion, string telefono, string? notas, string? mapaLink, bool activo)
         {
             var tienda = await GetTiendaActivaEntityAsync(identityUserId);
 
@@ -108,12 +109,13 @@ namespace Login.Application.Services
             u.Nombre = nombre.Trim();
             u.DireccionUbicacion = direccionUbicacion.Trim();
             u.Telefono = telefono.Trim();
+            u.MapaLink = string.IsNullOrWhiteSpace(mapaLink) ? null : mapaLink.Trim();
             u.Notas = string.IsNullOrWhiteSpace(notas) ? null : notas.Trim();
             u.Activo = activo;
 
             await _db.SaveChangesAsync();
 
-            return new UsuarioFinalDto(u.Id, u.Nombre, u.DireccionUbicacion, u.Telefono, u.Notas, u.Activo, u.CreatedAt);
+            return new UsuarioFinalDto(u.Id, u.Nombre, u.DireccionUbicacion, u.MapaLink, u.Telefono, u.Notas, u.Activo, u.CreatedAt);
         }
 
         public async Task EliminarUsuarioFinalAsync(string identityUserId, int id)
@@ -192,6 +194,7 @@ namespace Login.Application.Services
                 codigoC,
                 orden.UsuarioFinal.Nombre,
                 orden.UsuarioFinal.DireccionUbicacion,
+                orden.UsuarioFinal.MapaLink,
                 orden.NotaPedido);
         }
 

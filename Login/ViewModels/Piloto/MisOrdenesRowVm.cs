@@ -20,6 +20,7 @@ namespace Login.ViewModels.Piloto
         // Después del scan (Recolectada): destino final
         public string UsuarioFinalNombre { get; set; } = "";
         public string UsuarioFinalDireccion { get; set; } = "";
+        public string? UsuarioFinalMapaLink { get; set; }
         public string UsuarioFinalTelefono { get; set; } = "";
     }
 }
