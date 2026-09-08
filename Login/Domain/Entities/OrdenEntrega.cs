@@ -28,6 +28,9 @@ namespace Login.Domain.Entities
 
         public EstadoOrden Estado { get; set; } = EstadoOrden.Creada;
 
+        // ✅ Orden creada en modo auto-asignación (los pilotos la aceptan/rechazan)
+        public bool EsAuto { get; set; } = false;
+
         [MaxLength(400)]
         public string? NotaPedido { get; set; }
 
@@ -35,6 +38,10 @@ namespace Login.Domain.Entities
         public DateTime? AssignedAt { get; set; }
         public DateTime? RecolectadaAt { get; set; }
         public DateTime? EntregadaAt { get; set; }
+
+        // ✅ Precio calculado (base + km) y distancia
+        public decimal? Precio { get; set; }
+        public double? DistanciaKm { get; set; }
 
         public ICollection<CodigoEntrega> Codigos { get; set; } = new List<CodigoEntrega>();
         public ICollection<HistorialOrden> Historial { get; set; } = new List<HistorialOrden>();

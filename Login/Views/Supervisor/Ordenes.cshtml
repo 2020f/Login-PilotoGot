@@ -134,6 +134,17 @@
                         </div>
                     </div>
 
+                    @if (o.Precio.HasValue)
+                    {
+                        <div class="pg-precio-line">
+                            <span class="pg-precio-tag">RD$ @o.Precio.Value.ToString("N2")</span>
+                            @if (o.DistanciaKm.HasValue)
+                            {
+                                <span class="pg-distancia">· @o.DistanciaKm.Value.ToString("N2") km</span>
+                            }
+                        </div>
+                    }
+
                     @if (notasTxt != null)
                     {
                         <div class="pg-note">
@@ -178,7 +189,19 @@
                             </svg>
                             <span>Asignar Piloto</span>
                         </button>
-                        <div class="pg-attn">Requiere Atención</div>
+                        @if (o.EsAuto && o.TiendaAutoAsignacion)
+                        {
+                            <div class="pg-auto-badge">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                                </svg>
+                                Auto-activa · esperando piloto
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="pg-attn">Requiere Atención</div>
+                        }
                     }
                 </div>
             </div>

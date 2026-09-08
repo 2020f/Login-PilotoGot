@@ -79,6 +79,7 @@ builder.Services.AddScoped<IOrdenService, OrdenService>();
 builder.Services.AddScoped<IUserContextService, UserContextService>();
 builder.Services.AddScoped<ITiendaAppService, TiendaAppService>();
 builder.Services.AddScoped<IPilotoAppService, PilotoAppService>();
+builder.Services.AddHttpClient<IGoogleMapsService, GoogleMapsService>();
 
 var app = builder.Build();
 

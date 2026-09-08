@@ -20,6 +20,8 @@ namespace Login.Controllers.Api
 
         public sealed record ConfirmarRecolectaRequest(string CodigoB);
         public sealed record ConfirmarEntregaRequest(string CodigoB, string CodigoC);
+        public sealed record UbicacionRequest(double Latitud, double Longitud);
+        public sealed record EstadoRequest(bool EnLinea);
 
         private string GetUserId()
             => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
@@ -50,6 +52,52 @@ namespace Login.Controllers.Api
             {
                 await _svc.ConfirmarEntregaAsync(GetUserId(), request.CodigoB, request.CodigoC);
                 return new { ok = true };
+            });
+
+        // ---------- Auto-asignación ----------
+
+        [HttpGet("ordenes-auto")]
+        public async Task<IActionResult> OrdenesAuto()
+            => await RunAsync(() => _svc.GetOrdenesAutoAsync(GetUserId()));
+
+        [HttpPost("ordenes-auto/{ordenId:int}/aceptar")]
+        public async Task<IActionResult> AceptarOrdenAuto(int ordenId)
+            => await RunAsync(async () =>
+            {
+                await _svc.AceptarOrdenAutoAsync(GetUserId(), ordenId);
+                return new { ok = true };
+            });
+
+        [HttpPost("ordenes-auto/{ordenId:int}/rechazar")]
+        public async Task<IActionResult> RechazarOrdenAuto(int ordenId)
+            => await RunAsync(async () =>
+            {
+                await _svc.RechazarOrdenAutoAsync(GetUserId(), ordenId);
+                return new { ok = true };
+            });
+
+        // ---------- GPS ----------
+
+        [HttpPost("ubicacion")]
+        public async Task<IActionResult> ActualizarUbicacion([FromBody] UbicacionRequest request)
+            => await RunAsync(async () =>
+            {
+                await _svc.ActualizarUbicacionAsync(GetUserId(), request.Latitud, request.Longitud);
+                return new { ok = true };
+            });
+
+        // ---------- Estado (en línea / desconectado) ----------
+
+        [HttpGet("estado")]
+        public async Task<IActionResult> Estado()
+            => await RunAsync(() => _svc.GetEstadoAsync(GetUserId()));
+
+        [HttpPost("estado")]
+        public async Task<IActionResult> SetEstado([FromBody] EstadoRequest request)
+            => await RunAsync(async () =>
+            {
+                await _svc.SetEnLineaAsync(GetUserId(), request.EnLinea);
+                return await _svc.GetEstadoAsync(GetUserId());
             });
 
         private async Task<IActionResult> RunAsync<T>(Func<Task<T>> action)

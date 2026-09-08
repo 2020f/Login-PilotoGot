@@ -15,5 +15,9 @@ namespace Login.ViewModels.Tienda
         public DateTime? AssignedAt { get; set; }
         public DateTime? RecolectadaAt { get; set; }
         public DateTime? EntregadaAt { get; set; }
+
+        // Precio / distancia
+        public decimal? Precio { get; set; }
+        public double? DistanciaKm { get; set; }
     }
 }

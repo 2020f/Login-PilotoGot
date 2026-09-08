@@ -18,7 +18,14 @@ namespace Login.Domain.Entities
         [Required, MaxLength(30)]
         public string Telefono { get; set; } = string.Empty;
 
+        // ✅ Coordenadas del negocio (para mapa y cálculo de distancia/precio)
+        public double? Latitud { get; set; }
+        public double? Longitud { get; set; }
+
         public bool Activo { get; set; } = true;
+
+        // ✅ Auto-asignación de piloto (switch del negocio)
+        public bool AutoAsignacion { get; set; } = false;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

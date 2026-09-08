@@ -21,15 +21,18 @@ namespace Login.Controllers
         private readonly ApplicationDbContext _db;
         private readonly IOrdenService _ordenService;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly IGoogleMapsService _googleMaps;
 
         public SupervisorController(
             ApplicationDbContext db,
             IOrdenService ordenService,
-            UserManager<IdentityUser> userManager)
+            UserManager<IdentityUser> userManager,
+            IGoogleMapsService googleMaps)
         {
             _db = db;
             _ordenService = ordenService;
             _userManager = userManager;
+            _googleMaps = googleMaps;
         }
 
         private string GetUserId()
@@ -111,12 +114,16 @@ namespace Login.Controllers
             }
 
             // ✅ 1) Crear Tienda (BD)
+            var coords = await _googleMaps.GeocodificarAsync(input.Direccion.Trim());
+
             var tienda = new Tienda
             {
                 ClienteAppId = cliente.Id,
                 Nombre = input.Nombre.Trim(),
                 Direccion = input.Direccion.Trim(),
                 Telefono = input.Telefono.Trim(),
+                Latitud = coords?.Lat,
+                Longitud = coords?.Lng,
                 Activo = true
             };
 
@@ -244,6 +251,14 @@ namespace Login.Controllers
             tienda.Telefono = input.Telefono.Trim();
             tienda.Activo = input.Activo;
 
+            // Re-geocodificar la dirección (solo actualiza si Google devuelve coordenadas)
+            var coordsEdit = await _googleMaps.GeocodificarAsync(tienda.Direccion);
+            if (coordsEdit is not null)
+            {
+                tienda.Latitud = coordsEdit.Value.Lat;
+                tienda.Longitud = coordsEdit.Value.Lng;
+            }
+
             await _db.SaveChangesAsync();
 
             return RedirectToAction(nameof(Tiendas), new { ok = "Tienda actualizada ✅" });
@@ -297,13 +312,33 @@ namespace Login.Controllers
             return RedirectToAction(nameof(Tiendas), new { ok = "Tienda desactivada ✅" });
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleAutoAsignacion(int id)
+        {
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception ex) { return RedirectToAction(nameof(Tiendas), new { error = ex.Message }); }
+
+            var tienda = await _db.Tiendas
+                .SingleOrDefaultAsync(t => t.Id == id && t.ClienteAppId == clienteAppId);
+
+            if (tienda is null)
+                return RedirectToAction(nameof(Tiendas), new { error = "Tienda no encontrada." });
+
+            tienda.AutoAsignacion = !tienda.AutoAsignacion;
+            await _db.SaveChangesAsync();
+
+            var estado = tienda.AutoAsignacion ? "activado" : "desactivado";
+            return RedirectToAction(nameof(Tiendas), new { ok = $"Piloto automático {estado} para {tienda.Nombre} ✅" });
+        }
+
 
 
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ResetPasswordTienda(Login.ViewModels.Tienda.ResetPasswordTiendaVm input)
-        {
+        public async Task<IActionResult> ResetPasswordTienda(Login.ViewModels.Tienda.ResetPasswordTiendaVm input)        {
             if (!ModelState.IsValid)
                 return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, error = "Password inválido." });
 
@@ -623,7 +658,6 @@ namespace Login.Controllers
                 new SelectListItem { Value = EstadoOrden.Creada.ToString(), Text = "Creada" },
                 new SelectListItem { Value = EstadoOrden.Asignada.ToString(), Text = "Asignada" },
                 new SelectListItem { Value = EstadoOrden.Recolectada.ToString(), Text = "Recolectada" },
-                new SelectListItem { Value = EstadoOrden.Entregada.ToString(), Text = "Entregada" },
                 new SelectListItem { Value = EstadoOrden.Incidente.ToString(), Text = "Incidente" },
             };
 
@@ -636,6 +670,9 @@ namespace Login.Controllers
 
             // ✅ SIEMPRE filtrar por tenant
             q = q.Where(o => o.ClienteAppId == clienteAppId);
+
+            // ✅ Las órdenes Entregadas salen de la vista de órdenes
+            q = q.Where(o => o.Estado != EstadoOrden.Entregada);
 
             if (tiendaId.HasValue) q = q.Where(o => o.TiendaId == tiendaId.Value);
             if (pilotoId.HasValue) q = q.Where(o => o.PilotoId == pilotoId.Value);
@@ -686,7 +723,13 @@ namespace Login.Controllers
         CodigoB = o.Codigos
             .Where(c => c.Tipo == TipoCodigo.B_Recoleccion)
             .Select(c => c.Codigo)
-            .FirstOrDefault()
+            .FirstOrDefault(),
+
+        TiendaAutoAsignacion = o.Tienda.AutoAsignacion,
+        EsAuto = o.EsAuto,
+
+        Precio = o.Precio,
+        DistanciaKm = o.DistanciaKm
     })
     .ToListAsync();
 
@@ -930,18 +973,83 @@ namespace Login.Controllers
             return View(vm);
         }
 
+        // ==========================
+        // SEGUIMIENTO GPS (mapa + precios)
+        // ==========================
 
+        [HttpGet]
+        public async Task<IActionResult> Mapa(string? ok = null, string? error = null)
+        {
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception ex) { return RedirectToAction(nameof(Ordenes), new { error = ex.Message }); }
 
+            var cliente = await _db.ClientesApp.AsNoTracking()
+                .SingleOrDefaultAsync(c => c.Id == clienteAppId);
 
+            var vm = new MapaPilotosVm
+            {
+                PrecioBase = cliente?.PrecioBase ?? 0m,
+                PrecioPorKm = cliente?.PrecioPorKm ?? 0m,
+                Ok = ok,
+                Error = error,
+                Pilotos = await ObtenerPilotosMapaAsync(clienteAppId)
+            };
 
+            return View(vm);
+        }
 
+        [HttpGet]
+        public async Task<IActionResult> MapaData()
+        {
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception) { return Json(new List<PilotoMapaVm>()); }
 
+            var pilotos = await ObtenerPilotosMapaAsync(clienteAppId);
+            return Json(pilotos);
+        }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GuardarPrecios(decimal precioBase, decimal precioPorKm)
+        {
+            int clienteAppId;
+            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
+            catch (System.Exception ex) { return RedirectToAction(nameof(Mapa), new { error = ex.Message }); }
 
+            if (precioBase < 0 || precioPorKm < 0)
+                return RedirectToAction(nameof(Mapa), new { error = "Los precios no pueden ser negativos." });
 
+            var cliente = await _db.ClientesApp.SingleOrDefaultAsync(c => c.Id == clienteAppId);
+            if (cliente is null)
+                return RedirectToAction(nameof(Mapa), new { error = "ClienteApp no encontrado." });
 
+            cliente.PrecioBase = precioBase;
+            cliente.PrecioPorKm = precioPorKm;
+            cliente.UpdatedAt = DateTime.UtcNow;
 
+            await _db.SaveChangesAsync();
 
+            return RedirectToAction(nameof(Mapa), new { ok = "Tarifas guardadas ✅" });
+        }
 
+        private async Task<List<PilotoMapaVm>> ObtenerPilotosMapaAsync(int clienteAppId)
+        {
+            return await _db.Pilotos.AsNoTracking()
+                .Where(p => p.ClienteAppId == clienteAppId)
+                .OrderBy(p => p.Nombre)
+                .Select(p => new PilotoMapaVm
+                {
+                    Id = p.Id,
+                    Nombre = p.Nombre,
+                    Estado = p.Estado.ToString(),
+                    EstadoNum = (int)p.Estado,
+                    Latitud = p.Latitud,
+                    Longitud = p.Longitud,
+                    UltimaUbicacionAt = p.UltimaUbicacionAt
+                })
+                .ToListAsync();
+        }
     }
 }

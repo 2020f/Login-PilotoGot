@@ -57,6 +57,12 @@ namespace Login.Domain.Entities
         public int? MaxOrdenesMes { get; set; }
         public int? MaxPilotos { get; set; }
 
+        // =========================
+        // Tarifas de envío (precio base + precio/km)
+        // =========================
+        public decimal PrecioBase { get; set; } = 0m;
+        public decimal PrecioPorKm { get; set; } = 0m;
+
 
         // =========================
         // Estado / Notas

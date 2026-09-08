@@ -154,6 +154,8 @@ namespace Login.Controllers
             try { tienda = await GetTiendaActivaAsync(); }
             catch { return RedirectToAction(nameof(SeleccionarTienda)); }
 
+            var coords = Login.Application.Services.MapaLinkParser.Parse(input.MapaLink);
+
             var uf = new UsuarioFinal
             {
                 TiendaId = tienda.Id,
@@ -161,6 +163,8 @@ namespace Login.Controllers
                 DireccionUbicacion = input.DireccionUbicacion.Trim(),
                 Telefono = input.Telefono.Trim(),
                 MapaLink = string.IsNullOrWhiteSpace(input.MapaLink) ? null : input.MapaLink.Trim(),
+                Latitud = coords?.Lat,
+                Longitud = coords?.Lng,
                 Notas = string.IsNullOrWhiteSpace(input.Notas) ? null : input.Notas.Trim(),
                 Activo = true
             };
@@ -227,6 +231,11 @@ namespace Login.Controllers
             u.DireccionUbicacion = input.DireccionUbicacion.Trim();
             u.Telefono = input.Telefono.Trim();
             u.MapaLink = string.IsNullOrWhiteSpace(input.MapaLink) ? null : input.MapaLink.Trim();
+
+            var coordsEdit = Login.Application.Services.MapaLinkParser.Parse(input.MapaLink);
+            u.Latitud = coordsEdit?.Lat;
+            u.Longitud = coordsEdit?.Lng;
+
             u.Notas = string.IsNullOrWhiteSpace(input.Notas) ? null : input.Notas.Trim();
             u.Activo = input.Activo;
 
@@ -462,7 +471,9 @@ namespace Login.Controllers
                         CreatedAt = o.CreatedAt,
                         AssignedAt = o.AssignedAt,
                         RecolectadaAt = o.RecolectadaAt,
-                        EntregadaAt = o.EntregadaAt
+                        EntregadaAt = o.EntregadaAt,
+                        Precio = o.Precio,
+                        DistanciaKm = o.DistanciaKm
                     })
                     .ToListAsync()
             };

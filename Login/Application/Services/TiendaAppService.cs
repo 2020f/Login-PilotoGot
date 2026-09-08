@@ -79,6 +79,8 @@ namespace Login.Application.Services
         {
             var tienda = await GetTiendaActivaEntityAsync(identityUserId);
 
+            var coords = MapaLinkParser.Parse(mapaLink);
+
             var uf = new UsuarioFinal
             {
                 TiendaId = tienda.Id,
@@ -86,6 +88,8 @@ namespace Login.Application.Services
                 DireccionUbicacion = direccionUbicacion.Trim(),
                 Telefono = telefono.Trim(),
                 MapaLink = string.IsNullOrWhiteSpace(mapaLink) ? null : mapaLink.Trim(),
+                Latitud = coords?.Lat,
+                Longitud = coords?.Lng,
                 Notas = string.IsNullOrWhiteSpace(notas) ? null : notas.Trim(),
                 Activo = true
             };
@@ -110,6 +114,11 @@ namespace Login.Application.Services
             u.DireccionUbicacion = direccionUbicacion.Trim();
             u.Telefono = telefono.Trim();
             u.MapaLink = string.IsNullOrWhiteSpace(mapaLink) ? null : mapaLink.Trim();
+
+            var coords = MapaLinkParser.Parse(mapaLink);
+            u.Latitud = coords?.Lat;
+            u.Longitud = coords?.Lng;
+
             u.Notas = string.IsNullOrWhiteSpace(notas) ? null : notas.Trim();
             u.Activo = activo;
 
@@ -159,7 +168,9 @@ namespace Login.Application.Services
                     o.CreatedAt,
                     o.AssignedAt,
                     o.RecolectadaAt,
-                    o.EntregadaAt))
+                    o.EntregadaAt,
+                    o.Precio,
+                    o.DistanciaKm))
                 .ToListAsync();
         }
 

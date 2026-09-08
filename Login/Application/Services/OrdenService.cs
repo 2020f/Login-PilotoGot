@@ -11,10 +11,12 @@ namespace Login.Application.Services
     public class OrdenService : IOrdenService
     {
         private readonly ApplicationDbContext _db;
+        private readonly IGoogleMapsService _googleMaps;
 
-        public OrdenService(ApplicationDbContext db)
+        public OrdenService(ApplicationDbContext db, IGoogleMapsService googleMaps)
         {
             _db = db;
+            _googleMaps = googleMaps;
         }
 
         public async Task<OrdenCreadaResult> CrearOrdenAsync(
@@ -57,7 +59,10 @@ namespace Login.Application.Services
             cliente.OrdenSeq += 1;
             var numeroA = cliente.OrdenSeq;
 
-            // 5) Crear orden
+            // 5) Calcular distancia y precio (base + km)
+            var (distanciaKm, precio) = await CalcularPrecioAsync(cliente, tienda, uf);
+
+            // 6) Crear orden
             var orden = new OrdenEntrega
             {
                 ClienteAppId = clienteAppId,
@@ -65,6 +70,9 @@ namespace Login.Application.Services
                 UsuarioFinalId = usuarioFinalId,
                 NumeroOrdenA = numeroA,
                 Estado = EstadoOrden.Creada,
+                EsAuto = tienda.AutoAsignacion,
+                Precio = precio,
+                DistanciaKm = distanciaKm,
                 NotaPedido = string.IsNullOrWhiteSpace(notaPedido) ? null : notaPedido
             };
 
@@ -90,8 +98,7 @@ namespace Login.Application.Services
             });
 
             // 7) Historial
-            RegistrarHistorial(
-                orden.Id,
+            RegistrarHistorial(                orden.Id,
                 TipoEventoOrden.Creada,
                 actorIdentityUserId,
                 actorRol,
@@ -287,8 +294,154 @@ namespace Login.Application.Services
         }
 
         // -------------------------
+        // Auto-asignación (pilotos aceptan/rechazan)
+        // -------------------------
+
+        public async Task<List<OrdenAutoDisponibleDto>> GetOrdenesAutoDisponiblesAsync(int pilotoId)
+        {
+            // Regla: si el piloto tiene una orden auto activa, no recibe nuevas hasta entregarla
+            var tieneAutoActiva = await _db.OrdenesEntrega.AnyAsync(o =>
+                o.PilotoId == pilotoId && o.EsAuto &&
+                (o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada));
+
+            if (tieneAutoActiva)
+                return new List<OrdenAutoDisponibleDto>();
+
+            var piloto = await _db.Pilotos.AsNoTracking()
+                .SingleOrDefaultAsync(p => p.Id == pilotoId && p.Activo);
+
+            if (piloto is null || !piloto.EnLinea)
+                return new List<OrdenAutoDisponibleDto>();
+
+            var rechazadas = _db.OrdenesAutoRechazo
+                .Where(r => r.PilotoId == pilotoId)
+                .Select(r => r.OrdenEntregaId);
+
+            return await _db.OrdenesEntrega.AsNoTracking()
+                .Include(o => o.Tienda)
+                .Include(o => o.UsuarioFinal)
+                .Where(o => o.ClienteAppId == piloto.ClienteAppId
+                         && o.EsAuto
+                         && o.Estado == EstadoOrden.Creada
+                         && o.PilotoId == null
+                         && !rechazadas.Contains(o.Id))
+                .OrderBy(o => o.CreatedAt)
+                .Select(o => new OrdenAutoDisponibleDto(
+                    o.Id,
+                    o.NumeroOrdenA,
+                    o.Tienda.Nombre,
+                    o.Tienda.Direccion,
+                    o.UsuarioFinal.Nombre,
+                    o.NotaPedido,
+                    o.CreatedAt,
+                    o.DistanciaKm))
+                .ToListAsync();
+        }
+
+        public async Task AceptarOrdenAutoAsync(int ordenId, int pilotoId, string actorIdentityUserId, string actorRol)
+        {
+            if (ordenId <= 0) throw new ArgumentException("ordenId inválido.");
+            if (pilotoId <= 0) throw new ArgumentException("pilotoId inválido.");
+
+            var piloto = await _db.Pilotos.AsNoTracking()
+                .SingleOrDefaultAsync(p => p.Id == pilotoId && p.Activo);
+
+            if (piloto is null)
+                throw new InvalidOperationException("Piloto no encontrado o inactivo.");
+
+            // Regla: no puede aceptar otra auto si tiene una activa
+            var tieneAutoActiva = await _db.OrdenesEntrega.AnyAsync(o =>
+                o.PilotoId == pilotoId && o.EsAuto &&
+                (o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada));
+
+            if (tieneAutoActiva)
+                throw new InvalidOperationException("Debes finalizar tu entrega automática actual antes de aceptar otra.");
+
+            // ✅ Control de concurrencia atómico: el primer piloto que ejecute el UPDATE se la queda
+            var now = DateTime.UtcNow;
+            var rows = await _db.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE OrdenesEntrega SET PilotoId = {pilotoId}, Estado = {(int)EstadoOrden.Asignada}, AssignedAt = {now} WHERE Id = {ordenId} AND EsAuto = 1 AND Estado = {(int)EstadoOrden.Creada} AND PilotoId IS NULL");
+
+            if (rows == 0)
+                throw new InvalidOperationException("La orden ya fue tomada por otro piloto o ya no está disponible.");
+
+            RegistrarHistorial(
+                ordenId,
+                TipoEventoOrden.Asignada,
+                actorIdentityUserId,
+                actorRol,
+                $"Orden auto-asignada (aceptada por el piloto). PilotoId={pilotoId}.");
+
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task RechazarOrdenAutoAsync(int ordenId, int pilotoId)
+        {
+            if (ordenId <= 0) return;
+            if (pilotoId <= 0) return;
+
+            var ordenDisponible = await _db.OrdenesEntrega.AsNoTracking()
+                .AnyAsync(o => o.Id == ordenId && o.EsAuto &&
+                               o.Estado == EstadoOrden.Creada && o.PilotoId == null);
+
+            if (!ordenDisponible) return;
+
+            var ya = await _db.OrdenesAutoRechazo
+                .AnyAsync(r => r.OrdenEntregaId == ordenId && r.PilotoId == pilotoId);
+
+            if (ya) return;
+
+            _db.OrdenesAutoRechazo.Add(new OrdenAutoRechazo
+            {
+                OrdenEntregaId = ordenId,
+                PilotoId = pilotoId
+            });
+
+            await _db.SaveChangesAsync();
+        }
+
+        // -------------------------
         // Helpers
         // -------------------------
+
+        private async Task<(double? km, decimal precio)> CalcularPrecioAsync(ClienteApp cliente, Tienda tienda, UsuarioFinal uf)
+        {
+            var basePrecio = cliente.PrecioBase;
+
+            if (cliente.PrecioPorKm <= 0)
+                return (null, basePrecio);
+
+            // Resolver coordenadas de origen (tienda)
+            var latOrigen = tienda.Latitud;
+            var lngOrigen = tienda.Longitud;
+
+            if (latOrigen is null || lngOrigen is null)
+            {
+                var g = await _googleMaps.GeocodificarAsync(tienda.Direccion);
+                if (g is null) return (null, basePrecio);
+                latOrigen = g.Value.Lat;
+                lngOrigen = g.Value.Lng;
+            }
+
+            // Resolver coordenadas de destino (usuario final)
+            var latDestino = uf.Latitud;
+            var lngDestino = uf.Longitud;
+
+            if (latDestino is null || lngDestino is null)
+            {
+                var g = await _googleMaps.GeocodificarAsync(uf.DireccionUbicacion);
+                if (g is null) return (null, basePrecio);
+                latDestino = g.Value.Lat;
+                lngDestino = g.Value.Lng;
+            }
+
+            // Distancia real de ruta (Routes API); si falla, línea recta
+            var km = await _googleMaps.DistanciaRutaKmAsync(latOrigen.Value, lngOrigen.Value, latDestino.Value, lngDestino.Value)
+                     ?? _googleMaps.CalcularDistanciaKm(latOrigen.Value, lngOrigen.Value, latDestino.Value, lngDestino.Value);
+
+            var precio = basePrecio + (decimal)km * cliente.PrecioPorKm;
+            return (km, Math.Round(precio, 2));
+        }
 
         private async Task<string> GenerarCodigoUnicoAsync()
         {

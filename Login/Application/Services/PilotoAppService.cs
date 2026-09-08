@@ -102,10 +102,81 @@ namespace Login.Application.Services
             await _ordenService.ConfirmarEntregaAsync(codigoB, codigoC, identityUserId, "Piloto");
         }
 
+        // ---------- Auto-asignación ----------
+
+        public async Task<List<OrdenAutoDisponibleDto>> GetOrdenesAutoAsync(string identityUserId)
+        {
+            var piloto = await GetPilotoLogueadoAsync(identityUserId);
+            if (piloto is null) return new List<OrdenAutoDisponibleDto>();
+
+            return await _ordenService.GetOrdenesAutoDisponiblesAsync(piloto.Id);
+        }
+
+        public async Task AceptarOrdenAutoAsync(string identityUserId, int ordenId)
+        {
+            var piloto = await GetPilotoLogueadoAsync(identityUserId);
+            if (piloto is null)
+                throw new InvalidOperationException("Piloto no encontrado o inactivo.");
+
+            await _ordenService.AceptarOrdenAutoAsync(ordenId, piloto.Id, identityUserId, "Piloto");
+        }
+
+        public async Task RechazarOrdenAutoAsync(string identityUserId, int ordenId)
+        {
+            var piloto = await GetPilotoLogueadoAsync(identityUserId);
+            if (piloto is null)
+                throw new InvalidOperationException("Piloto no encontrado o inactivo.");
+
+            await _ordenService.RechazarOrdenAutoAsync(ordenId, piloto.Id);
+        }
+
+        public async Task ActualizarUbicacionAsync(string identityUserId, double latitud, double longitud)
+        {
+            if (latitud < -90 || latitud > 90 || longitud < -180 || longitud > 180)
+                throw new ArgumentException("Coordenadas inválidas.");
+
+            var piloto = await _db.Pilotos
+                .SingleOrDefaultAsync(p => p.IdentityUserId == identityUserId && p.Activo);
+
+            if (piloto is null)
+                throw new InvalidOperationException("Piloto no encontrado o inactivo.");
+
+            piloto.Latitud = latitud;
+            piloto.Longitud = longitud;
+            piloto.UltimaUbicacionAt = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task<PilotoEstadoDto> GetEstadoAsync(string identityUserId)
+        {
+            var piloto = await GetPilotoLogueadoAsync(identityUserId);
+            if (piloto is null)
+                throw new InvalidOperationException("Piloto no encontrado o inactivo.");
+
+            return new PilotoEstadoDto(piloto.EnLinea, piloto.Estado.ToString());
+        }
+
+        public async Task SetEnLineaAsync(string identityUserId, bool enLinea)
+        {
+            var piloto = await _db.Pilotos
+                .SingleOrDefaultAsync(p => p.IdentityUserId == identityUserId && p.Activo);
+
+            if (piloto is null)
+                throw new InvalidOperationException("Piloto no encontrado o inactivo.");
+
+            piloto.EnLinea = enLinea;
+
+            // Si se pone en línea y estaba Inactivo por error, lo dejamos Disponible
+            if (enLinea && piloto.Estado == EstadoPiloto.Inactivo)
+                piloto.Estado = EstadoPiloto.Disponible;
+
+            await _db.SaveChangesAsync();
+        }
+
         // ---------- Helpers ----------
 
-        private IQueryable<OrdenEntrega> OrdenesActivasQuery(int pilotoId)
-        {
+        private IQueryable<OrdenEntrega> OrdenesActivasQuery(int pilotoId)        {
             return _db.OrdenesEntrega
                 .AsNoTracking()
                 .Include(o => o.Tienda)
@@ -129,7 +200,11 @@ namespace Login.Application.Services
                 o.UsuarioFinal.Nombre,
                 o.UsuarioFinal.DireccionUbicacion,
                 o.UsuarioFinal.MapaLink,
-                o.UsuarioFinal.Telefono);
+                o.UsuarioFinal.Telefono,
+                o.Precio,
+                o.DistanciaKm,
+                o.Tienda.Latitud,
+                o.Tienda.Longitud);
         }
 
         private async Task<Piloto?> GetPilotoLogueadoAsync(string identityUserId)

@@ -1,0 +1,193 @@
+@model Login.ViewModels.Supervisor.MapaPilotosVm
+@using Login.Application.Interfaces
+@inject IGoogleMapsService GoogleMaps
+@{
+    ViewData["Title"] = "Seguimiento GPS";
+    Layout = "_LayoutGestor";
+    var apiKey = GoogleMaps.BrowserApiKey;
+    var keyValida = !string.IsNullOrWhiteSpace(apiKey) && !apiKey.Contains("REEMPLAZAR", StringComparison.OrdinalIgnoreCase);
+}
+
+<div class="pg-page pg-mapa-page">
+
+    @if (!string.IsNullOrWhiteSpace(Model.Ok))
+    {
+        <div class="pg-alert pg-alert-ok">
+            <span class="pg-alert-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+            <div>@Model.Ok</div>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="pg-alert pg-alert-bad">
+            <span class="pg-alert-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+            <div>@Model.Error</div>
+        </div>
+    }
+
+    <div class="pg-mapa-grid">
+
+        <!-- TARJETAS SUPERIORES -->
+        <div class="pg-grid-2 pg-mapa-top">
+
+            <!-- Tarjeta 1: config de precios -->
+            <div class="pg-card pg-mapa-card">
+                <div class="pg-mapa-card-head">
+                    <div>
+                        <div class="pg-mapa-card-title">Tarifas de envío</div>
+                        <div class="pg-mapa-card-sub">Precio base + precio por kilómetro</div>
+                    </div>
+                </div>
+                <form method="post" asp-action="GuardarPrecios" class="pg-precios-form">
+                    @Html.AntiForgeryToken()
+                    <div class="pg-precio-field">
+                        <label>Precio base (RD$)</label>
+                        <input type="number" step="0.01" min="0" name="precioBase" value="@Model.PrecioBase" />
+                    </div>
+                    <div class="pg-precio-field">
+                        <label>Precio por km (RD$)</label>
+                        <input type="number" step="0.01" min="0" name="precioPorKm" value="@Model.PrecioPorKm" />
+                    </div>
+                    <button type="submit" class="pg-btn pg-btn-primary">Guardar tarifas</button>
+                </form>
+            </div>
+
+            <!-- Tarjeta 2: lista de pilotos + estado -->
+            <div class="pg-card pg-mapa-card">
+                <div class="pg-mapa-card-head">
+                    <div>
+                        <div class="pg-mapa-card-title">Pilotos</div>
+                        <div class="pg-mapa-card-sub">Estado en vivo de la flota</div>
+                    </div>
+                </div>
+                <div class="pg-pilotos-list">
+                    @foreach (var p in Model.Pilotos)
+                    {
+                        var estadoClase = p.EstadoNum == 1 ? "disponible" : p.EstadoNum == 2 ? "ocupado" : "inactivo";
+                        <div class="pg-piloto-row">
+                            <div class="pg-piloto-row-info">
+                                <span class="pg-dot-estado @estadoClase"></span>
+                                <div>
+                                    <div class="pg-piloto-row-name">@p.Nombre</div>
+                                    <div class="pg-piloto-row-estado">@p.Estado</div>
+                                </div>
+                            </div>
+                            @if (p.Latitud.HasValue && p.Longitud.HasValue)
+                            {
+                                <button type="button" class="pg-btn pg-btn-ghost pg-btn-sm"
+                                        data-lat="@p.Latitud" data-lng="@p.Longitud"
+                                        onclick="centrarPiloto(this)">
+                                    Centrar
+                                </button>
+                            }
+                            else
+                            {
+                                <span class="pg-sin-gps">Sin GPS</span>
+                            }
+                        </div>
+                    }
+                    @if (Model.Pilotos.Count == 0)
+                    {
+                        <div style="color:var(--pg-muted);padding:12px 0;">No hay pilotos registrados.</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- MAPA (tarjeta inferior pantalla completa) -->
+        <div class="pg-card pg-mapa-wrap">
+            @if (!keyValida)
+            {
+                <div class="pg-mapa-aviso">
+                    <strong>Google Maps no está configurado.</strong>
+                    Agrega tu API key en <code>appsettings.json</code> → <code>GoogleMaps:ApiKey</code>.
+                </div>
+            }
+            <div id="pgMap" style="width:100%;height:100%;min-height:420px;"></div>
+        </div>
+
+    </div>
+</div>
+
+@if (keyValida)
+{
+    <script src="https://maps.googleapis.com/maps/api/js?key=@apiKey&callback=initMap" async defer></script>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var map = null;
+            var markers = {};
+            var keyValida = @(keyValida ? "true" : "false");
+
+            var MOTO_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24">'
+                + '<circle cx="12" cy="12" r="11.5" fill="#2563eb" stroke="#ffffff" stroke-width="1.2"/>'
+                + '<g fill="#ffffff" transform="translate(4.5,6.2) scale(0.62)">'
+                + '<path d="M17.5 10c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5 4.5-2 4.5-4.5-2-4.5-4.5-4.5zm0 7c-1.4 0-2.5-1.1-2.5-2.5s1.1-2.5 2.5-2.5 2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5zM5.5 10C3 10 1 12 1 14.5S3 19 5.5 19 10 17 10 14.5 8 10 5.5 10zm0 7c-1.4 0-2.5-1.1-2.5-2.5S4.1 12 5.5 12 8 13.1 8 14.5 6.9 17 5.5 17z"/>'
+                + '<path d="M20 9h-2.2l-1.3-3h-4l-1.5 3h-2v2h3.2l1.5-3h2.3l1.3 3.2c-.8.5-1.3 1.4-1.3 2.3H20V9z"/>'
+                + '</g></svg>';
+
+            var motoIcon = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(MOTO_SVG);
+
+            function initMap() {
+                if (!window.google || !window.google.maps) return;
+                map = new google.maps.Map(document.getElementById("pgMap"), {
+                    center: { lat: 18.4812, lng: -69.9000 },
+                    zoom: 12,
+                    mapTypeControl: false,
+                    streetViewControl: false,
+                    fullscreenControl: true
+                });
+                cargarPilotos();
+                setInterval(cargarPilotos, 5000);
+            }
+
+            function cargarPilotos() {
+                fetch("/Supervisor/MapaData")
+                    .then(function (r) { return r.json(); })
+                    .then(function (pilotos) {
+                        if (!map) return;
+                        var vistos = {};
+                        pilotos.forEach(function (p) {
+                            if (p.latitud == null || p.longitud == null) return;
+                            vistos[p.id] = true;
+                            var pos = { lat: p.latitud, lng: p.longitud };
+                            if (markers[p.id]) {
+                                markers[p.id].setPosition(pos);
+                            } else {
+                                markers[p.id] = new google.maps.Marker({
+                                    position: pos,
+                                    map: map,
+                                    icon: motoIcon,
+                                    title: p.nombre + " (" + p.estado + ")"
+                                });
+                            }
+                        });
+                        for (var id in markers) {
+                            if (!vistos[id]) {
+                                markers[id].setMap(null);
+                                delete markers[id];
+                            }
+                        }
+                    })
+                    .catch(function () { /* silencioso */ });
+            }
+
+            window.centrarPiloto = function (btn) {
+                if (!map) return;
+                var lat = parseFloat(btn.getAttribute("data-lat"));
+                var lng = parseFloat(btn.getAttribute("data-lng"));
+                map.panTo({ lat: lat, lng: lng });
+                map.setZoom(15);
+            };
+
+            window.initMap = initMap;
+
+            // Si la API ya cargó (p.ej. cache), iniciamos de inmediato
+            if (keyValida && window.google && window.google.maps) {
+                initMap();
+            }
+        })();
+    </script>
+}

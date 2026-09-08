@@ -42,6 +42,7 @@
                     <th>Dirección</th>
                     <th style="width:160px;">Teléfono</th>
                     <th style="width:80px;">Activo</th>
+                    <th style="width:120px;text-align:center;">Auto Piloto</th>
                     <th style="width:120px;text-align:right;">Acciones</th>
                 </tr>
             </thead>
@@ -49,7 +50,7 @@
                 @if (Model == null || !Model.Any())
                 {
                     <tr>
-                        <td colspan="6" style="text-align:center;color:var(--pg-muted);padding:28px 14px;">
+                        <td colspan="7" style="text-align:center;color:var(--pg-muted);padding:28px 14px;">
                             No hay tiendas creadas todavía.
                         </td>
                     </tr>
@@ -72,6 +73,18 @@
                                 {
                                     <span style="color:var(--pg-muted);font-size:12.5px;">Inactivo</span>
                                 }
+                            </td>
+                            <td style="text-align:center;">
+                                <form method="post" asp-action="ToggleAutoAsignacion" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@t.Id" />
+                                    <button type="submit"
+                                            class="pg-switch @(t.AutoAsignacion ? "on" : "")"
+                                            title="@(t.AutoAsignacion ? "Piloto automático activo" : "Piloto automático inactivo")"
+                                            style="border:none;background:transparent;cursor:pointer;padding:0;">
+                                        <span class="pg-switch-track"><span class="pg-switch-thumb"></span></span>
+                                    </button>
+                                </form>
                             </td>
                             <td style="text-align:right;">
                                 <a class="pg-action-ico" asp-action="EditarTienda" asp-route-id="@t.Id" title="Editar">

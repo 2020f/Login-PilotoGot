@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Login.Application.Interfaces;
 using Login.Data;
 using Login.Domain.Entities;
 using Login.ViewModels.Gestor;
@@ -17,11 +18,16 @@ namespace Login.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly IGoogleMapsService _googleMaps;
 
-        public GestorController(ApplicationDbContext db, UserManager<IdentityUser> userManager)
+        public GestorController(
+            ApplicationDbContext db,
+            UserManager<IdentityUser> userManager,
+            IGoogleMapsService googleMaps)
         {
             _db = db;
             _userManager = userManager;
+            _googleMaps = googleMaps;
         }
 
         private string GetUserId()
@@ -84,12 +90,16 @@ namespace Login.Controllers
                 return RedirectToAction(nameof(CrearTienda), new { error = "Límite de tiendas alcanzado según el plan." });
 
             // ✅ crear tienda dentro del tenant
+            var coords = await _googleMaps.GeocodificarAsync(input.Direccion.Trim());
+
             var tienda = new Tienda
             {
                 ClienteAppId = clienteAppId,
                 Nombre = input.Nombre.Trim(),
                 Direccion = input.Direccion.Trim(),
                 Telefono = input.Telefono.Trim(),
+                Latitud = coords?.Lat,
+                Longitud = coords?.Lng,
                 Activo = true
             };
 

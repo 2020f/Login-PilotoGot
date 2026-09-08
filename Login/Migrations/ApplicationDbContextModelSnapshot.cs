@@ -83,6 +83,14 @@ namespace Login.Migrations
                     b.Property<int>("PlanId")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("PrecioBase")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PrecioPorKm")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime?>("ProximoCobro")
                         .HasColumnType("datetime2");
 
@@ -192,6 +200,33 @@ namespace Login.Migrations
                     b.ToTable("HistorialOrdenes");
                 });
 
+            modelBuilder.Entity("Login.Domain.Entities.OrdenAutoRechazo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OrdenEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PilotoId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PilotoId");
+
+                    b.HasIndex("OrdenEntregaId", "PilotoId")
+                        .IsUnique();
+
+                    b.ToTable("OrdenesAutoRechazo");
+                });
+
             modelBuilder.Entity("Login.Domain.Entities.OrdenEntrega", b =>
                 {
                     b.Property<int>("Id")
@@ -209,8 +244,14 @@ namespace Login.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<double?>("DistanciaKm")
+                        .HasColumnType("float");
+
                     b.Property<DateTime?>("EntregadaAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("EsAuto")
+                        .HasColumnType("bit");
 
                     b.Property<int>("Estado")
                         .HasColumnType("int");
@@ -224,6 +265,10 @@ namespace Login.Migrations
 
                     b.Property<int?>("PilotoId")
                         .HasColumnType("int");
+
+                    b.Property<decimal?>("Precio")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("RecolectadaAt")
                         .HasColumnType("datetime2");
@@ -265,6 +310,9 @@ namespace Login.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("EnLinea")
+                        .HasColumnType("bit");
+
                     b.Property<int>("Estado")
                         .HasColumnType("int");
 
@@ -272,6 +320,12 @@ namespace Login.Migrations
                         .IsRequired()
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<double?>("Latitud")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Longitud")
+                        .HasColumnType("float");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
@@ -282,6 +336,9 @@ namespace Login.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("UltimaUbicacionAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -337,6 +394,9 @@ namespace Login.Migrations
                     b.Property<bool>("Activo")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("AutoAsignacion")
+                        .HasColumnType("bit");
+
                     b.Property<int>("ClienteAppId")
                         .HasColumnType("int");
 
@@ -347,6 +407,12 @@ namespace Login.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<double?>("Latitud")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Longitud")
+                        .HasColumnType("float");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
@@ -439,6 +505,12 @@ namespace Login.Migrations
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
+
+                    b.Property<double?>("Latitud")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Longitud")
+                        .HasColumnType("float");
 
                     b.Property<string>("MapaLink")
                         .HasMaxLength(500)
@@ -729,6 +801,25 @@ namespace Login.Migrations
                         .IsRequired();
 
                     b.Navigation("OrdenEntrega");
+                });
+
+            modelBuilder.Entity("Login.Domain.Entities.OrdenAutoRechazo", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.OrdenEntrega", "OrdenEntrega")
+                        .WithMany()
+                        .HasForeignKey("OrdenEntregaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.Piloto", "Piloto")
+                        .WithMany()
+                        .HasForeignKey("PilotoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("OrdenEntrega");
+
+                    b.Navigation("Piloto");
                 });
 
             modelBuilder.Entity("Login.Domain.Entities.OrdenEntrega", b =>

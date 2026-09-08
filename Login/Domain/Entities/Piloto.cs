@@ -18,11 +18,19 @@ namespace Login.Domain.Entities
 
         public EstadoPiloto Estado { get; set; } = EstadoPiloto.Disponible;
 
+        // ✅ Toggle propio del piloto (estilo Uber): en línea para recibir órdenes auto
+        public bool EnLinea { get; set; } = false;
+
         // ✅ Relación con Identity (usuario que inicia sesión)
         [Required, MaxLength(450)]
         public string IdentityUserId { get; set; } = string.Empty;
 
         public bool Activo { get; set; } = true;
+
+        // ✅ Ubicación GPS en vivo (la app móvil la reporta)
+        public double? Latitud { get; set; }
+        public double? Longitud { get; set; }
+        public DateTime? UltimaUbicacionAt { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

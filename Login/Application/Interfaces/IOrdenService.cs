@@ -44,6 +44,15 @@ namespace Login.Application.Interfaces
         /// Devuelve info “segura” para piloto. No revela datos sensibles antes de recolecta.
         /// </summary>
         Task<OrdenPilotoView> ObtenerOrdenParaPilotoAsync(string codigoB, int pilotoId);
+
+        /// <summary>Lista de órdenes en modo auto disponibles para que un piloto las acepte.</summary>
+        Task<List<OrdenAutoDisponibleDto>> GetOrdenesAutoDisponiblesAsync(int pilotoId);
+
+        /// <summary>Un piloto acepta una orden auto (control de concurrencia: el primero se la queda).</summary>
+        Task AceptarOrdenAutoAsync(int ordenId, int pilotoId, string actorIdentityUserId, string actorRol);
+
+        /// <summary>Un piloto rechaza una orden auto (queda fuera de su lista).</summary>
+        Task RechazarOrdenAutoAsync(int ordenId, int pilotoId);
     }
 
     public sealed record OrdenCreadaResult(
@@ -51,6 +60,17 @@ namespace Login.Application.Interfaces
         int NumeroOrdenA,
         string CodigoB,
         string CodigoC
+    );
+
+    public sealed record OrdenAutoDisponibleDto(
+        int OrdenId,
+        int NumeroOrdenA,
+        string TiendaNombre,
+        string TiendaDireccion,
+        string UsuarioFinalNombre,
+        string? NotaPedido,
+        DateTime CreatedAt,
+        double? DistanciaKm
     );
 
     public sealed record OrdenPilotoView(

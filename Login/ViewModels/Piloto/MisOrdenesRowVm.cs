@@ -22,5 +22,9 @@ namespace Login.ViewModels.Piloto
         public string UsuarioFinalDireccion { get; set; } = "";
         public string? UsuarioFinalMapaLink { get; set; }
         public string UsuarioFinalTelefono { get; set; } = "";
+
+        // Precio / distancia
+        public decimal? Precio { get; set; }
+        public double? DistanciaKm { get; set; }
     }
 }

@@ -19,6 +19,14 @@ namespace Login.ViewModels.Supervisor
         public string? TiendaTelefono { get; set; }
         public string? Notas { get; set; } // <- OJO: este nombre debe coincidir con tu entidad real
 
+        // Auto-asignación
+        public bool TiendaAutoAsignacion { get; set; }
+        public bool EsAuto { get; set; }
+
+        // Precio / distancia
+        public decimal? Precio { get; set; }
+        public double? DistanciaKm { get; set; }
+
         public DateTime CreatedAt { get; set; }
 
         // Para poder asignar:

@@ -51,7 +51,9 @@ namespace Login.Application.Interfaces
         DateTime CreatedAt,
         DateTime? AssignedAt,
         DateTime? RecolectadaAt,
-        DateTime? EntregadaAt);
+        DateTime? EntregadaAt,
+        decimal? Precio,
+        double? DistanciaKm);
 
     public sealed record OrdenQrDto(
         int OrdenId,

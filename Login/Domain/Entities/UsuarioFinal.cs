@@ -19,6 +19,10 @@ namespace Login.Domain.Entities
         [MaxLength(500)]
         public string? MapaLink { get; set; }
 
+        // ✅ Coordenadas del destino (para cálculo de distancia/precio)
+        public double? Latitud { get; set; }
+        public double? Longitud { get; set; }
+
         [Required, MaxLength(30)]
         public string Telefono { get; set; } = string.Empty;
 

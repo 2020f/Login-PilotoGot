@@ -70,7 +70,10 @@ namespace Login.Controllers
                     UsuarioFinalNombre = o.UsuarioFinal.Nombre,
                     UsuarioFinalDireccion = o.UsuarioFinal.DireccionUbicacion,
                     UsuarioFinalMapaLink = o.UsuarioFinal.MapaLink,
-                    UsuarioFinalTelefono = o.UsuarioFinal.Telefono
+                    UsuarioFinalTelefono = o.UsuarioFinal.Telefono,
+
+                    Precio = o.Precio,
+                    DistanciaKm = o.DistanciaKm
                 })
                 .ToListAsync();
 
@@ -118,7 +121,10 @@ namespace Login.Controllers
                     UsuarioFinalNombre = o.UsuarioFinal.Nombre,
                     UsuarioFinalDireccion = o.UsuarioFinal.DireccionUbicacion,
                     UsuarioFinalMapaLink = o.UsuarioFinal.MapaLink,
-                    UsuarioFinalTelefono = o.UsuarioFinal.Telefono
+                    UsuarioFinalTelefono = o.UsuarioFinal.Telefono,
+
+                    Precio = o.Precio,
+                    DistanciaKm = o.DistanciaKm
                 })
                 .FirstOrDefaultAsync();
 

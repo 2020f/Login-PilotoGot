@@ -25,6 +25,7 @@ namespace Login.Data
         public DbSet<UsuarioTienda> UsuariosTienda { get; set; } = null!;
         public DbSet<UserContext> UserContexts { get; set; } = null!;
         public DbSet<UsuarioClienteApp> UsuariosClienteApp { get; set; } = null!;
+        public DbSet<OrdenAutoRechazo> OrdenesAutoRechazo => Set<OrdenAutoRechazo>();
 
 
 
@@ -32,6 +33,14 @@ namespace Login.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            // ✅ Precisión para montos (evita truncados)
+            builder.Entity<ClienteApp>()
+                .Property(c => c.PrecioBase).HasPrecision(18, 2);
+            builder.Entity<ClienteApp>()
+                .Property(c => c.PrecioPorKm).HasPrecision(18, 2);
+            builder.Entity<OrdenEntrega>()
+                .Property(o => o.Precio).HasPrecision(18, 2);
 
             // ✅ A único por tenant
             builder.Entity<OrdenEntrega>()
@@ -104,6 +113,23 @@ namespace Login.Data
                 .WithMany()
                 .HasForeignKey(x => x.ClienteAppId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // ✅ Un piloto rechaza una orden auto una sola vez
+            builder.Entity<OrdenAutoRechazo>()
+                .HasIndex(x => new { x.OrdenEntregaId, x.PilotoId })
+                .IsUnique();
+
+            builder.Entity<OrdenAutoRechazo>()
+                .HasOne(x => x.OrdenEntrega)
+                .WithMany()
+                .HasForeignKey(x => x.OrdenEntregaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<OrdenAutoRechazo>()
+                .HasOne(x => x.Piloto)
+                .WithMany()
+                .HasForeignKey(x => x.PilotoId)
+                .OnDelete(DeleteBehavior.Restrict);
 
 
 

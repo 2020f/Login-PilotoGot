@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Login.Application.Interfaces
@@ -23,6 +24,24 @@ namespace Login.Application.Interfaces
 
         /// <summary>Confirma la entrega con los códigos B + C (valida que la orden sea del piloto).</summary>
         Task ConfirmarEntregaAsync(string identityUserId, string codigoB, string codigoC);
+
+        /// <summary>Órdenes en modo auto disponibles para que este piloto las acepte.</summary>
+        Task<List<OrdenAutoDisponibleDto>> GetOrdenesAutoAsync(string identityUserId);
+
+        /// <summary>Acepta una orden auto (control de concurrencia).</summary>
+        Task AceptarOrdenAutoAsync(string identityUserId, int ordenId);
+
+        /// <summary>Rechaza una orden auto.</summary>
+        Task RechazarOrdenAutoAsync(string identityUserId, int ordenId);
+
+        /// <summary>Actualiza la ubicación GPS del piloto (reportada por la app móvil).</summary>
+        Task ActualizarUbicacionAsync(string identityUserId, double latitud, double longitud);
+
+        /// <summary>Devuelve el estado en línea/ocupado del piloto.</summary>
+        Task<PilotoEstadoDto> GetEstadoAsync(string identityUserId);
+
+        /// <summary>Activa/desactiva el estado "en línea" del piloto.</summary>
+        Task SetEnLineaAsync(string identityUserId, bool enLinea);
     }
 
     public sealed record OrdenPilotoDto(
@@ -38,5 +57,13 @@ namespace Login.Application.Interfaces
         string UsuarioFinalNombre,
         string UsuarioFinalDireccion,
         string? UsuarioFinalMapaLink,
-        string UsuarioFinalTelefono);
+        string UsuarioFinalTelefono,
+        decimal? Precio,
+        double? DistanciaKm,
+        double? TiendaLatitud,
+        double? TiendaLongitud);
+
+    public sealed record PilotoEstadoDto(
+        bool EnLinea,
+        string Estado);
 }

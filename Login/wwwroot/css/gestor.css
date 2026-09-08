@@ -1403,3 +1403,215 @@ html, body { height: 100%; }
         grid-template-columns: 1fr;
     }
 }
+
+/* ============ SWITCH (toggle auto-asignación) ============ */
+.pg-switch {
+    display: inline-block;
+    vertical-align: middle;
+}
+.pg-switch-track {
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    background: #d1d5db;
+    border-radius: 999px;
+    position: relative;
+    transition: background .18s ease;
+}
+.pg-switch-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,.25);
+    transition: transform .18s ease;
+}
+.pg-switch.on .pg-switch-track {
+    background: var(--pg-blue);
+}
+.pg-switch.on .pg-switch-thumb {
+    transform: translateX(18px);
+}
+
+/* Badge modo auto en tarjetas de órdenes */
+.pg-auto-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--pg-blue);
+    background: var(--pg-blue-soft);
+    border-radius: 999px;
+    padding: 3px 9px;
+    margin-top: 8px;
+}
+.pg-auto-badge.off {
+    color: var(--pg-muted);
+    background: #f3f4f6;
+}
+
+/* ============ MAPA GPS ============ */
+.pg-mapa-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
+}
+
+.pg-mapa-card {
+    padding: 18px 20px;
+}
+
+.pg-mapa-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.pg-mapa-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--pg-text);
+}
+
+.pg-mapa-card-sub {
+    font-size: 12.5px;
+    color: var(--pg-muted);
+    margin-top: 2px;
+}
+
+.pg-precios-form {
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.pg-precio-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pg-precio-field label {
+    font-size: 12px;
+    color: var(--pg-muted);
+    font-weight: 500;
+}
+
+.pg-precio-field input {
+    border: 1px solid var(--pg-border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 14px;
+    width: 130px;
+    color: var(--pg-text);
+}
+
+.pg-precio-field input:focus {
+    outline: none;
+    border-color: var(--pg-blue);
+}
+
+.pg-pilotos-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 210px;
+    overflow-y: auto;
+}
+
+.pg-piloto-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border: 1px solid var(--pg-border);
+    border-radius: 10px;
+}
+
+.pg-piloto-row-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pg-piloto-row-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--pg-text);
+}
+
+.pg-piloto-row-estado {
+    font-size: 11.5px;
+    color: var(--pg-muted);
+}
+
+.pg-dot-estado {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.pg-dot-estado.disponible { background: #16a34a; }
+.pg-dot-estado.ocupado { background: #d97706; }
+.pg-dot-estado.inactivo { background: #9ca3af; }
+
+.pg-btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.pg-sin-gps {
+    font-size: 11.5px;
+    color: var(--pg-muted);
+}
+
+.pg-mapa-wrap {
+    flex: 1;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+    min-height: 420px;
+}
+
+.pg-mapa-aviso {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+}
+
+.pg-precio-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.pg-precio-tag {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #166534;
+    background: #dcfce7;
+    border-radius: 999px;
+    padding: 3px 10px;
+}
+
+.pg-distancia {
+    font-size: 12px;
+    color: var(--pg-muted);
+}
