@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Login.Application.Interfaces;
 using Login.Data;
+using Login.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace Login.Application.Services
@@ -13,25 +14,27 @@ namespace Login.Application.Services
         public async Task<int> GetTiendaActivaIdAsync(string identityUserId)
         {
             var ctx = await _db.UserContexts.SingleOrDefaultAsync(x => x.IdentityUserId == identityUserId);
-            if (ctx?.TiendaActivaId is int tiendaId) return tiendaId;
+            if (ctx?.TiendaActivaId is int tiendaId)
+            {
+                if (!await UsuarioTieneAccesoATiendaAsync(identityUserId, tiendaId))
+                    throw new System.InvalidOperationException("La tienda activa no está disponible. Selecciona otra tienda autorizada.");
+                return tiendaId;
+            }
 
             // si no hay tienda activa, intenta usar la primera tienda permitida
             var first = await _db.UsuariosTienda
                 .AsNoTracking()
-                .Where(x => x.IdentityUserId == identityUserId && x.Activo)
+                .Where(x => x.IdentityUserId == identityUserId && x.Activo && x.Tienda.Activo
+                    && x.Tienda.ClienteApp.Estado == EstadoClienteApp.Activo)
+                .OrderBy(x => x.TiendaId)
                 .Select(x => x.TiendaId)
                 .FirstOrDefaultAsync();
 
             if (first == 0)
                 throw new System.InvalidOperationException("Este usuario no tiene tiendas asignadas.");
 
-            // guardar default
-            if (ctx is null)
-                _db.UserContexts.Add(new Domain.Entities.UserContext { IdentityUserId = identityUserId, TiendaActivaId = first });
-            else
-                ctx.TiendaActivaId = first;
-
-            await _db.SaveChangesAsync();
+            // Un default determinista no necesita escritura. Evita una carrera
+            // del índice único cuando varias peticiones abren la cuenta a la vez.
             return first;
         }
 
@@ -54,7 +57,7 @@ namespace Login.Application.Services
             return _db.UsuariosTienda.AnyAsync(x =>
                 x.IdentityUserId == identityUserId &&
                 x.TiendaId == tiendaId &&
-                x.Activo);
+                x.Activo && x.Tienda.Activo && x.Tienda.ClienteApp.Estado == EstadoClienteApp.Activo);
         }
     }
 }

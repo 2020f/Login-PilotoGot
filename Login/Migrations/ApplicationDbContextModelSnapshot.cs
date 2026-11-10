@@ -131,6 +131,9 @@ namespace Login.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(80)
@@ -141,6 +144,9 @@ namespace Login.Migrations
 
                     b.Property<int>("OrdenEntregaId")
                         .HasColumnType("int");
+
+                    b.Property<bool>("Reservado")
+                        .HasColumnType("bit");
 
                     b.Property<int>("Tipo")
                         .HasColumnType("int");
@@ -153,11 +159,14 @@ namespace Login.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Codigo")
-                        .IsUnique();
+                    b.HasIndex("Codigo");
 
                     b.HasIndex("OrdenEntregaId", "Tipo")
                         .IsUnique();
+
+                    b.HasIndex("ClienteAppId", "Tipo", "Codigo")
+                        .IsUnique()
+                        .HasFilter("[Reservado] = 1");
 
                     b.ToTable("CodigosEntrega");
                 });
@@ -241,6 +250,10 @@ namespace Login.Migrations
                     b.Property<int>("ClienteAppId")
                         .HasColumnType("int");
 
+                    b.Property<string>("CodigoA")
+                        .HasMaxLength(4)
+                        .HasColumnType("nvarchar(4)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -286,6 +299,10 @@ namespace Login.Migrations
                     b.HasIndex("TiendaId");
 
                     b.HasIndex("UsuarioFinalId");
+
+                    b.HasIndex("ClienteAppId", "CodigoA")
+                        .IsUnique()
+                        .HasFilter("[CodigoA] IS NOT NULL AND [Estado] <> 4");
 
                     b.HasIndex("ClienteAppId", "NumeroOrdenA")
                         .IsUnique();
@@ -783,11 +800,19 @@ namespace Login.Migrations
 
             modelBuilder.Entity("Login.Domain.Entities.CodigoEntrega", b =>
                 {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Login.Domain.Entities.OrdenEntrega", "OrdenEntrega")
                         .WithMany("Codigos")
                         .HasForeignKey("OrdenEntregaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("ClienteApp");
 
                     b.Navigation("OrdenEntrega");
                 });

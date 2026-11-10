@@ -10,6 +10,12 @@ namespace Login.Domain.Entities
         public int OrdenEntregaId { get; set; }
         public OrdenEntrega OrdenEntrega { get; set; } = null!;
 
+        public int ClienteAppId { get; set; }
+        public ClienteApp ClienteApp { get; set; } = null!;
+
+        // Se libera al entregar; el valor y su historial nunca se borran.
+        public bool Reservado { get; set; } = true;
+
         public TipoCodigo Tipo { get; set; }
 
         [Required, MaxLength(80)]

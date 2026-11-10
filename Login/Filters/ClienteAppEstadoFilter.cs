@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using Login.Data;
+using Login.Application.Interfaces;
 using Login.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -10,10 +11,12 @@ namespace Login.Filters
     public class ClienteAppEstadoFilter : IAsyncActionFilter
     {
         private readonly ApplicationDbContext _db;
+        private readonly IUserContextService _userContext;
 
-        public ClienteAppEstadoFilter(ApplicationDbContext db)
+        public ClienteAppEstadoFilter(ApplicationDbContext db, IUserContextService userContext)
         {
             _db = db;
+            _userContext = userContext;
         }
 
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
@@ -46,6 +49,15 @@ namespace Login.Filters
             // 3) Permitir Logout (para que pueda salir sí o sí)
             // Nota: si tu logout está en Identity, lo cubrimos por path también
             var path = context.HttpContext.Request.Path.Value?.ToLower() ?? "";
+            // La selección valida el tenant de destino en UserContextService. Debe
+            // seguir accesible si la tienda seleccionada fue suspendida o revocada.
+            if (routeController.Equals("Auth", StringComparison.OrdinalIgnoreCase)
+                || path == "/api/tienda/tiendas" || path == "/api/tienda/tienda-activa"
+                || (routeController == "Tienda" && routeAction == "SeleccionarTienda"))
+            {
+                await next();
+                return;
+            }
             if (path.Contains("/logout") || path.Contains("/identity/account/logout"))
             {
                 await next();
@@ -74,7 +86,13 @@ namespace Login.Filters
             // 5) Resolver ClienteAppId según rol
             int clienteAppId = 0;
 
-            if (user.IsInRole("Gestor"))
+            if (path.StartsWith("/api/piloto") || routeController == "Piloto")
+            {
+                clienteAppId = await _db.Pilotos.AsNoTracking()
+                    .Where(p => p.IdentityUserId == userId && p.Activo)
+                    .Select(p => p.ClienteAppId).SingleOrDefaultAsync();
+            }
+            else if (user.IsInRole("Gestor") && !path.StartsWith("/api/tienda") && routeController != "Tienda")
             {
                 clienteAppId = await _db.ClientesApp.AsNoTracking()
                     .Where(c => c.GestorIdentityUserId == userId)
@@ -83,10 +101,17 @@ namespace Login.Filters
             }
             else if (user.IsInRole("Cliente"))
             {
-                clienteAppId = await _db.UsuariosTienda.AsNoTracking()
-                    .Where(ut => ut.IdentityUserId == userId && ut.Activo)
-                    .Select(ut => ut.Tienda.ClienteAppId)
-                    .SingleOrDefaultAsync();
+                try
+                {
+                    var tiendaId = await _userContext.GetTiendaActivaIdAsync(userId);
+                    clienteAppId = await _db.Tiendas.AsNoTracking().Where(t => t.Id == tiendaId)
+                        .Select(t => t.ClienteAppId).SingleOrDefaultAsync();
+                }
+                catch (InvalidOperationException)
+                {
+                    Bloquear(context, "Tienda no disponible");
+                    return;
+                }
             }
             else if (user.IsInRole("Piloto"))
             {
@@ -98,7 +123,7 @@ namespace Login.Filters
 
             if (clienteAppId == 0)
             {
-                await next();
+                Bloquear(context, "Usuario sin tenant activo");
                 return;
             }
 
@@ -130,6 +155,13 @@ namespace Login.Filters
             }
 
             await next();
+        }
+
+        private static void Bloquear(ActionExecutingContext context, string motivo)
+        {
+            context.Result = context.HttpContext.Request.Path.StartsWithSegments("/api")
+                ? new JsonResult(new { error = motivo }) { StatusCode = StatusCodes.Status403Forbidden }
+                : new RedirectToActionResult("Index", "Bloqueo", new { motivo });
         }
     }
 }

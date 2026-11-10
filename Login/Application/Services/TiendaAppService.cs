@@ -32,7 +32,8 @@ namespace Login.Application.Services
         {
             return await _db.UsuariosTienda
                 .AsNoTracking()
-                .Where(x => x.IdentityUserId == identityUserId && x.Activo && x.Tienda.Activo)
+                .Where(x => x.IdentityUserId == identityUserId && x.Activo && x.Tienda.Activo
+                    && x.Tienda.ClienteApp.Estado == EstadoClienteApp.Activo)
                 .OrderBy(x => x.Tienda.Nombre)
                 .Select(x => new TiendaInfoDto(x.Tienda.Id, x.Tienda.Nombre, x.Tienda.Direccion, x.Tienda.Activo))
                 .ToListAsync();
@@ -156,7 +157,7 @@ namespace Login.Application.Services
 
             return await _db.OrdenesEntrega.AsNoTracking()
                 .Include(o => o.UsuarioFinal)
-                .Where(o => o.TiendaId == tienda.Id)
+                .Where(o => o.TiendaId == tienda.Id && o.ClienteAppId == tienda.ClienteAppId)
                 .OrderByDescending(o => o.CreatedAt)
                 .Take(200)
                 .Select(o => new OrdenTiendaDto(
@@ -170,7 +171,8 @@ namespace Login.Application.Services
                     o.RecolectadaAt,
                     o.EntregadaAt,
                     o.Precio,
-                    o.DistanciaKm))
+                    o.DistanciaKm,
+                    o.CodigoA))
                 .ToListAsync();
         }
 
@@ -182,7 +184,7 @@ namespace Login.Application.Services
                 .AsNoTracking()
                 .Include(o => o.UsuarioFinal)
                 .Include(o => o.Codigos)
-                .FirstOrDefaultAsync(o => o.Id == ordenId && o.TiendaId == tienda.Id);
+                .FirstOrDefaultAsync(o => o.Id == ordenId && o.TiendaId == tienda.Id && o.ClienteAppId == tienda.ClienteAppId);
 
             if (orden is null)
                 throw new InvalidOperationException("Orden no encontrada o no es de tu tienda.");
@@ -206,7 +208,8 @@ namespace Login.Application.Services
                 orden.UsuarioFinal.Nombre,
                 orden.UsuarioFinal.DireccionUbicacion,
                 orden.UsuarioFinal.MapaLink,
-                orden.NotaPedido);
+                orden.NotaPedido,
+                orden.CodigoA);
         }
 
         public async Task<OrdenCreadaResult> CrearOrdenAsync(string identityUserId, int usuarioFinalId, string? notaPedido)

@@ -1,9 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Login.ViewModels.Supervisor
 {
     public class AsignarPilotoVm
     {
+        public int? OrdenId { get; set; }
+
         [Required]
         public string CodigoB { get; set; } = string.Empty;
 

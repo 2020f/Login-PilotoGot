@@ -20,10 +20,10 @@ namespace Login.Application.Interfaces
         Task<OrdenPilotoDto?> GetOrdenDetalleAsync(string identityUserId, int ordenId);
 
         /// <summary>Confirma la recolecta con el código B (valida que la orden sea del piloto).</summary>
-        Task ConfirmarRecolectaAsync(string identityUserId, string codigoB);
+        Task ConfirmarRecolectaAsync(string identityUserId, string codigoB, int? ordenId = null);
 
         /// <summary>Confirma la entrega con los códigos B + C (valida que la orden sea del piloto).</summary>
-        Task ConfirmarEntregaAsync(string identityUserId, string codigoB, string codigoC);
+        Task ConfirmarEntregaAsync(string identityUserId, string codigoB, string codigoC, int? ordenId = null);
 
         /// <summary>Órdenes en modo auto disponibles para que este piloto las acepte.</summary>
         Task<List<OrdenAutoDisponibleDto>> GetOrdenesAutoAsync(string identityUserId);
@@ -61,7 +61,8 @@ namespace Login.Application.Interfaces
         decimal? Precio,
         double? DistanciaKm,
         double? TiendaLatitud,
-        double? TiendaLongitud);
+        double? TiendaLongitud,
+        string? CodigoA = null);
 
     public sealed record PilotoEstadoDto(
         bool EnLinea,

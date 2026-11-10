@@ -47,10 +47,23 @@ namespace Login.Data
                 .HasIndex(o => new { o.ClienteAppId, o.NumeroOrdenA })
                 .IsUnique();
 
-            // ✅ Código único global
+            // Los cuatro dígitos se reservan por tenant mientras la orden esté abierta.
+            builder.Entity<OrdenEntrega>()
+                .HasIndex(o => new { o.ClienteAppId, o.CodigoA })
+                .IsUnique()
+                .HasFilter("[CodigoA] IS NOT NULL AND [Estado] <> 4");
+
             builder.Entity<CodigoEntrega>()
-                .HasIndex(c => c.Codigo)
-                .IsUnique();
+                .HasIndex(c => c.Codigo);
+            builder.Entity<CodigoEntrega>()
+                .HasIndex(c => new { c.ClienteAppId, c.Tipo, c.Codigo })
+                .IsUnique()
+                .HasFilter("[Reservado] = 1");
+            builder.Entity<CodigoEntrega>()
+                .HasOne(c => c.ClienteApp)
+                .WithMany()
+                .HasForeignKey(c => c.ClienteAppId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // ✅ Una orden solo tiene 1 B y 1 C
             builder.Entity<CodigoEntrega>()

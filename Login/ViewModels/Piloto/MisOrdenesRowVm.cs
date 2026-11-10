@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Login.ViewModels.Piloto
 {
@@ -6,6 +6,8 @@ namespace Login.ViewModels.Piloto
     {
         public int OrdenId { get; set; }
         public int NumeroOrdenA { get; set; }
+        public string? CodigoA { get; set; }
+        public string CodigoVisibleA => CodigoA ?? NumeroOrdenA.ToString();
         public string Estado { get; set; } = "";
         public DateTime CreatedAt { get; set; }
 

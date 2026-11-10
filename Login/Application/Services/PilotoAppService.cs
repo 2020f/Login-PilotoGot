@@ -26,7 +26,7 @@ namespace Login.Application.Services
             var piloto = await GetPilotoLogueadoAsync(identityUserId);
             if (piloto is null) return null;
 
-            return await OrdenesActivasQuery(piloto.Id)
+            return await OrdenesActivasQuery(piloto.Id, piloto.ClienteAppId)
                 .OrderByDescending(o => o.AssignedAt ?? o.CreatedAt)
                 .Select(ToDto())
                 .FirstOrDefaultAsync();
@@ -37,7 +37,7 @@ namespace Login.Application.Services
             var piloto = await GetPilotoLogueadoAsync(identityUserId);
             if (piloto is null) return new List<OrdenPilotoDto>();
 
-            return await OrdenesActivasQuery(piloto.Id)
+            return await OrdenesActivasQuery(piloto.Id, piloto.ClienteAppId)
                 .OrderByDescending(o => o.AssignedAt ?? o.CreatedAt)
                 .Select(ToDto())
                 .ToListAsync();
@@ -48,13 +48,13 @@ namespace Login.Application.Services
             var piloto = await GetPilotoLogueadoAsync(identityUserId);
             if (piloto is null) return null;
 
-            return await OrdenesActivasQuery(piloto.Id)
+            return await OrdenesActivasQuery(piloto.Id, piloto.ClienteAppId)
                 .Where(o => o.Id == ordenId)
                 .Select(ToDto())
                 .FirstOrDefaultAsync();
         }
 
-        public async Task ConfirmarRecolectaAsync(string identityUserId, string codigoB)
+        public async Task ConfirmarRecolectaAsync(string identityUserId, string codigoB, int? ordenId = null)
         {
             if (string.IsNullOrWhiteSpace(codigoB))
                 throw new ArgumentException("codigoB requerido.");
@@ -69,16 +69,18 @@ namespace Login.Application.Services
                 .Include(o => o.Codigos)
                 .AnyAsync(o =>
                     o.PilotoId == piloto.Id &&
+                    o.ClienteAppId == piloto.ClienteAppId &&
                     o.Estado == EstadoOrden.Asignada &&
+                    (ordenId == null || o.Id == ordenId) &&
                     o.Codigos.Any(c => c.Tipo == TipoCodigo.B_Recoleccion && c.Codigo == codigoB));
 
             if (!ordenValida)
                 throw new InvalidOperationException("Ese B no corresponde a una orden asignada a ti.");
 
-            await _ordenService.ConfirmarRecolectaAsync(codigoB, identityUserId, "Piloto");
+            await _ordenService.ConfirmarRecolectaAsync(codigoB, identityUserId, "Piloto", ordenId);
         }
 
-        public async Task ConfirmarEntregaAsync(string identityUserId, string codigoB, string codigoC)
+        public async Task ConfirmarEntregaAsync(string identityUserId, string codigoB, string codigoC, int? ordenId = null)
         {
             if (string.IsNullOrWhiteSpace(codigoB)) throw new ArgumentException("codigoB requerido.");
             if (string.IsNullOrWhiteSpace(codigoC)) throw new ArgumentException("codigoC requerido.");
@@ -93,13 +95,15 @@ namespace Login.Application.Services
                 .Include(o => o.Codigos)
                 .AnyAsync(o =>
                     o.PilotoId == piloto.Id &&
+                    o.ClienteAppId == piloto.ClienteAppId &&
                     o.Estado == EstadoOrden.Recolectada &&
+                    (ordenId == null || o.Id == ordenId) &&
                     o.Codigos.Any(c => c.Tipo == TipoCodigo.B_Recoleccion && c.Codigo == codigoB));
 
             if (!ordenValida)
                 throw new InvalidOperationException("No puedes cerrar: la orden no está recolectada o no es tuya.");
 
-            await _ordenService.ConfirmarEntregaAsync(codigoB, codigoC, identityUserId, "Piloto");
+            await _ordenService.ConfirmarEntregaAsync(codigoB, codigoC, identityUserId, "Piloto", ordenId);
         }
 
         // ---------- Auto-asignación ----------
@@ -176,12 +180,13 @@ namespace Login.Application.Services
 
         // ---------- Helpers ----------
 
-        private IQueryable<OrdenEntrega> OrdenesActivasQuery(int pilotoId)        {
+        private IQueryable<OrdenEntrega> OrdenesActivasQuery(int pilotoId, int clienteAppId)
+        {
             return _db.OrdenesEntrega
                 .AsNoTracking()
                 .Include(o => o.Tienda)
                 .Include(o => o.UsuarioFinal)
-                .Where(o => o.PilotoId == pilotoId &&
+                .Where(o => o.PilotoId == pilotoId && o.ClienteAppId == clienteAppId &&
                             (o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada));
         }
 
@@ -198,13 +203,14 @@ namespace Login.Application.Services
                 o.Tienda.Telefono,
                 o.NotaPedido,
                 o.UsuarioFinal.Nombre,
-                o.UsuarioFinal.DireccionUbicacion,
-                o.UsuarioFinal.MapaLink,
-                o.UsuarioFinal.Telefono,
+                o.Estado == EstadoOrden.Recolectada ? o.UsuarioFinal.DireccionUbicacion : "",
+                o.Estado == EstadoOrden.Recolectada ? o.UsuarioFinal.MapaLink : null,
+                o.Estado == EstadoOrden.Recolectada ? o.UsuarioFinal.Telefono : "",
                 o.Precio,
                 o.DistanciaKm,
                 o.Tienda.Latitud,
-                o.Tienda.Longitud);
+                o.Tienda.Longitud,
+                o.CodigoA);
         }
 
         private async Task<Piloto?> GetPilotoLogueadoAsync(string identityUserId)

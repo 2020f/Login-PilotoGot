@@ -1,0 +1,233 @@
+{
+  "fechaLocal": "2026-11-09",
+  "zona": "America/Santo_Domingo",
+  "backendBase": "278f7668cfa9c6ba5c79df0f049f77326348ce2f",
+  "rama": "codex/pilotgo-sesion-ordenes-multitenant",
+  "backend": [
+    {
+      "archivo": "final-sqlite.trx",
+      "total": 19,
+      "pasaron": 19,
+      "fallaron": 0,
+      "casos": [
+        {
+          "nombre": "Login.Tests.SessionTests.Expired_access_can_be_renewed_without_password_and_refresh_rotates",
+          "resultado": "Passed",
+          "duracion": "00:00:00.1385981"
+        },
+        {
+          "nombre": "Login.Tests.SessionTests.Removed_role_is_revoked_and_refresh_returns_current_roles",
+          "resultado": "Passed",
+          "duracion": "00:00:00.1086544"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.One_pilot_cannot_accept_two_auto_orders_concurrently",
+          "resultado": "Passed",
+          "duracion": "00:00:00.3935714"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Complete_flow_in_one_service_scope_observes_each_committed_state(automatic: False)",
+          "resultado": "Passed",
+          "duracion": "00:00:00.0371147"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Two_successive_auto_orders_finish_without_another_login",
+          "resultado": "Passed",
+          "duracion": "00:00:00.2481173"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Simultaneous_creations_keep_unique_sequence_and_monthly_limit",
+          "resultado": "Passed",
+          "duracion": "00:00:00.7616687"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Offline_pilot_cannot_accept_by_id",
+          "resultado": "Passed",
+          "duracion": "00:00:00.2115938"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Complete_flow_in_one_service_scope_observes_each_committed_state(automatic: True)",
+          "resultado": "Passed",
+          "duracion": "00:00:00.0208222"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Multi_store_user_can_switch_and_only_read_selected_store",
+          "resultado": "Passed",
+          "duracion": "00:00:00.1649546"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Tenant_and_pilot_cannot_read_or_complete_other_orders_or_qr",
+          "resultado": "Passed",
+          "duracion": "00:00:01.1258573"
+        },
+        {
+          "nombre": "Login.Tests.SessionTests.Concurrent_refresh_consumes_token_once",
+          "resultado": "Passed",
+          "duracion": "00:00:00.0927834"
+        },
+        {
+          "nombre": "Login.Tests.SessionTests.Refresh_expiration_is_enforced_and_database_contains_only_a_hash",
+          "resultado": "Passed",
+          "duracion": "00:00:00.4087729"
+        },
+        {
+          "nombre": "Login.Tests.SessionTests.Logout_revokes_this_device_and_keeps_other_device_signed_in",
+          "resultado": "Passed",
+          "duracion": "00:00:00.1953681"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Manual_assignments_are_visible_with_the_same_bearer_token",
+          "resultado": "Passed",
+          "duracion": "00:00:00.1948023"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Suspended_tenant_is_forbidden_on_mobile_endpoints",
+          "resultado": "Passed",
+          "duracion": "00:00:00.0949314"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Another_tenant_cannot_accept_or_reject_an_order_by_id",
+          "resultado": "Passed",
+          "duracion": "00:00:00.2118296"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Manual_assignment_rejects_inactive_and_other_tenant_pilots",
+          "resultado": "Passed",
+          "duracion": "00:00:00.1109242"
+        },
+        {
+          "nombre": "Login.Tests.SessionTests.Password_change_invalidates_access_and_refresh",
+          "resultado": "Passed",
+          "duracion": "00:00:00.2244980"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Two_pilots_competing_for_one_offer_produce_one_assignment_and_history",
+          "resultado": "Passed",
+          "duracion": "00:00:00.4178516"
+        }
+      ]
+    },
+    {
+      "archivo": "final-sqlserver.trx",
+      "total": 19,
+      "pasaron": 19,
+      "fallaron": 0,
+      "casos": [
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Multi_store_user_can_switch_and_only_read_selected_store",
+          "resultado": "Passed",
+          "duracion": "00:00:00.2572189"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Complete_flow_in_one_service_scope_observes_each_committed_state(automatic: True)",
+          "resultado": "Passed",
+          "duracion": "00:00:00.0938147"
+        },
+        {
+          "nombre": "Login.Tests.SessionTests.Password_change_invalidates_access_and_refresh",
+          "resultado": "Passed",
+          "duracion": "00:00:00.2423693"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Two_successive_auto_orders_finish_without_another_login",
+          "resultado": "Passed",
+          "duracion": "00:00:00.4200565"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Complete_flow_in_one_service_scope_observes_each_committed_state(automatic: False)",
+          "resultado": "Passed",
+          "duracion": "00:00:00.1095171"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Offline_pilot_cannot_accept_by_id",
+          "resultado": "Passed",
+          "duracion": "00:00:00.2535574"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.One_pilot_cannot_accept_two_auto_orders_concurrently",
+          "resultado": "Passed",
+          "duracion": "00:00:00.3106458"
+        },
+        {
+          "nombre": "Login.Tests.SessionTests.Expired_access_can_be_renewed_without_password_and_refresh_rotates",
+          "resultado": "Passed",
+          "duracion": "00:00:00.1683508"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Tenant_and_pilot_cannot_read_or_complete_other_orders_or_qr",
+          "resultado": "Passed",
+          "duracion": "00:00:01.2573718"
+        },
+        {
+          "nombre": "Login.Tests.SessionTests.Removed_role_is_revoked_and_refresh_returns_current_roles",
+          "resultado": "Passed",
+          "duracion": "00:00:00.1497928"
+        },
+        {
+          "nombre": "Login.Tests.SessionTests.Refresh_expiration_is_enforced_and_database_contains_only_a_hash",
+          "resultado": "Passed",
+          "duracion": "00:00:00.3405789"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Another_tenant_cannot_accept_or_reject_an_order_by_id",
+          "resultado": "Passed",
+          "duracion": "00:00:00.3599435"
+        },
+        {
+          "nombre": "Login.Tests.SessionTests.Logout_revokes_this_device_and_keeps_other_device_signed_in",
+          "resultado": "Passed",
+          "duracion": "00:00:00.2040346"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Suspended_tenant_is_forbidden_on_mobile_endpoints",
+          "resultado": "Passed",
+          "duracion": "00:00:00.1077661"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Simultaneous_creations_keep_unique_sequence_and_monthly_limit",
+          "resultado": "Passed",
+          "duracion": "00:00:00.2038798"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Manual_assignment_rejects_inactive_and_other_tenant_pilots",
+          "resultado": "Passed",
+          "duracion": "00:00:00.2107359"
+        },
+        {
+          "nombre": "Login.Tests.SessionTests.Concurrent_refresh_consumes_token_once",
+          "resultado": "Passed",
+          "duracion": "00:00:00.1225280"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Manual_assignments_are_visible_with_the_same_bearer_token",
+          "resultado": "Passed",
+          "duracion": "00:00:00.2886475"
+        },
+        {
+          "nombre": "Login.Tests.OrderFlowTests.Two_pilots_competing_for_one_offer_produce_one_assignment_and_history",
+          "resultado": "Passed",
+          "duracion": "00:00:00.3517222"
+        }
+      ]
+    }
+  ],
+  "flutter": {
+    "log": "flutter-tests-20261109.txt",
+    "fallaron": 0,
+    "logAnalisis": "flutter-analyze-20261109.txt",
+    "analisis": "sin incidencias",
+    "pasaron": 16
+  },
+  "compilacionBackend": "dotnet build Login.sln --no-restore: correcta, 0 errores",
+  "apk": {
+    "ruta": "C:\\Users\\Fernelis\\Desktop\\pilotGOapp\\build\\app\\outputs\\flutter-apk\\app-debug.apk",
+    "tipo": "debug",
+    "bytes": 182451035,
+    "sha256": "70D0FAA02D6C096C3D76BCBACA6529D39ED868038F723584D06CE7074BEE9074"
+  },
+  "alcance": [
+    "Datos ficticios y bases aisladas",
+    "Sin despliegue ni instalación en teléfono",
+    "Sin pruebas de push o de GPS en segundo plano"
+  ]
+}

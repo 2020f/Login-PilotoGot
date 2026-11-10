@@ -1,0 +1,18 @@
+00:00 +0: loading C:/Users/Fernelis/Desktop/pilotGOapp/test/pilot_orders_test.dart
+00:00 +0: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: saved password is prefilled and forgetting removes it
+00:00 +1: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: saved password is prefilled and forgetting removes it
+00:00 +2: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: saved password is prefilled and forgetting removes it
+00:00 +3: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: saved password is prefilled and forgetting removes it
+00:00 +4: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: saved password is prefilled and forgetting removes it
+00:00 +5: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: saved password is prefilled and forgetting removes it
+00:00 +6: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: saved password is prefilled and forgetting removes it
+00:00 +7: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: saved password is prefilled and forgetting removes it
+00:00 +8: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: saved password is prefilled and forgetting removes it
+00:01 +9: C:/Users/Fernelis/Desktop/pilotGOapp/test/pilot_orders_test.dart: manual orders update on screen repeatedly without logout, even offline
+00:01 +10: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: switching stores replaces cached orders with selected store
+00:01 +11: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: switching stores replaces cached orders with selected store
+00:01 +12: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: switching stores replaces cached orders with selected store
+00:01 +13: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: switching stores replaces cached orders with selected store
+00:01 +14: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: switching stores replaces cached orders with selected store
+00:01 +15: C:/Users/Fernelis/Desktop/pilotGOapp/test/widget_test.dart: switching stores replaces cached orders with selected store
+00:02 +16: All tests passed!

@@ -22,20 +22,23 @@ namespace Login.Application.Interfaces
             string codigoB,
             int pilotoId,
             string actorIdentityUserId,
-            string actorRol);
+            string actorRol,
+            int? ordenId = null);
 
         /// <summary>Confirma recolecta usando B (marca B como usado y cambia estado).</summary>
         Task ConfirmarRecolectaAsync(
             string codigoB,
             string actorIdentityUserId,
-            string actorRol);
+            string actorRol,
+            int? ordenId = null);
 
         /// <summary>Confirma entrega usando B + C (marca C como usado y cambia estado).</summary>
         Task ConfirmarEntregaAsync(
             string codigoB,
             string codigoC,
             string actorIdentityUserId,
-            string actorRol);
+            string actorRol,
+            int? ordenId = null);
 
         /// <summary>Valida límite mensual de órdenes según el plan del ClienteApp.</summary>
         Task ValidarLimitePorPlanAsync(int clienteAppId, DateTime fechaUtc);
@@ -43,7 +46,7 @@ namespace Login.Application.Interfaces
         /// <summary>
         /// Devuelve info “segura” para piloto. No revela datos sensibles antes de recolecta.
         /// </summary>
-        Task<OrdenPilotoView> ObtenerOrdenParaPilotoAsync(string codigoB, int pilotoId);
+        Task<OrdenPilotoView> ObtenerOrdenParaPilotoAsync(string codigoB, int pilotoId, int? ordenId = null);
 
         /// <summary>Lista de órdenes en modo auto disponibles para que un piloto las acepte.</summary>
         Task<List<OrdenAutoDisponibleDto>> GetOrdenesAutoDisponiblesAsync(int pilotoId);
@@ -59,7 +62,8 @@ namespace Login.Application.Interfaces
         int OrdenId,
         int NumeroOrdenA,
         string CodigoB,
-        string CodigoC
+        string CodigoC,
+        string? CodigoA = null
     );
 
     public sealed record OrdenAutoDisponibleDto(
@@ -70,7 +74,8 @@ namespace Login.Application.Interfaces
         string UsuarioFinalNombre,
         string? NotaPedido,
         DateTime CreatedAt,
-        double? DistanciaKm
+        double? DistanciaKm,
+        string? CodigoA = null
     );
 
     public sealed record OrdenPilotoView(
@@ -80,6 +85,7 @@ namespace Login.Application.Interfaces
         bool PuedeVerDestino,
         string? DestinoDireccion,
         string? NombreUsuarioFinal,
-        string? TelefonoUsuarioFinal
+        string? TelefonoUsuarioFinal,
+        string? CodigoA = null
     );
 }

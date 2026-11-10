@@ -29,6 +29,7 @@
     const overlay   = document.getElementById("pgAssignOverlay");
     if (!overlay) return;
 
+    const inputOrdenId = document.getElementById("modalOrdenId");
     const inputCodigoB    = document.getElementById("modalCodigoB");
     const inputPilotoId   = document.getElementById("modalPilotoId");
     const modalOrdenLabel = document.getElementById("modalOrdenLabel");
@@ -46,6 +47,7 @@
             const ordenA  = btn.getAttribute("data-ordena") || "";
 
             if (inputCodigoB)  inputCodigoB.value  = codigoB;
+            if (inputOrdenId) inputOrdenId.value = btn.getAttribute("data-ordenid") || "";
             if (inputPilotoId) inputPilotoId.value  = "";
             if (modalOrdenLabel) modalOrdenLabel.textContent = ordenA ? `ORD-${ordenA}` : "ORD-????";
 
