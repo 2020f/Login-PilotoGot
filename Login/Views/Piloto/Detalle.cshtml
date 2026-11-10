@@ -76,7 +76,7 @@ else
         <div class="pg-order-head">
             <div>
                 <div class="pg-order-kicker">Orden de entrega</div>
-                <div class="pg-order-id">#@o.NumeroOrdenA</div>
+                <div class="pg-order-id">#@o.CodigoVisibleA</div>
             </div>
             <span class="pg-pill @(o.PuedeVerDestinoFinal ? "pg-pill-route" : "pg-pill-pick")">
                 @(o.PuedeVerDestinoFinal ? "En ruta" : "Recolectando")
@@ -130,13 +130,14 @@ else
         }
 
         <form method="post" asp-action="ConfirmarRecolecta" class="pg-card pg-form">
+            <input type="hidden" name="OrdenId" value="@o.OrdenId" />
             @Html.AntiForgeryToken()
 
             <label class="pg-input-label">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M21 14v.01"/><path d="M14 21v.01"/><path d="M21 21v.01"/></svg>
                 Escanea / pega código B
             </label>
-            <input class="pg-input" name="CodigoB" placeholder="Código B (QR de tienda)" required autocomplete="off" />
+            <input class="pg-input" name="CodigoB" inputmode="@(o.CodigoA != null ? "numeric" : "text")" maxlength="@(o.CodigoA != null ? 4 : 80)" pattern="@(o.CodigoA != null ? "[0-9]{4}" : ".+")" placeholder="Código B (QR de tienda)" required autocomplete="off" />
             <button class="pg-btn pg-btn-dark pg-btn-wide" type="submit">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
                 Confirmar recolección
@@ -200,7 +201,8 @@ else
         </button>
         <div class="pg-subhint">Requiere Código (C) + Código (B) del paquete</div>
 
-        <form method="post" asp-action="ConfirmarEntrega" id="formConfirmarEntrega" style="display:none;">
+        <form method="post" asp-action="ConfirmarEntrega" id="formConfirmarEntrega" data-cortos="@(o.CodigoA != null ? "true" : "false")" style="display:none;">
+            <input type="hidden" name="OrdenId" value="@o.OrdenId" />
             @Html.AntiForgeryToken()
             <input type="hidden" name="CodigoB" id="hdCodigoB" />
             <input type="hidden" name="CodigoC" id="hdCodigoC" />
@@ -247,7 +249,7 @@ else
                     </div>
                 </div>
 
-                <input class="pg-input" id="txtCodigoBFinal" placeholder="Código B (QR de cierre)" disabled />
+                <input class="pg-input" id="txtCodigoBFinal" placeholder="Código B (QR de cierre)" />
 
                 <div class="pg-scanbox">
                     <button class="pg-btn pg-btn-dark pg-btn-wide" id="btnFinalizarEntrega" type="button" disabled>

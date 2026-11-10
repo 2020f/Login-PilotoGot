@@ -53,7 +53,8 @@ namespace Login.Application.Interfaces
         DateTime? RecolectadaAt,
         DateTime? EntregadaAt,
         decimal? Precio,
-        double? DistanciaKm);
+        double? DistanciaKm,
+        string? CodigoA = null);
 
     public sealed record OrdenQrDto(
         int OrdenId,
@@ -64,5 +65,6 @@ namespace Login.Application.Interfaces
         string UsuarioFinalNombre,
         string DireccionUbicacion,
         string? MapaLink,
-        string? Descripcion);
+        string? Descripcion,
+        string? CodigoA = null);
 }

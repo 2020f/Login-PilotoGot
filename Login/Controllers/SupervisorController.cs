@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Threading.Tasks;
 using Login.Application.Interfaces;
 using Login.Data;
@@ -676,7 +676,11 @@ namespace Login.Controllers
 
             if (tiendaId.HasValue) q = q.Where(o => o.TiendaId == tiendaId.Value);
             if (pilotoId.HasValue) q = q.Where(o => o.PilotoId == pilotoId.Value);
-            if (numeroOrdenA.HasValue) q = q.Where(o => o.NumeroOrdenA == numeroOrdenA.Value);
+            if (numeroOrdenA.HasValue)
+            {
+                var codigoA = numeroOrdenA.Value.ToString("D4", System.Globalization.CultureInfo.InvariantCulture);
+                q = q.Where(o => o.CodigoA == codigoA || (o.CodigoA == null && o.NumeroOrdenA == numeroOrdenA.Value));
+            }
 
             if (!string.IsNullOrWhiteSpace(estado) && System.Enum.TryParse<EstadoOrden>(estado, out var est))
                 q = q.Where(o => o.Estado == est);
@@ -709,6 +713,7 @@ namespace Login.Controllers
         TiendaTelefono = o.Tienda.Telefono,
 
         NumeroOrdenA = o.NumeroOrdenA,
+                    CodigoA = o.CodigoA,
         Estado = o.Estado.ToString(),
 
         PilotoId = o.PilotoId,
@@ -756,7 +761,9 @@ namespace Login.Controllers
             // ✅ Seguridad extra: el Gestor SOLO puede asignar órdenes de SU ClienteApp
             var ordenTenant = await _db.CodigosEntrega
                 .AsNoTracking()
-                .Where(c => c.Codigo == input.CodigoB && c.Tipo == TipoCodigo.B_Recoleccion)
+                .Where(c => c.Codigo == input.CodigoB && c.Tipo == TipoCodigo.B_Recoleccion
+                    && c.OrdenEntrega.ClienteAppId == clienteAppId && c.OrdenEntrega.Estado == EstadoOrden.Creada
+                    && (input.OrdenId == null || c.OrdenEntregaId == input.OrdenId))
                 .Select(c => c.OrdenEntrega.ClienteAppId)
                 .SingleOrDefaultAsync();
 
@@ -774,7 +781,7 @@ namespace Login.Controllers
 
             try
             {
-                await _ordenService.AsignarPilotoAsync(input.CodigoB, input.PilotoId, actorId, actorRol);
+                await _ordenService.AsignarPilotoAsync(input.CodigoB, input.PilotoId, actorId, actorRol, input.OrdenId);
                 return RedirectToAction(nameof(Ordenes), new { ok = "Piloto asignado ✅" });
             }
             catch (System.Exception ex)

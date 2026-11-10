@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Login.Application.Interfaces;
@@ -376,7 +376,7 @@ namespace Login.Controllers
 
                 return RedirectToAction(nameof(CrearOrden), new
                 {
-                    ok = $"Orden creada ✅ A={res.NumeroOrdenA} | B={res.CodigoB} | C={res.CodigoC}"
+                    ok = $"Orden creada ✅ A={res.CodigoA ?? res.NumeroOrdenA.ToString()} | B={res.CodigoB} | C={res.CodigoC}"
                 });
             }
             catch (System.Exception ex)
@@ -420,6 +420,7 @@ namespace Login.Controllers
         {
             OrdenId = orden.Id,
             NumeroOrdenA = orden.NumeroOrdenA,
+            CodigoA = orden.CodigoA,
             Estado = orden.Estado.ToString(),
 
             CodigoB = codigoB ?? "",
@@ -465,6 +466,7 @@ namespace Login.Controllers
                     {
                         OrdenId = o.Id,
                         NumeroOrdenA = o.NumeroOrdenA,
+                    CodigoA = o.CodigoA,
                         Estado = o.Estado.ToString(),
                         EstadoNum = (int)o.Estado,
                         UsuarioFinal = o.UsuarioFinal.Nombre,

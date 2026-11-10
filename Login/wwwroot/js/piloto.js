@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
     'use strict';
 
     /* ── Validation modal (C + B) ─────────────────────── */
@@ -13,6 +13,10 @@
     const btnFinalizar = document.getElementById('btnFinalizarEntrega');
 
     const formEntrega = document.getElementById('formConfirmarEntrega');
+    const cortos = formEntrega?.dataset.cortos === 'true';
+    const patron = cortos ? /^[0-9]{4}$/ : /^[A-Za-z0-9]{10,15}$/;
+    if (txtCodigoC) { txtCodigoC.maxLength = cortos ? 4 : 15; txtCodigoC.inputMode = cortos ? 'numeric' : 'text'; }
+    if (txtCodigoBFinal) { txtCodigoBFinal.maxLength = cortos ? 4 : 80; txtCodigoBFinal.inputMode = cortos ? 'numeric' : 'text'; }
     const hdB = document.getElementById('hdCodigoB');
     const hdC = document.getElementById('hdCodigoC');
 
@@ -46,12 +50,12 @@
 
     function isCodigoCValid() {
         const v = (txtCodigoC && txtCodigoC.value || '').trim();
-        return /^[A-Za-z0-9]{10,15}$/.test(v);
+        return patron.test(v);
     }
 
     function isCodigoBValid() {
         const b = (txtCodigoBFinal && txtCodigoBFinal.value || '').trim();
-        return b.length > 0;
+        return cortos ? /^[0-9]{4}$/.test(b) : b.length > 0;
     }
 
     function unlockFinalize() {
@@ -70,7 +74,7 @@
 
     if (txtCodigoC) {
         txtCodigoC.addEventListener('input', function () {
-            this.value = (this.value || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 15);
+            this.value = (this.value || '').replace(cortos ? /[^0-9]/g : /[^A-Za-z0-9]/g, '').slice(0, cortos ? 4 : 15);
             const ok = isCodigoCValid();
             setCheck(ok);
             if (ok && isCodigoBValid()) unlockFinalize();
@@ -90,8 +94,7 @@
         btnFinalizar.addEventListener('click', function () {
             const c = (txtCodigoC && txtCodigoC.value || '').trim();
             const b = (txtCodigoBFinal && txtCodigoBFinal.value || '').trim();
-            if (!/^[A-Za-z0-9]{10,15}$/.test(c)) return;
-            if (!b) return;
+            if (!isCodigoCValid() || !isCodigoBValid()) return;
             hdC.value = c;
             hdB.value = b;
             formEntrega.submit();

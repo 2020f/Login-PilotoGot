@@ -6,7 +6,7 @@
         <div class="qr-head">
             <div>
                 <div class="qr-head-id">Orden de entrega</div>
-                <div class="qr-head-num">#@Model.NumeroOrdenA</div>
+                <div class="qr-head-num">#@Model.CodigoVisibleA</div>
             </div>
             <button type="button" class="qr-close" aria-label="Cerrar">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
@@ -32,6 +32,7 @@
                 <div class="qr-col-desc">El piloto escanea este QR para iniciar y confirmar la recolección.</div>
                 <div class="qr-img-box">
                     <img src="/Qr/Generar?codigo=@Model.CodigoB" alt="QR Piloto" />
+                    <div class="qr-code-val">@Model.CodigoB</div>
                 </div>
             </div>
 
@@ -50,7 +51,7 @@
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                             <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                         </svg>
-                        Código de seguridad único
+                        Código de confirmación de esta orden
                     </div>
                 </div>
             </div>

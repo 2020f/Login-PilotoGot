@@ -3,6 +3,7 @@ using Login.Application.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Login.Controllers.Api
 {
@@ -18,8 +19,8 @@ namespace Login.Controllers.Api
             _svc = svc;
         }
 
-        public sealed record ConfirmarRecolectaRequest(string CodigoB);
-        public sealed record ConfirmarEntregaRequest(string CodigoB, string CodigoC);
+        public sealed record ConfirmarRecolectaRequest(string CodigoB, int? OrdenId = null);
+        public sealed record ConfirmarEntregaRequest(string CodigoB, string CodigoC, int? OrdenId = null);
         public sealed record UbicacionRequest(double Latitud, double Longitud);
         public sealed record EstadoRequest(bool EnLinea);
 
@@ -39,18 +40,20 @@ namespace Login.Controllers.Api
             => await RunAsync(() => _svc.GetOrdenDetalleAsync(GetUserId(), ordenId));
 
         [HttpPost("confirmar-recolecta")]
+        [EnableRateLimiting("CodigosEntrega")]
         public async Task<IActionResult> ConfirmarRecolecta([FromBody] ConfirmarRecolectaRequest request)
             => await RunAsync(async () =>
             {
-                await _svc.ConfirmarRecolectaAsync(GetUserId(), request.CodigoB);
+                await _svc.ConfirmarRecolectaAsync(GetUserId(), request.CodigoB, request.OrdenId);
                 return new { ok = true };
             });
 
         [HttpPost("confirmar-entrega")]
+        [EnableRateLimiting("CodigosEntrega")]
         public async Task<IActionResult> ConfirmarEntrega([FromBody] ConfirmarEntregaRequest request)
             => await RunAsync(async () =>
             {
-                await _svc.ConfirmarEntregaAsync(GetUserId(), request.CodigoB, request.CodigoC);
+                await _svc.ConfirmarEntregaAsync(GetUserId(), request.CodigoB, request.CodigoC, request.OrdenId);
                 return new { ok = true };
             });
 

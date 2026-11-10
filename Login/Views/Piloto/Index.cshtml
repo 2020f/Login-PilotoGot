@@ -1,4 +1,4 @@
-﻿@model Login.ViewModels.Piloto.MisOrdenesIndexVm
+@model Login.ViewModels.Piloto.MisOrdenesIndexVm
 @{
     Layout = "_LayoutPiloto";
     ViewData["Title"] = "Mis órdenes";
@@ -64,7 +64,7 @@ else
 
             <div class="pg-ocard-body">
                 <div class="pg-ocard-top">
-                    <span class="pg-ocard-id">#@o.NumeroOrdenA</span>
+                    <span class="pg-ocard-id">#@o.CodigoVisibleA</span>
                     <span class="pg-pill @(enRuta ? "pg-pill-route" : "pg-pill-pick")">
                         @(enRuta ? "En ruta" : "Recolectando")
                     </span>

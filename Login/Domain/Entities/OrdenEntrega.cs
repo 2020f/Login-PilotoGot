@@ -26,6 +26,10 @@ namespace Login.Domain.Entities
         // ✅ A secuencial por ClienteApp (UNIQUE por tenant)
         public int NumeroOrdenA { get; set; }
 
+        // Null conserva el número A ya emitido en órdenes anteriores a la migración.
+        [MaxLength(4)]
+        public string? CodigoA { get; set; }
+
         public EstadoOrden Estado { get; set; } = EstadoOrden.Creada;
 
         // ✅ Orden creada en modo auto-asignación (los pilotos la aceptan/rechazan)

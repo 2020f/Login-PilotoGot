@@ -18,7 +18,15 @@ cd Login && dotnet ef database update
 cd Login && dotnet ef migrations add <MigrationName>
 ```
 
-No test projects exist in this repository.
+Integration tests are in `Login.Tests`. Run `dotnet test Login.sln` for isolated
+SQLite tests. To also test SQL Server LocalDB, create/start the disposable
+`PilotGoCodexQA_20261109` instance and set `PILOTGO_TEST_SQLSERVER=1` before running
+the same tests. Tests use generated `PilotGoTest_*` databases, never
+`DefaultConnection`, and skip application seeding in the `Testing` environment.
+See `docs/ANALISIS-SESION-ORDENES-MULTITENANT-20261109.md` for the mobile flow and QA.
+See `docs/RELEASE-1.1.0.md` before deployment: four-digit codes require migration
+`20261110033858_CodigosCuatroDigitos` and an updated mobile client. Production
+requires a private `Jwt__Key` and does not create demo accounts automatically.
 
 ## Database
 
@@ -51,7 +59,10 @@ Creada → Asignada → Recolectada → Entregada
          Piloto assigned  Scan B code  Scan B+C codes
 ```
 
-Each order has two QR codes:
+New orders display four-digit A/B/C strings; existing codes remain unchanged.
+Short-code validation also requires the permanent order ID. B/C are reserved
+per tenant/type until delivery and can then be reused without losing history.
+Each order has two verification codes:
 - **Code B** (`B_Recoleccion`) — scanned at pickup; only then is the delivery address revealed to the pilot
 - **Code C** (`C_Finalizacion`) — scanned at delivery along with B to finalize
 

@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Login.Application.Interfaces;
@@ -7,6 +7,7 @@ using Login.Domain.Enums;
 using Login.ViewModels.Piloto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Login.Controllers
@@ -48,13 +49,14 @@ namespace Login.Controllers
                 .Include(o => o.Tienda)
                 .Include(o => o.UsuarioFinal)
                 .Include(o => o.Codigos)
-                .Where(o => o.PilotoId == piloto.Id &&
+                .Where(o => o.ClienteAppId == piloto.ClienteAppId && o.PilotoId == piloto.Id &&
                             (o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada))
                 .OrderByDescending(o => o.AssignedAt ?? o.CreatedAt)
                 .Select(o => new MisOrdenesRowVm
                 {
                     OrdenId = o.Id,
                     NumeroOrdenA = o.NumeroOrdenA,
+                    CodigoA = o.CodigoA,
                     Estado = o.Estado.ToString(),
                     CreatedAt = o.CreatedAt,
 
@@ -101,13 +103,14 @@ namespace Login.Controllers
                 .Include(o => o.Tienda)
                 .Include(o => o.UsuarioFinal)
                 .Include(o => o.Codigos)
-                .Where(o => o.PilotoId == piloto.Id &&
+                .Where(o => o.ClienteAppId == piloto.ClienteAppId && o.PilotoId == piloto.Id &&
                             o.Id == id &&
                             (o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada))
                 .Select(o => new MisOrdenesRowVm
                 {
                     OrdenId = o.Id,
                     NumeroOrdenA = o.NumeroOrdenA,
+                    CodigoA = o.CodigoA,
                     Estado = o.Estado.ToString(),
                     CreatedAt = o.CreatedAt,
 
@@ -139,6 +142,7 @@ namespace Login.Controllers
         // POST: /Piloto/ConfirmarRecolecta  (escaneo/pegar B)
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("CodigosEntrega")]
         public async Task<IActionResult> ConfirmarRecolecta(ConfirmarRecolectaVm input)
         {
             if (!ModelState.IsValid)
@@ -158,6 +162,8 @@ namespace Login.Controllers
                 .AnyAsync(o =>
                     o.PilotoId == piloto.Id &&
                     o.Estado == EstadoOrden.Asignada &&
+                    o.ClienteAppId == piloto.ClienteAppId &&
+                    (input.OrdenId == null || o.Id == input.OrdenId) &&
                     o.Codigos.Any(c => c.Tipo == TipoCodigo.B_Recoleccion && c.Codigo == input.CodigoB));
 
             if (!ordenValida)
@@ -165,12 +171,14 @@ namespace Login.Controllers
 
             try
             {
-                await _ordenService.ConfirmarRecolectaAsync(input.CodigoB, userId, "Piloto");
+                await _ordenService.ConfirmarRecolectaAsync(input.CodigoB, userId, "Piloto", input.OrdenId);
 
                 // Buscar la orden para redirigir al detalle (destino final desbloqueado)
                 var ordenId = await _db.CodigosEntrega
                     .AsNoTracking()
-                    .Where(c => c.Codigo == input.CodigoB && c.Tipo == TipoCodigo.B_Recoleccion)
+                    .Where(c => c.Codigo == input.CodigoB && c.Tipo == TipoCodigo.B_Recoleccion
+                        && c.OrdenEntrega.PilotoId == piloto.Id && c.OrdenEntrega.ClienteAppId == piloto.ClienteAppId
+                        && (input.OrdenId == null || c.OrdenEntregaId == input.OrdenId))
                     .Select(c => c.OrdenEntregaId)
                     .FirstOrDefaultAsync();
 
@@ -188,6 +196,7 @@ namespace Login.Controllers
         // POST: /Piloto/ConfirmarEntrega  (C + escaneo/pegar B otra vez)
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("CodigosEntrega")]
         public async Task<IActionResult> ConfirmarEntrega(ConfirmarEntregaVm input)
         {
             if (!ModelState.IsValid)
@@ -207,6 +216,8 @@ namespace Login.Controllers
                 .AnyAsync(o =>
                     o.PilotoId == piloto.Id &&
                     o.Estado == EstadoOrden.Recolectada &&
+                    o.ClienteAppId == piloto.ClienteAppId &&
+                    (input.OrdenId == null || o.Id == input.OrdenId) &&
                     o.Codigos.Any(c => c.Tipo == TipoCodigo.B_Recoleccion && c.Codigo == input.CodigoB));
 
             if (!ordenValida)
@@ -214,7 +225,7 @@ namespace Login.Controllers
 
             try
             {
-                await _ordenService.ConfirmarEntregaAsync(input.CodigoB, input.CodigoC, userId, "Piloto");
+                await _ordenService.ConfirmarEntregaAsync(input.CodigoB, input.CodigoC, userId, "Piloto", input.OrdenId);
                 return RedirectToAction(nameof(Index), new { ok = "Entrega confirmada ✅" });
             }
             catch (System.Exception ex)

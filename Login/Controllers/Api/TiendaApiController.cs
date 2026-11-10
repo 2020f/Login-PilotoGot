@@ -41,7 +41,7 @@ namespace Login.Controllers.Api
             => await RunAsync(async () =>
             {
                 await _svc.SetTiendaActivaAsync(GetUserId(), request.TiendaId);
-                return _svc.GetTiendaActivaAsync(GetUserId());
+                return await _svc.GetTiendaActivaAsync(GetUserId());
             });
 
         // ---------- Usuarios finales ----------

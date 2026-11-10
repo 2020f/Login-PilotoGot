@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 
 namespace Login.ViewModels.Supervisor
@@ -10,6 +10,8 @@ namespace Login.ViewModels.Supervisor
         public int TiendaId { get; set; }
         public string TiendaNombre { get; set; } = "";
         public int NumeroOrdenA { get; set; }
+        public string? CodigoA { get; set; }
+        public string CodigoVisibleA => CodigoA ?? NumeroOrdenA.ToString();
         public string Estado { get; set; } = "";
         public int? PilotoId { get; set; }
         public string? PilotoNombre { get; set; }
