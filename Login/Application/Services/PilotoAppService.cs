@@ -14,11 +14,13 @@ namespace Login.Application.Services
     {
         private readonly ApplicationDbContext _db;
         private readonly IOrdenService _ordenService;
+        private readonly QuotaPolicyService _quotas;
 
-        public PilotoAppService(ApplicationDbContext db, IOrdenService ordenService)
+        public PilotoAppService(ApplicationDbContext db, IOrdenService ordenService, QuotaPolicyService quotas)
         {
             _db = db;
             _ordenService = ordenService;
+            _quotas = quotas;
         }
 
         public async Task<OrdenPilotoDto?> GetOrdenActualAsync(string identityUserId)
@@ -158,25 +160,36 @@ namespace Login.Application.Services
             if (piloto is null)
                 throw new InvalidOperationException("Piloto no encontrado o inactivo.");
 
-            return new PilotoEstadoDto(piloto.EnLinea, piloto.Estado.ToString());
+            var ocupadas = await TieneOrdenesAbiertasAsync(piloto.Id, piloto.ClienteAppId);
+            return new PilotoEstadoDto(piloto.EnLinea,
+                (ocupadas ? EstadoPiloto.Ocupado : EstadoPiloto.Disponible).ToString());
         }
 
         public async Task SetEnLineaAsync(string identityUserId, bool enLinea)
         {
+            // Mismo orden de bloqueo que las altas, bajas y asignaciones.
+            var tenantId = await _db.Pilotos.AsNoTracking().Where(p => p.IdentityUserId == identityUserId && p.Activo)
+                .Select(p => p.ClienteAppId).SingleOrDefaultAsync();
+            if (tenantId == 0) throw new InvalidOperationException("Piloto no encontrado o inactivo.");
+            using var tx = await _quotas.BeginTenantMutationAsync(tenantId);
             var piloto = await _db.Pilotos
-                .SingleOrDefaultAsync(p => p.IdentityUserId == identityUserId && p.Activo);
+                .SingleOrDefaultAsync(p => p.IdentityUserId == identityUserId && p.ClienteAppId == tenantId && p.Activo);
 
             if (piloto is null)
                 throw new InvalidOperationException("Piloto no encontrado o inactivo.");
 
             piloto.EnLinea = enLinea;
 
-            // Si se pone en línea y estaba Inactivo por error, lo dejamos Disponible
-            if (enLinea && piloto.Estado == EstadoPiloto.Inactivo)
-                piloto.Estado = EstadoPiloto.Disponible;
+            piloto.Estado = await TieneOrdenesAbiertasAsync(piloto.Id, tenantId)
+                ? EstadoPiloto.Ocupado : EstadoPiloto.Disponible;
 
             await _db.SaveChangesAsync();
+            await tx.CommitAsync();
         }
+
+        private Task<bool> TieneOrdenesAbiertasAsync(int pilotoId, int tenantId)
+            => _db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && o.PilotoId == pilotoId
+                && o.Estado != EstadoOrden.Entregada);
 
         // ---------- Helpers ----------
 
@@ -198,18 +211,18 @@ namespace Login.Application.Services
                 o.Estado.ToString(),
                 o.CreatedAt,
                 o.Estado == EstadoOrden.Recolectada,
-                o.Tienda.Nombre,
-                o.Tienda.Direccion,
-                o.Tienda.Telefono,
+                o.DatosEntregaCongelados ? o.RecogidaNombre : o.Tienda.Nombre,
+                o.DatosEntregaCongelados ? o.RecogidaDireccion : o.Tienda.Direccion,
+                o.DatosEntregaCongelados ? o.RecogidaTelefono : o.Tienda.Telefono,
                 o.NotaPedido,
-                o.UsuarioFinal.Nombre,
-                o.Estado == EstadoOrden.Recolectada ? o.UsuarioFinal.DireccionUbicacion : "",
-                o.Estado == EstadoOrden.Recolectada ? o.UsuarioFinal.MapaLink : null,
-                o.Estado == EstadoOrden.Recolectada ? o.UsuarioFinal.Telefono : "",
+                o.DatosEntregaCongelados ? o.DestinoNombre : o.UsuarioFinal.Nombre,
+                o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoDireccion : o.UsuarioFinal.DireccionUbicacion) : "",
+                o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoMapaLink : o.UsuarioFinal.MapaLink) : null,
+                o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoTelefono : o.UsuarioFinal.Telefono) : "",
                 o.Precio,
                 o.DistanciaKm,
-                o.Tienda.Latitud,
-                o.Tienda.Longitud,
+                o.DatosEntregaCongelados ? o.RecogidaLatitud : o.Tienda.Latitud,
+                o.DatosEntregaCongelados ? o.RecogidaLongitud : o.Tienda.Longitud,
                 o.CodigoA);
         }
 

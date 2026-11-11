@@ -3,6 +3,7 @@ namespace Login.ViewModels.Tienda
     public class QrCodigosVm
     {
         public int OrdenId { get; set; }
+        public int TiendaId { get; set; }
         public long NumeroOrdenA { get; set; }
         public string? CodigoA { get; set; }
         public string CodigoVisibleA => CodigoA ?? NumeroOrdenA.ToString();

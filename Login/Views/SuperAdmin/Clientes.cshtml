@@ -36,9 +36,9 @@
 <div class="sa-card sa-card-pad" style="margin-bottom:12px;">
     <div style="display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
         <div class="sa-sub" style="font-weight:800; color:#334155;">Buscar</div>
-        <input id="saClientesSearch" class="sa-input"
+        <form method="get" action="/SuperAdmin/Clientes"><input name="q" value="@Model.Q" id="saClientesSearch" class="sa-input"
                placeholder="Buscar por empresa, email, plan o estado..."
-               style="min-width:320px; width:420px; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
+               style="max-width:100%; width:420px; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" /><button class="sa-btn" type="submit">Buscar</button></form>
     </div>
 </div>
 
@@ -143,16 +143,16 @@
     </div>
 
     <div class="sa-card-pad" style="display:flex; justify-content:space-between; color:#64748b; font-size:13px;">
-        <div id="saClientesCount">Mostrando @Model.Clientes.Count de @Model.Clientes.Count empresas</div>
+        <div id="saClientesCount">@Model.Total empresas · Página @Model.Pagina</div>
         <div style="display:flex; gap:10px;">
-            <button class="sa-btn" disabled>Anterior</button>
-            <button class="sa-btn" disabled>Siguiente</button>
+            @if(Model.Pagina > 1) { <a class="sa-btn" asp-action="Clientes" asp-route-q="@Model.Q" asp-route-pagina="@(Model.Pagina-1)">Anterior</a> }
+            @if(Model.Pagina * 20 < Model.Total) { <a class="sa-btn" asp-action="Clientes" asp-route-q="@Model.Q" asp-route-pagina="@(Model.Pagina+1)">Siguiente</a> }
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script src="~/js/superadmin/clientes.js" asp-append-version="true"></script>
+    <script src="~/js/clientes.js" asp-append-version="true"></script>
 }
 
 @await Html.PartialAsync("_ModalCrearCliente", new Login.ViewModels.SuperAdmin.ClienteAppCreateVm())

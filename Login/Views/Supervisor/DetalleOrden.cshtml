@@ -1,0 +1,22 @@
+@model Login.ViewModels.Supervisor.OrderDetailVm
+@{ Layout = "_LayoutGestor"; ViewData["Title"] = $"Orden {Model.CodigoA}"; }
+<div class="pg-card" style="padding:24px;">
+    <a asp-action="Ordenes" asp-route-historial="true">Volver al historial</a>
+    <h1>Orden @Model.CodigoA</h1>
+    <p>Identificador permanente: @Model.Id · @Model.Estado</p>
+    <dl>
+        <dt>Comercio</dt><dd>@Model.Tienda</dd>
+        <dt>Destinatario</dt><dd>@Model.Destinatario · @Model.Direccion</dd>
+        <dt>Piloto</dt><dd>@(Model.Piloto ?? "Sin asignar")</dd>
+        <dt>Creada</dt><dd>@Model.CreatedAt.AddHours(-4).ToString("dd/MM/yyyy HH:mm") (Santo Domingo)</dd>
+        <dt>Tarifa</dt><dd>@(Model.Precio.HasValue ? $"RD$ {Model.Precio:N2}" : "Sin tarifa")</dd>
+    </dl>
+    <h2>Historial de la orden</h2>
+    @if (Model.Eventos.Count == 0) { <p>Esta orden no registra eventos.</p> }
+    <ol>
+        @foreach (var e in Model.Eventos)
+        {
+            <li><strong>@e.CreatedAt.AddHours(-4).ToString("dd/MM/yyyy HH:mm") · @e.Tipo</strong> · @e.Rol<br />@e.Descripcion</li>
+        }
+    </ol>
+</div>

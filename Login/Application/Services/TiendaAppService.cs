@@ -15,15 +15,17 @@ namespace Login.Application.Services
         private readonly ApplicationDbContext _db;
         private readonly IOrdenService _ordenService;
         private readonly IUserContextService _userCtx;
+        private readonly TimeProvider _clock;
 
         public TiendaAppService(
             ApplicationDbContext db,
             IOrdenService ordenService,
-            IUserContextService userCtx)
+            IUserContextService userCtx, TimeProvider? clock = null)
         {
             _db = db;
             _ordenService = ordenService;
             _userCtx = userCtx;
+            _clock = clock ?? TimeProvider.System;
         }
 
         // ---------- Tiendas ----------
@@ -165,7 +167,7 @@ namespace Login.Application.Services
                     o.NumeroOrdenA,
                     o.Estado.ToString(),
                     (int)o.Estado,
-                    o.UsuarioFinal.Nombre,
+                    o.DatosEntregaCongelados ? o.DestinoNombre : o.UsuarioFinal.Nombre,
                     o.CreatedAt,
                     o.AssignedAt,
                     o.RecolectadaAt,
@@ -205,14 +207,14 @@ namespace Login.Application.Services
                 orden.Estado.ToString(),
                 codigoB,
                 codigoC,
-                orden.UsuarioFinal.Nombre,
-                orden.UsuarioFinal.DireccionUbicacion,
-                orden.UsuarioFinal.MapaLink,
+                orden.DatosEntregaCongelados ? orden.DestinoNombre : orden.UsuarioFinal.Nombre,
+                orden.DatosEntregaCongelados ? orden.DestinoDireccion : orden.UsuarioFinal.DireccionUbicacion,
+                orden.DatosEntregaCongelados ? orden.DestinoMapaLink : orden.UsuarioFinal.MapaLink,
                 orden.NotaPedido,
                 orden.CodigoA);
         }
 
-        public async Task<OrdenCreadaResult> CrearOrdenAsync(string identityUserId, int usuarioFinalId, string? notaPedido)
+        public async Task<OrdenCreadaResult> CrearOrdenAsync(string identityUserId, int usuarioFinalId, string? notaPedido, string? operacionId = null)
         {
             var tienda = await GetTiendaActivaEntityAsync(identityUserId);
 
@@ -222,7 +224,30 @@ namespace Login.Application.Services
                 usuarioFinalId: usuarioFinalId,
                 notaPedido: notaPedido,
                 actorIdentityUserId: identityUserId,
-                actorRol: "Cliente");
+                actorRol: "Cliente",
+                operacionId: operacionId);
+        }
+
+        public async Task<ResumenOrdenesTiendaDto> GetResumenOrdenesAsync(string identityUserId)
+        {
+            var tienda = await GetTiendaActivaEntityAsync(identityUserId);
+            TimeZoneInfo zona;
+            try { zona = TimeZoneInfo.FindSystemTimeZoneById("America/Santo_Domingo"); }
+            catch (TimeZoneNotFoundException) { zona = TimeZoneInfo.FindSystemTimeZoneById("SA Western Standard Time"); }
+            var hoy = TimeZoneInfo.ConvertTime(_clock.GetUtcNow(), zona).Date;
+            var desde = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(hoy, DateTimeKind.Unspecified), zona);
+            var hasta = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(hoy.AddDays(1), DateTimeKind.Unspecified), zona);
+            return await _db.OrdenesEntrega.AsNoTracking()
+                .Where(o => o.TiendaId == tienda.Id && o.ClienteAppId == tienda.ClienteAppId)
+                .GroupBy(_ => 1)
+                .Select(g => new ResumenOrdenesTiendaDto(
+                    g.Count(o => o.Estado == EstadoOrden.Asignada),
+                    g.Count(o => o.Estado == EstadoOrden.Recolectada),
+                    g.Count(o => o.Estado == EstadoOrden.Entregada && o.EntregadaAt >= desde && o.EntregadaAt < hasta),
+                    g.Count(o => o.Estado == EstadoOrden.Creada),
+                    g.Count(o => o.Estado == EstadoOrden.Incidente),
+                    g.Count(o => o.Estado == EstadoOrden.Creada || o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada)))
+                .SingleOrDefaultAsync() ?? new ResumenOrdenesTiendaDto(0, 0, 0, 0, 0, 0);
         }
 
         // ---------- Helpers ----------

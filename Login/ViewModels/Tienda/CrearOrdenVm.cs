@@ -8,6 +8,8 @@ namespace Login.ViewModels.Tienda
     {
         public int ClienteAppId { get; set; }
         public int TiendaId { get; set; }
+        [MaxLength(64)]
+        public string? OperacionId { get; set; }
 
         [Required]
         public int UsuarioFinalId { get; set; }

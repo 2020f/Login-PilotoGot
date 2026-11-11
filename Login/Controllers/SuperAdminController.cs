@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Login.Data;
+using Login.Application.Services;
 using Login.Domain.Entities;
 using Login.Domain.Enums;
 using Login.ViewModels.SuperAdmin;
@@ -17,16 +18,41 @@ namespace Login.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly QuotaPolicyService _quotas;
 
-        public SuperAdminController(ApplicationDbContext db, UserManager<IdentityUser> userManager)
+        public SuperAdminController(ApplicationDbContext db, UserManager<IdentityUser> userManager, QuotaPolicyService quotas)
         {
             _db = db;
             _userManager = userManager;
+            _quotas = quotas;
         }
 
         // =========================
         // PLANES
         // =========================
+
+
+        [HttpGet]
+        public async Task<IActionResult> Dashboard()
+        {
+            var todayUtc = DateTime.SpecifyKind(DateTime.UtcNow.AddHours(-4).Date.AddHours(4), DateTimeKind.Utc);
+            var tomorrowUtc = todayUtc.AddDays(1);
+            var vm = new DashboardVm
+            {
+                Empresas = await _db.ClientesApp.CountAsync(),
+                EmpresasActivas = await _db.ClientesApp.CountAsync(c => c.Estado == EstadoClienteApp.Activo),
+                EmpresasBloqueadas = await _db.ClientesApp.CountAsync(c => c.Estado != EstadoClienteApp.Activo),
+                SinGestor = await _db.ClientesApp.CountAsync(c => c.GestorIdentityUserId == null),
+                ComerciosActivos = await _db.Tiendas.CountAsync(t => t.Activo),
+                PilotosActivos = await _db.Pilotos.CountAsync(p => p.Activo),
+                OrdenesAbiertas = await _db.OrdenesEntrega.CountAsync(o => o.Estado != EstadoOrden.Entregada),
+                OrdenesHoy = await _db.OrdenesEntrega.CountAsync(o => o.CreatedAt >= todayUtc && o.CreatedAt < tomorrowUtc),
+                EntregadasHoy = await _db.OrdenesEntrega.CountAsync(o => o.EntregadaAt >= todayUtc && o.EntregadaAt < tomorrowUtc),
+                GeneradoAt = DateTime.UtcNow
+            };
+            Response.Headers.CacheControl = "no-store";
+            return View(vm);
+        }
 
         [HttpGet]
         public async Task<IActionResult> Planes(string? ok = null, string? error = null)
@@ -152,56 +178,27 @@ namespace Login.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Clientes(string? ok = null, string? error = null)
+        public async Task<IActionResult> Clientes(string? ok = null, string? error = null, string? q = null, int pagina = 1)
         {
-            // Listado con conteos + email del gestor si existe
-            var clientes = await _db.ClientesApp.AsNoTracking()
-                .Include(c => c.Plan)
-                .Select(c => new ClienteAppRowVm
-                {
-                    Id = c.Id,
-                    NombreComercial = c.NombreComercial,
-                    PlanNombre = c.Plan.Nombre,
-                    Activo = c.Plan.Activo, // si quieres puedes cambiarlo por otra lógica
-                    Estado = c.Estado.ToString(),
-                    GestorEmail = null, // se completa abajo
-                    MaxTiendas = c.Plan.MaxTiendas,
-                    MaxPilotos = c.Plan.MaxPilotos,
-
-                    TiendasCount = c.Tiendas.Count,
-                    PilotosCount = c.Pilotos.Count
-                })
-                .OrderByDescending(x => x.Id)
-                .ToListAsync();
-
-            // Resolver email del gestor (Identity está aparte)
-            var gestorIds = await _db.ClientesApp.AsNoTracking()
-                .Where(c => c.GestorIdentityUserId != null)
-                .Select(c => new { c.Id, c.GestorIdentityUserId })
-                .ToListAsync();
-
-            foreach (var item in gestorIds)
+            pagina = Math.Clamp(pagina, 1, 1000000);
+            var query = _db.ClientesApp.AsNoTracking();
+            if (!string.IsNullOrWhiteSpace(q))
             {
-                var row = clientes.FirstOrDefault(x => x.Id == item.Id);
-                if (row == null) continue;
-
-                var u = await _userManager.FindByIdAsync(item.GestorIdentityUserId!);
-                row.GestorEmail = u?.Email;
+                var term = q.Trim().ToLower();
+                query = query.Where(c => c.NombreComercial.ToLower().Contains(term) || c.Plan.Nombre.ToLower().Contains(term)
+                    || (c.Email != null && c.Email.ToLower().Contains(term))
+                    || _db.Users.Any(u => u.Id == c.GestorIdentityUserId && u.Email != null && u.Email.ToLower().Contains(term)));
             }
-
-            var vm = new ClientesIndexVm
+            var total = await query.CountAsync();
+            var clientes = await query.OrderByDescending(c => c.Id).Skip((pagina - 1) * 20).Take(20).Select(c => new ClienteAppRowVm
             {
-                Ok = ok,
-                Error = error,
-                Clientes = clientes
-            };
-
-            ViewBag.Planes = await _db.Planes.AsNoTracking()
-                .Where(p => p.Activo)
-                .OrderBy(p => p.Nombre)
-                .ToListAsync();
-
-            return View(vm);
+                Id = c.Id, NombreComercial = c.NombreComercial, PlanNombre = c.Plan.Nombre, Activo = c.Estado == EstadoClienteApp.Activo,
+                Estado = c.Estado.ToString(), GestorEmail = _db.Users.Where(u => u.Id == c.GestorIdentityUserId).Select(u => u.Email).FirstOrDefault(),
+                MaxTiendas = c.Plan.MaxTiendas, MaxPilotos = c.MaxPilotos ?? c.Plan.MaxPilotos,
+                TiendasCount = c.Tiendas.Count(t => t.Activo), PilotosCount = c.Pilotos.Count(p => p.Activo)
+            }).ToListAsync();
+            ViewBag.Planes = await _db.Planes.AsNoTracking().Where(p => p.Activo).OrderBy(p => p.Nombre).ToListAsync();
+            return View(new ClientesIndexVm { Ok = ok, Error = error, Clientes = clientes, Q = q, Total = total, Pagina = pagina });
         }
 
         [HttpGet]
@@ -609,6 +606,11 @@ namespace Login.Controllers
             if (!ModelState.IsValid)
                 return View(input);
 
+            if (!await _db.ClientesApp.AnyAsync(c => c.Id == input.ClienteAppId)) return NotFound();
+            await using var tx = await _quotas.BeginTenantMutationAsync(input.ClienteAppId, requireActive: false);
+            try { await _quotas.EnsureNewUserAsync(input.ClienteAppId); }
+            catch (InvalidOperationException ex) { ModelState.AddModelError("", ex.Message); return View(input); }
+
             var cliente = await _db.ClientesApp.SingleOrDefaultAsync(c => c.Id == input.ClienteAppId);
             if (cliente is null)
                 return RedirectToAction(nameof(Clientes), new { error = "ClienteApp no existe." });
@@ -638,12 +640,14 @@ namespace Login.Controllers
             }
 
             // Rol Gestor
-            await _userManager.AddToRoleAsync(user, "Gestor");
+            var roleResult = await _userManager.AddToRoleAsync(user, "Gestor");
+            if (!roleResult.Succeeded) return RedirectToAction(nameof(Clientes), new { error = "No se pudo asignar el rol del gestor." });
 
             // ✅ amarrar gestor al tenant
             cliente.GestorIdentityUserId = user.Id;
             await _db.SaveChangesAsync();
 
+            await tx.CommitAsync();
             return RedirectToAction(nameof(Clientes), new { ok = "Gestor creado y asignado ✅" });
         }
     }

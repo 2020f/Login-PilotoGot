@@ -19,6 +19,21 @@ namespace Login.Domain.Entities
         public int UsuarioFinalId { get; set; }
         public UsuarioFinal UsuarioFinal { get; set; } = null!;
 
+        // La migración congela también los registros previos con los datos disponibles.
+        // La bandera distingue NULL legítimo (por ejemplo coordenadas) del legado sin migrar.
+        public bool DatosEntregaCongelados { get; set; }
+        [MaxLength(120)] public string RecogidaNombre { get; set; } = "";
+        [MaxLength(200)] public string RecogidaDireccion { get; set; } = "";
+        [MaxLength(30)] public string RecogidaTelefono { get; set; } = "";
+        public double? RecogidaLatitud { get; set; }
+        public double? RecogidaLongitud { get; set; }
+        [MaxLength(120)] public string DestinoNombre { get; set; } = "";
+        [MaxLength(250)] public string DestinoDireccion { get; set; } = "";
+        [MaxLength(30)] public string DestinoTelefono { get; set; } = "";
+        [MaxLength(500)] public string? DestinoMapaLink { get; set; }
+        public double? DestinoLatitud { get; set; }
+        public double? DestinoLongitud { get; set; }
+
         // Asignación (nullable)
         public int? PilotoId { get; set; }
         public Piloto? Piloto { get; set; }

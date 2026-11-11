@@ -1,10 +1,14 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Login.Application.Interfaces;
 using Login.Data;
 using Login.Domain.Entities;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -13,6 +17,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace Login.Tests;
 
@@ -33,6 +38,23 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
         builder.UseSetting("Jwt:Key", JwtKey);
         builder.ConfigureTestServices(services =>
         {
+            // Las pruebas no dependen del EventLog de Windows ni de permisos
+            // del sistema operativo para comprobar un error de base de datos.
+            services.AddLogging(logging => logging.ClearProviders());
+            // Cookies/CSRF reales con claves aisladas por host de pruebas;
+            // nunca escribir ni reutilizar las claves del usuario o producción.
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
+            services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+            {
+                // La emisión/refresh y la validación observan el mismo reloj
+                // controlado. Conserva expiración, not-before y tolerancia reales.
+                options.TokenValidationParameters.LifetimeValidator = (notBefore, expires, _, parameters) =>
+                {
+                    var now = Clock.GetUtcNow().UtcDateTime;
+                    return expires.HasValue && expires.Value >= now.Subtract(parameters.ClockSkew)
+                        && (!notBefore.HasValue || notBefore.Value <= now.Add(parameters.ClockSkew));
+                };
+            });
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<ApplicationDbContext>();
             services.AddDbContext<ApplicationDbContext>(options =>
@@ -40,7 +62,7 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
                 if (_useSqlServer)
                     options.UseSqlServer($"Server=(localdb)\\PilotGoCodexQA_20261109;Database={_sqlDatabase};Integrated Security=true;TrustServerCertificate=true");
                 else
-                    options.UseSqlite($"Data Source={_database};Default Timeout=30");
+                    options.UseSqlite($"Data Source={_database};Default Timeout=30;Pooling=False");
             });
             services.RemoveAll<IGoogleMapsService>();
             services.AddSingleton<IGoogleMapsService, NoMaps>();
@@ -98,6 +120,22 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
         return client;
     }
 
+    public async Task<HttpClient> LoginWebAsync(string id)
+    {
+        var client = CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var html = await client.GetStringAsync("/Identity/Account/Login");
+        var token = Regex.Match(html, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"");
+        Assert.True(token.Success, "El login web debe emitir un token CSRF.");
+        var response = await client.PostAsync("/Identity/Account/Login", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Input.Email"] = $"{id}@example.test", ["Input.Password"] = Password,
+            ["__RequestVerificationToken"] = WebUtility.HtmlDecode(token.Groups[1].Value)
+        }));
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.DoesNotContain("Login", response.Headers.Location?.OriginalString ?? "");
+        return client;
+    }
+
     public async Task InScopeAsync(Func<IServiceProvider, Task> action)
     {
         using var scope = Services.CreateScope();
@@ -119,7 +157,6 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
         base.Dispose(disposing);
         if (disposing)
         {
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
             File.Delete(_database);
         }
     }

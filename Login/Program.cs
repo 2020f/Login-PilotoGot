@@ -23,6 +23,7 @@ builder.Services.AddControllersWithViews(options =>
 });
 
 builder.Services.AddRazorPages();
+builder.Services.AddHttpContextAccessor();
 
 // 2) DbContext + SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -95,6 +96,7 @@ builder.Services.AddScoped<IUserContextService, UserContextService>();
 builder.Services.AddScoped<ITiendaAppService, TiendaAppService>();
 builder.Services.AddScoped<IPilotoAppService, PilotoAppService>();
 builder.Services.AddScoped<MobileSessionService>();
+builder.Services.AddScoped<QuotaPolicyService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHttpClient<IGoogleMapsService, GoogleMapsService>();
 

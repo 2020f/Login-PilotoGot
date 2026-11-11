@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Login.Application.Interfaces;
+using Login.Application.Services;
 using Login.Data;
 using Login.Domain.Entities;
 using Login.ViewModels.Gestor;
@@ -19,15 +20,17 @@ namespace Login.Controllers
         private readonly ApplicationDbContext _db;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IGoogleMapsService _googleMaps;
+        private readonly QuotaPolicyService _quotas;
 
         public GestorController(
             ApplicationDbContext db,
             UserManager<IdentityUser> userManager,
-            IGoogleMapsService googleMaps)
+            IGoogleMapsService googleMaps, QuotaPolicyService quotas)
         {
             _db = db;
             _userManager = userManager;
             _googleMaps = googleMaps;
+            _quotas = quotas;
         }
 
         private string GetUserId()
@@ -79,18 +82,10 @@ namespace Login.Controllers
             try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
             catch (System.Exception ex) { return RedirectToAction(nameof(UsuariosTienda), new { error = ex.Message }); }
 
-            // ✅ validar límite por plan (MaxTiendas)
-            var plan = await _db.ClientesApp
-                .Where(c => c.Id == clienteAppId)
-                .Select(c => new { c.Plan.MaxTiendas })
-                .SingleAsync();
-
-            var tiendasActuales = await _db.Tiendas.CountAsync(t => t.ClienteAppId == clienteAppId && t.Activo);
-            if (tiendasActuales >= plan.MaxTiendas)
-                return RedirectToAction(nameof(CrearTienda), new { error = "Límite de tiendas alcanzado según el plan." });
-
-            // ✅ crear tienda dentro del tenant
             var coords = await _googleMaps.GeocodificarAsync(input.Direccion.Trim());
+            await using var tx = await _quotas.BeginTenantMutationAsync(clienteAppId);
+            try { await _quotas.EnsureNewStoreAsync(clienteAppId, createsUser: false); }
+            catch (InvalidOperationException ex) { ModelState.AddModelError("", ex.Message); return View(input); }
 
             var tienda = new Tienda
             {
@@ -106,6 +101,7 @@ namespace Login.Controllers
             _db.Tiendas.Add(tienda);
             await _db.SaveChangesAsync();
 
+            await tx.CommitAsync();
             return RedirectToAction(nameof(ListarTiendas), new { ok = "Tienda creada ✅" });
         }
 
@@ -189,6 +185,8 @@ namespace Login.Controllers
             try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
             catch (System.Exception ex) { return RedirectToAction(nameof(AsignarTiendaUsuario), new { error = ex.Message }); }
 
+            await using var tx = await _quotas.BeginTenantMutationAsync(clienteAppId);
+
             // ✅ validar tienda Y que pertenezca a ESTE ClienteApp
             var tienda = await _db.Tiendas.SingleOrDefaultAsync(t =>
                 t.Id == input.TiendaId &&
@@ -203,6 +201,11 @@ namespace Login.Controllers
             var user = await _userManager.FindByEmailAsync(email);
             if (user is null)
                 return RedirectToAction(nameof(AsignarTiendaUsuario), new { error = "Usuario no existe (email)." });
+
+            if (!await _userManager.IsInRoleAsync(user, "Cliente"))
+                return RedirectToAction(nameof(AsignarTiendaUsuario), new { error = "El usuario debe tener rol Cliente." });
+            try { await _quotas.EnsureMembershipAsync(clienteAppId, user.Id); }
+            catch (InvalidOperationException ex) { return RedirectToAction(nameof(AsignarTiendaUsuario), new { error = ex.Message }); }
 
             // 3) evitar duplicado
             var existe = await _db.UsuariosTienda.AnyAsync(x => x.IdentityUserId == user.Id && x.TiendaId == tienda.Id);
@@ -220,6 +223,7 @@ namespace Login.Controllers
 
             await _db.SaveChangesAsync();
 
+            await tx.CommitAsync();
             return RedirectToAction(nameof(AsignarTiendaUsuario), new { ok = "Asignación creada ✅" });
         }
 

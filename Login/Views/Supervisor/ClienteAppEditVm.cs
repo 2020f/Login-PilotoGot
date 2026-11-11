@@ -46,8 +46,11 @@ namespace Login.ViewModels.SuperAdmin
 
         public bool EsTrial { get; set; }
 
+        [Range(0, 1000000)]
         public int? MaxUsuarios { get; set; }
+        [Range(0, 1000000)]
         public int? MaxOrdenesMes { get; set; }
+        [Range(0, 1000000)]
         public int? MaxPilotos { get; set; }
 
         [MaxLength(500)]

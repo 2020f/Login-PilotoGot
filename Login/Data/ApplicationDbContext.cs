@@ -26,6 +26,7 @@ namespace Login.Data
         public DbSet<UserContext> UserContexts { get; set; } = null!;
         public DbSet<UsuarioClienteApp> UsuariosClienteApp { get; set; } = null!;
         public DbSet<OrdenAutoRechazo> OrdenesAutoRechazo => Set<OrdenAutoRechazo>();
+        public DbSet<OperacionOrden> OperacionesOrden => Set<OperacionOrden>();
 
 
 
@@ -33,6 +34,13 @@ namespace Login.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            builder.Entity<OperacionOrden>()
+                .HasIndex(x => new { x.ClienteAppId, x.ActorIdentityUserId, x.Tipo, x.Clave }).IsUnique();
+            builder.Entity<OperacionOrden>().HasOne(x => x.ClienteApp).WithMany()
+                .HasForeignKey(x => x.ClienteAppId).OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<OperacionOrden>().HasOne(x => x.OrdenEntrega).WithMany()
+                .HasForeignKey(x => x.OrdenEntregaId).OnDelete(DeleteBehavior.Restrict);
 
             // ✅ Precisión para montos (evita truncados)
             builder.Entity<ClienteApp>()

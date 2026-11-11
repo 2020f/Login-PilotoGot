@@ -92,7 +92,7 @@ namespace Login.Areas.Identity.Pages.Account
                 user.UserName!,
                 Input.Password,
                 Input.RememberMe,
-                lockoutOnFailure: false);
+                lockoutOnFailure: true);
 
             if (result.Succeeded)
             {

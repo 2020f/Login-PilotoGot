@@ -25,11 +25,14 @@ namespace Login.Application.Interfaces
 
         // Órdenes
         Task<List<OrdenTiendaDto>> GetOrdenesAsync(string identityUserId);
+        Task<ResumenOrdenesTiendaDto> GetResumenOrdenesAsync(string identityUserId);
         Task<OrdenQrDto> GetOrdenQrAsync(string identityUserId, int ordenId);
-        Task<OrdenCreadaResult> CrearOrdenAsync(string identityUserId, int usuarioFinalId, string? notaPedido);
+        Task<OrdenCreadaResult> CrearOrdenAsync(string identityUserId, int usuarioFinalId, string? notaPedido, string? operacionId = null);
     }
 
     public sealed record TiendaInfoDto(int Id, string Nombre, string Direccion, bool Activo);
+    public sealed record ResumenOrdenesTiendaDto(int Asignadas, int EnRuta, int EntregadasHoy,
+        int Pendientes, int Incidentes, int TotalActivas);
     public sealed record TiendaActivaDto(int Id, string Nombre, string Direccion, string Telefono, int ClienteAppId);
 
     public sealed record UsuarioFinalDto(

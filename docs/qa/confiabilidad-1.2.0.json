@@ -1,0 +1,315 @@
+{
+  "version": "1.2.0+3",
+  "date": "2026-11-11",
+  "branch": "codex/confiabilidad-panel-app",
+  "backend_base": "da48f5294a3359cc8febc315793fb3f4c3cd03b6",
+  "mobile_base": "0f42e391e1336eb39404eeeb5c598b00491b43a5",
+  "tests": {
+    "migration_preserves_legacy_codes_and_freezes_available_data": true,
+    "release_backend_build": "passed",
+    "script_applied_twice": true,
+    "flutter": {
+      "analyze": "No issues found",
+      "failed": 0,
+      "passed": 32
+    },
+    "sqlite": {
+      "total": 63,
+      "skipped": 1,
+      "failed": 0,
+      "passed": 62
+    },
+    "static_web": {
+      "real_cookie_and_CSRF_tests": true,
+      "node_syntax_checks": 3,
+      "missing_script_paths": 0
+    },
+    "sqlserver": {
+      "total": 63,
+      "failed": 0,
+      "passed": 63
+    },
+    "sqlserver_cases": [
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Availability_is_derived_from_workload_even_when_stored_status_is_stale"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.FleetFlowTests.Twenty_pilots_and_forty_shops_complete_two_rounds_with_original_sessions"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Web_creation_redirect_contains_identifiers_and_replaying_the_form_does_not_duplicate"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.ProductionConfigurationTests.Production_rejects_the_published_development_signing_key"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.ShortCodeTests.Database_rejects_duplicate_active_codes_within_one_tenant"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderFlowTests.One_pilot_cannot_accept_two_auto_orders_concurrently"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.StoreContextAndAccessTests.Two_devices_keep_explicit_store_when_legacy_preference_changes"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Pilot_cannot_be_reconnected_by_a_request_competing_with_deactivation"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Rejected_uncommitted_request_can_be_corrected_with_the_same_key"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderFlowTests.Another_tenant_cannot_accept_or_reject_an_order_by_id"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.StoreContextAndAccessTests.Creation_capabilities_are_authenticated_and_bound_to_an_authorized_store"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.ShortCodeTests.Active_legacy_A_is_reserved_and_legacy_codes_still_complete"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.StoreContextAndAccessTests.Store_selection_and_administrative_membership_change_have_consistent_lock_order"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderFlowTests.Suspended_tenant_is_forbidden_on_mobile_endpoints"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderFlowTests.Simultaneous_creations_keep_unique_sequence_and_monthly_limit"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Replay_after_delivery_and_customer_deactivation_keeps_result_and_quota"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Operation_keys_are_scoped_to_actor_and_tenant_and_legacy_requests_still_create"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.StoreContextAndAccessTests.Malformed_explicit_store_never_falls_back_to_a_valid_preference(value: \"-1\")"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.StoreContextAndAccessTests.Failed_web_logins_lock_the_account_and_block_mobile_login_too"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderFlowTests.Tenant_and_pilot_cannot_read_or_complete_other_orders_or_qr"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Pilot_deactivation_competing_with_assignment_never_strands_an_order(automatic: False)"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.SessionTests.Removed_role_is_revoked_and_refresh_returns_current_roles"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.PanelOperationsTests.Dispatch_fragment_and_history_only_show_the_managers_tenant"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.PanelNavigationTests.Superadmin_pages_and_their_local_scripts_are_connected"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Summary_counts_all_orders_and_uses_the_local_delivery_day"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderFlowTests.Two_pilots_competing_for_one_offer_produce_one_assignment_and_history"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.CodeMigrationTests.Migration_preserves_existing_codes_and_backfills_active_reservations"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.PanelOperationsTests.Invalid_statistics_range_returns_a_readable_error_instead_of_throwing"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.StoreContextAndAccessTests.Explicit_store_is_revalidated_after_membership_is_revoked"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.ShortCodeTests.Concurrent_new_codes_are_four_digits_and_reserved_per_tenant"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Guid_X_format_cannot_bypass_the_operation_key_length_limit"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderFlowTests.Complete_flow_in_one_service_scope_observes_each_committed_state(automatic: True)"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Existing_key_with_different_payload_conflicts_without_discard_permission"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Pilot_deactivation_competing_with_assignment_never_strands_an_order(automatic: True)"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.ShortCodeTests.Code_attempts_are_limited_without_blocking_order_refresh"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.PanelOperationsTests.Every_pilot_deactivation_route_rejects_open_deliveries"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderFlowTests.Complete_flow_in_one_service_scope_observes_each_committed_state(automatic: False)"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.SessionTests.Password_change_invalidates_access_and_refresh"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.ShortCodeTests.Same_digits_in_two_tenants_require_the_right_order_and_pilot"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderFlowTests.Manual_assignments_are_visible_with_the_same_bearer_token"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.StoreContextAndAccessTests.First_legacy_store_selection_is_safe_when_two_requests_race"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.PanelOperationsTests.Deactivating_one_store_does_not_lock_its_principal_identity"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.StoreContextAndAccessTests.Malformed_explicit_store_never_falls_back_to_a_valid_preference(value: \"1,2\")"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Concurrent_retries_create_one_order_with_original_codes_and_history"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.SessionTests.Logout_revokes_this_device_and_keeps_other_device_signed_in"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.SessionTests.Concurrent_refresh_consumes_token_once"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.PanelNavigationTests.QR_is_requested_by_order_and_rechecks_web_membership_without_putting_PIN_in_URL"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.SessionTests.Refresh_expiration_is_enforced_and_database_contains_only_a_hash"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.PanelOperationsTests.Store_edit_and_deactivate_share_pending_order_guard"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.ShortCodeTests.Completed_codes_can_be_reused_without_accepting_a_stale_order_request"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderFlowTests.Offline_pilot_cannot_accept_by_id"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderFlowTests.Two_successive_auto_orders_finish_without_another_login"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.StoreContextAndAccessTests.Malformed_explicit_store_never_falls_back_to_a_valid_preference(value: \"0\")"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.StoreContextAndAccessTests.Malformed_explicit_store_never_falls_back_to_a_valid_preference(value: \"not-a-store\")"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Pickup_destination_contacts_and_null_coordinates_are_frozen_without_leaking_before_pickup"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.PanelOperationsTests.Zero_means_unlimited_and_distinct_users_consume_only_one_slot"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderReliabilityTests.Negative_order_quota_is_rejected_and_does_not_act_as_unlimited"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderFlowTests.Multi_store_user_can_switch_and_only_read_selected_store"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.PanelNavigationTests.Administrative_mutations_require_CSRF_and_reject_store_users"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.OrderFlowTests.Manual_assignment_rejects_inactive_and_other_tenant_pilots"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.PanelOperationsTests.Reactivations_cannot_bypass_effective_pilot_override"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.SessionTests.Expired_access_can_be_renewed_without_password_and_refresh_rotates"
+      },
+      {
+        "outcome": "Passed",
+        "name": "Login.Tests.PanelNavigationTests.Manager_pages_render_without_nested_forms_and_tenant_B_is_not_visible"
+      }
+    ]
+  },
+  "migration": "20261111222204_ConfiabilidadOrdenesSnapshot",
+  "script": "docs/qa/confiabilidad-1.2.0.sql",
+  "script_sha256": "5e0f5a6bc58671aaff6d2d42179ec9aca5c8885c403488cd14186e1af5ef4daa",
+  "apk": {
+    "bytes": 71381913,
+    "path": "C:\\Users\\Fernelis\\Desktop\\pilotGOapp\\build\\releases\\PilotGo-1.2.0-prueba.apk",
+    "target_sdk": 36,
+    "min_sdk": 24,
+    "certificate_sha256": "773d72ba127d16a95f032d520d37162708ea8676bf2f7e3e48168f751724e487",
+    "package": "com.pilotgo.app",
+    "signature_verified": true,
+    "version_name": "1.2.0",
+    "api": "https://pilotogoapp.zapflow77.dpdns.org",
+    "sha256": "7e666424d3673e870d2a45ca8322a9310b3387e945e88194f6ce74be0ac46072",
+    "blocks_creation_on_incompatible_backend": true,
+    "version_code": 3
+  },
+  "qa_cleanup": {
+    "proxy_stopped": true,
+    "databases_deleted": true,
+    "instance_deleted": true
+  },
+  "visual_browser_qa": {
+    "completed": false,
+    "reason": "Computer Use stopped: could not determine current browser URL with sufficient confidence to enforce policy."
+  },
+  "physical_phone_qa": false,
+  "production_deployed": false
+}

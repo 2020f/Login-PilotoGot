@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Login.Application.Interfaces;
+using Login.Application.Exceptions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,13 +13,15 @@ namespace Login.Controllers.Api
     public class TiendaApiController : ControllerBase
     {
         private readonly ITiendaAppService _svc;
+        private readonly ILogger<TiendaApiController> _logger;
 
-        public TiendaApiController(ITiendaAppService svc)
+        public TiendaApiController(ITiendaAppService svc, ILogger<TiendaApiController> logger)
         {
             _svc = svc;
+            _logger = logger;
         }
 
-        public sealed record CrearOrdenRequest(int UsuarioFinalId, string? NotaPedido);
+        public sealed record CrearOrdenRequest(int UsuarioFinalId, string? NotaPedido, string? OperacionId = null);
         public sealed record CrearUsuarioFinalRequest(string Nombre, string DireccionUbicacion, string Telefono, string? Notas, string? MapaLink);
         public sealed record EditarUsuarioFinalRequest(string Nombre, string DireccionUbicacion, string Telefono, string? Notas, string? MapaLink, bool Activo);
         public sealed record SetTiendaActivaRequest(int TiendaId);
@@ -27,6 +30,11 @@ namespace Login.Controllers.Api
             => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
 
         // ---------- Tiendas ----------
+
+        [HttpGet("capacidades")]
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Capacidades()
+            => Ok(new { versionContrato = 2, creacionIdempotente = true, contextoTienda = true });
 
         [HttpGet("tiendas")]
         public async Task<IActionResult> Tiendas()
@@ -76,13 +84,17 @@ namespace Login.Controllers.Api
         public async Task<IActionResult> Ordenes()
             => await RunAsync(() => _svc.GetOrdenesAsync(GetUserId()));
 
+        [HttpGet("ordenes/resumen")]
+        public async Task<IActionResult> ResumenOrdenes()
+            => await RunAsync(() => _svc.GetResumenOrdenesAsync(GetUserId()));
+
         [HttpGet("ordenes/{ordenId:int}/qr")]
         public async Task<IActionResult> OrdenQr(int ordenId)
             => await RunAsync(() => _svc.GetOrdenQrAsync(GetUserId(), ordenId));
 
         [HttpPost("ordenes")]
         public async Task<IActionResult> CrearOrden([FromBody] CrearOrdenRequest request)
-            => await RunAsync(() => _svc.CrearOrdenAsync(GetUserId(), request.UsuarioFinalId, request.NotaPedido));
+            => await RunAsync(() => _svc.CrearOrdenAsync(GetUserId(), request.UsuarioFinalId, request.NotaPedido, request.OperacionId));
 
         // ---------- Helper ----------
 
@@ -93,6 +105,14 @@ namespace Login.Controllers.Api
                 var result = await action();
                 return Ok(result);
             }
+            catch (OperacionOrdenConflictoException ex)
+            {
+                return Conflict(new { error = ex.Message });
+            }
+            catch (OrdenSolicitudRechazadaException ex)
+            {
+                return BadRequest(new { error = ex.Message, solicitudRechazada = true });
+            }
             catch (InvalidOperationException ex)
             {
                 return BadRequest(new { error = ex.Message });
@@ -101,9 +121,10 @@ namespace Login.Controllers.Api
             {
                 return BadRequest(new { error = ex.Message });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500, new { error = "Error interno del servidor." });
+                _logger.LogError(ex, "Error en API de comercio. TraceId {TraceId}, acción {Action}", HttpContext.TraceIdentifier, RouteData.Values["action"]);
+                return StatusCode(500, new { error = "Error interno del servidor.", traceId = HttpContext.TraceIdentifier });
             }
         }
     }

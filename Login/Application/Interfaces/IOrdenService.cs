@@ -15,7 +15,8 @@ namespace Login.Application.Interfaces
             int usuarioFinalId,
             string? notaPedido = null,
             string actorIdentityUserId = "System",
-            string actorRol = "System");
+            string actorRol = "System",
+            string? operacionId = null);
 
         /// <summary>Asigna piloto a una orden (por código B).</summary>
         Task AsignarPilotoAsync(

@@ -13,10 +13,12 @@ namespace Login.Controllers.Api
     public class PilotoApiController : ControllerBase
     {
         private readonly IPilotoAppService _svc;
+        private readonly ILogger<PilotoApiController> _logger;
 
-        public PilotoApiController(IPilotoAppService svc)
+        public PilotoApiController(IPilotoAppService svc, ILogger<PilotoApiController> logger)
         {
             _svc = svc;
+            _logger = logger;
         }
 
         public sealed record ConfirmarRecolectaRequest(string CodigoB, int? OrdenId = null);
@@ -118,9 +120,10 @@ namespace Login.Controllers.Api
             {
                 return BadRequest(new { error = ex.Message });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500, new { error = "Error interno del servidor." });
+                _logger.LogError(ex, "Error en API de piloto. TraceId {TraceId}, acción {Action}", HttpContext.TraceIdentifier, RouteData.Values["action"]);
+                return StatusCode(500, new { error = "Error interno del servidor.", traceId = HttpContext.TraceIdentifier });
             }
         }
     }

@@ -93,15 +93,8 @@
                     <span>Tiendas (Negocios)</span>
                 </a>
 
-                <span class="pg-nav-item pg-nav-disabled">
-                    <span class="pg-nav-ico">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                            <circle cx="12" cy="12" r="10"/>
-                            <polyline points="12 6 12 12 16 14"/>
-                        </svg>
-                    </span>
-                    <span>Historial Global</span>
-                </span>
+                <a class="pg-nav-item" asp-controller="Supervisor" asp-action="Ordenes" asp-route-historial="true"><span>Historial de órdenes</span></a>
+                <a class="pg-nav-item" asp-controller="Gestor" asp-action="UsuariosTienda"><span>Accesos de comercios</span></a>
             </div>
         </nav>
 
@@ -141,14 +134,9 @@
             <div class="pg-topbar-right">
                 <div class="pg-pill">
                     <span class="pg-dot"></span>
-                    <span>Sistema Operativo</span>
+                    <span>Panel de operaciones</span>
                 </div>
-                <button type="button" class="pg-icon-btn" aria-label="Notificaciones">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                    </svg>
-                    <span class="pg-badge-dot"></span>
-                </button>
+
             </div>
         </header>
 

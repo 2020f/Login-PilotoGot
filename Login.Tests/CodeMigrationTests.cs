@@ -37,6 +37,13 @@ public sealed class CodeMigrationTests
             foreach (var order in orders)
             {
                 Assert.Null(order.CodigoA);
+                Assert.True(order.DatosEntregaCongelados);
+                Assert.Equal("A1", order.RecogidaNombre);
+                Assert.Equal("Calle A", order.RecogidaDireccion);
+                Assert.Equal("Destino A", order.DestinoNombre);
+                Assert.Equal("Destino privado A", order.DestinoDireccion);
+                Assert.Equal("5550001", order.DestinoTelefono);
+                Assert.Null(order.DestinoMapaLink);
                 foreach (var code in order.Codigos)
                 {
                     Assert.Equal($"OLD{order.NumeroOrdenA}{(int)code.Tipo}Z", code.Codigo);
@@ -44,6 +51,10 @@ public sealed class CodeMigrationTests
                     Assert.Equal(order.Estado != EstadoOrden.Entregada, code.Reservado);
                 }
             }
+            await db.UsuariosFinales.Where(u => u.Id == app.CustomerA)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.DireccionUbicacion, "Agenda actualizada después de migrar"));
+            Assert.All(await db.OrdenesEntrega.AsNoTracking().ToListAsync(),
+                o => Assert.Equal("Destino privado A", o.DestinoDireccion));
         });
     }
 }

@@ -27,6 +27,10 @@ See `docs/ANALISIS-SESION-ORDENES-MULTITENANT-20261109.md` for the mobile flow a
 See `docs/RELEASE-1.1.0.md` before deployment: four-digit codes require migration
 `20261110033858_CodigosCuatroDigitos` and an updated mobile client. Production
 requires a private `Jwt__Key` and does not create demo accounts automatically.
+The next reliability batch is documented in `docs/CONFIABILIDAD-1.2.0.md`.
+It requires migration `20261111222204_ConfiabilidadOrdenesSnapshot` and adds
+store-scoped requests, durable create-operation IDs and immutable delivery data.
+Upgrade the backend/database before distributing the matching mobile client.
 
 ## Database
 

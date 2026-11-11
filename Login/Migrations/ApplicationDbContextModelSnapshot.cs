@@ -209,6 +209,53 @@ namespace Login.Migrations
                     b.ToTable("HistorialOrdenes");
                 });
 
+            modelBuilder.Entity("Login.Domain.Entities.OperacionOrden", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActorIdentityUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Clave")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OrdenEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrdenEntregaId");
+
+                    b.HasIndex("ClienteAppId", "ActorIdentityUserId", "Tipo", "Clave")
+                        .IsUnique();
+
+                    b.ToTable("OperacionesOrden");
+                });
+
             modelBuilder.Entity("Login.Domain.Entities.OrdenAutoRechazo", b =>
                 {
                     b.Property<int>("Id")
@@ -257,6 +304,34 @@ namespace Login.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("DatosEntregaCongelados")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("DestinoDireccion")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<double?>("DestinoLatitud")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("DestinoLongitud")
+                        .HasColumnType("float");
+
+                    b.Property<string>("DestinoMapaLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("DestinoNombre")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("DestinoTelefono")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<double?>("DistanciaKm")
                         .HasColumnType("float");
 
@@ -282,6 +357,27 @@ namespace Login.Migrations
                     b.Property<decimal?>("Precio")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("RecogidaDireccion")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<double?>("RecogidaLatitud")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("RecogidaLongitud")
+                        .HasColumnType("float");
+
+                    b.Property<string>("RecogidaNombre")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("RecogidaTelefono")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<DateTime?>("RecolectadaAt")
                         .HasColumnType("datetime2");
@@ -824,6 +920,25 @@ namespace Login.Migrations
                         .HasForeignKey("OrdenEntregaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("OrdenEntrega");
+                });
+
+            modelBuilder.Entity("Login.Domain.Entities.OperacionOrden", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.OrdenEntrega", "OrdenEntrega")
+                        .WithMany()
+                        .HasForeignKey("OrdenEntregaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ClienteApp");
 
                     b.Navigation("OrdenEntrega");
                 });

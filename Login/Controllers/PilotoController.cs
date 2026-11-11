@@ -63,16 +63,16 @@ namespace Login.Controllers
                     PuedeVerDestinoFinal = o.Estado == EstadoOrden.Recolectada,
 
                     // TIENDA (pickup)
-                    TiendaNombre = o.Tienda.Nombre,
-                    TiendaDireccion = o.Tienda.Direccion,
-                    TiendaTelefono = o.Tienda.Telefono,
+                    TiendaNombre = o.DatosEntregaCongelados ? o.RecogidaNombre : o.Tienda.Nombre,
+                    TiendaDireccion = o.DatosEntregaCongelados ? o.RecogidaDireccion : o.Tienda.Direccion,
+                    TiendaTelefono = o.DatosEntregaCongelados ? o.RecogidaTelefono : o.Tienda.Telefono,
                     NotaPedido = o.NotaPedido,
 
                     // USUARIO FINAL (delivery)
-                    UsuarioFinalNombre = o.UsuarioFinal.Nombre,
-                    UsuarioFinalDireccion = o.UsuarioFinal.DireccionUbicacion,
-                    UsuarioFinalMapaLink = o.UsuarioFinal.MapaLink,
-                    UsuarioFinalTelefono = o.UsuarioFinal.Telefono,
+                    UsuarioFinalNombre = o.DatosEntregaCongelados ? o.DestinoNombre : o.UsuarioFinal.Nombre,
+                    UsuarioFinalDireccion = o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoDireccion : o.UsuarioFinal.DireccionUbicacion) : "",
+                    UsuarioFinalMapaLink = o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoMapaLink : o.UsuarioFinal.MapaLink) : null,
+                    UsuarioFinalTelefono = o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoTelefono : o.UsuarioFinal.Telefono) : "",
 
                     Precio = o.Precio,
                     DistanciaKm = o.DistanciaKm
@@ -116,15 +116,15 @@ namespace Login.Controllers
 
                     PuedeVerDestinoFinal = o.Estado == EstadoOrden.Recolectada,
 
-                    TiendaNombre = o.Tienda.Nombre,
-                    TiendaDireccion = o.Tienda.Direccion,
-                    TiendaTelefono = o.Tienda.Telefono,
+                    TiendaNombre = o.DatosEntregaCongelados ? o.RecogidaNombre : o.Tienda.Nombre,
+                    TiendaDireccion = o.DatosEntregaCongelados ? o.RecogidaDireccion : o.Tienda.Direccion,
+                    TiendaTelefono = o.DatosEntregaCongelados ? o.RecogidaTelefono : o.Tienda.Telefono,
                     NotaPedido = o.NotaPedido,
 
-                    UsuarioFinalNombre = o.UsuarioFinal.Nombre,
-                    UsuarioFinalDireccion = o.UsuarioFinal.DireccionUbicacion,
-                    UsuarioFinalMapaLink = o.UsuarioFinal.MapaLink,
-                    UsuarioFinalTelefono = o.UsuarioFinal.Telefono,
+                    UsuarioFinalNombre = o.DatosEntregaCongelados ? o.DestinoNombre : o.UsuarioFinal.Nombre,
+                    UsuarioFinalDireccion = o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoDireccion : o.UsuarioFinal.DireccionUbicacion) : "",
+                    UsuarioFinalMapaLink = o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoMapaLink : o.UsuarioFinal.MapaLink) : null,
+                    UsuarioFinalTelefono = o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoTelefono : o.UsuarioFinal.Telefono) : "",
 
                     Precio = o.Precio,
                     DistanciaKm = o.DistanciaKm

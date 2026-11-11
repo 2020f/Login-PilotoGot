@@ -1,20 +1,10 @@
-﻿<div class="sa-topbar-row">
-    <div class="sa-page-title">
-        <h1>@(ViewData["PageTitle"] ?? ViewData["Title"] ?? "Panel")</h1>
-    </div>
-
+<div class="sa-topbar-row">
+    <div class="sa-page-title"><h1>@(ViewData["PageTitle"] ?? ViewData["Title"] ?? "Panel")</h1></div>
     <div class="sa-topbar-actions">
-        <div class="sa-search">
-            <span class="sa-search-ico">🔎</span>
-            <input id="saGlobalSearch" type="text" placeholder="Buscar cliente, orden o ID..." />
-        </div>
-
-        <button class="sa-icon-btn" type="button" title="Notificaciones">
-            🔔 <span class="sa-dot"></span>
-        </button>
-
-        <button class="sa-icon-btn" type="button" title="Configuración">
-            ⚙️
-        </button>
+        <form class="sa-search" method="get" action="/SuperAdmin/Clientes">
+            <label for="saGlobalSearch">Buscar empresas</label>
+            <input name="q" id="saGlobalSearch" type="search" placeholder="Empresa o gestor..." />
+            <button class="sa-btn" type="submit">Buscar</button>
+        </form>
     </div>
 </div>

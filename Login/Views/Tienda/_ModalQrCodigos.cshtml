@@ -31,7 +31,7 @@
                 </div>
                 <div class="qr-col-desc">El piloto escanea este QR para iniciar y confirmar la recolección.</div>
                 <div class="qr-img-box">
-                    <img src="/Qr/Generar?codigo=@Model.CodigoB" alt="QR Piloto" />
+                    <img src="@Url.Action("Orden", "Qr", new { ordenId = Model.OrdenId, tiendaId = Model.TiendaId })" alt="QR Piloto" />
                     <div class="qr-code-val">@Model.CodigoB</div>
                 </div>
             </div>

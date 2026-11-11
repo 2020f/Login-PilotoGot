@@ -194,6 +194,7 @@
                 </div>
             </div>
 
+<div class="sa-card sa-card-pad" style="margin:16px;"><h3>Excepciones de cuota</h3><p>Pilotos y órdenes: vacío usa plan; cero es ilimitado. Usuarios: vacío o cero es ilimitado, e incluye gestor, pilotos y accesos de comercios activos.</p><label>Máximo de pilotos<input class="sa-input" asp-for="MaxPilotos" type="number" min="0" /></label><label>Órdenes por mes<input class="sa-input" asp-for="MaxOrdenesMes" type="number" min="0" /></label><label>Usuarios activos<input class="sa-input" asp-for="MaxUsuarios" type="number" min="0" /></label></div>
             <div class="sa-modal-foot">
                 <a class="sa-btn" href="/SuperAdmin/Clientes">Cancelar</a>
                 <button class="sa-btn sa-btn-primary" type="submit">💾 Guardar Cliente</button>
@@ -204,7 +205,7 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/superadmin/crearcliente.js" asp-append-version="true"></script>
+    <script src="~/js/crearcliente.js" asp-append-version="true"></script>
 }
 
 
@@ -360,6 +361,6 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/superadmin/crearcliente.js" asp-append-version="true"></script>
+    <script src="~/js/crearcliente.js" asp-append-version="true"></script>
 }
  *@

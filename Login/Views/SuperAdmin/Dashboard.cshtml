@@ -1,0 +1,17 @@
+@model Login.ViewModels.SuperAdmin.DashboardVm
+@{ Layout = "_LayoutSuperAdmin"; ViewData["Title"] = "Resumen de operaciones"; }
+<div class="sa-card sa-card-pad">
+    <h2>Resumen de la plataforma</h2>
+    <p>Actualizado @Model.GeneradoAt.AddHours(-4).ToString("dd/MM/yyyy HH:mm") · Día comercial de Santo Domingo.</p>
+    <div class="sa-grid-3">
+        <div class="sa-card sa-card-pad"><strong>@Model.Empresas</strong><p>Empresas · @Model.EmpresasActivas activas · @Model.EmpresasBloqueadas suspendidas/vencidas</p></div>
+        <div class="sa-card sa-card-pad"><strong>@Model.ComerciosActivos</strong><p>Comercios activos</p></div>
+        <div class="sa-card sa-card-pad"><strong>@Model.PilotosActivos</strong><p>Pilotos activos</p></div>
+        <div class="sa-card sa-card-pad"><strong>@Model.OrdenesAbiertas</strong><p>Órdenes abiertas</p></div>
+        <div class="sa-card sa-card-pad"><strong>@Model.OrdenesHoy</strong><p>Creadas hoy</p></div>
+        <div class="sa-card sa-card-pad"><strong>@Model.EntregadasHoy</strong><p>Entregadas hoy</p></div>
+    </div>
+    @if (Model.SinGestor > 0) { <p role="status">@Model.SinGestor empresas aún necesitan un gestor para operar.</p> }
+    <a class="sa-btn" asp-action="Clientes">Administrar empresas</a>
+    <a class="sa-btn" asp-action="Planes">Administrar planes</a>
+</div>
