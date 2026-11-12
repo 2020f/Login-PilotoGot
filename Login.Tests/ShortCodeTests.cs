@@ -104,7 +104,7 @@ public sealed class ShortCodeTests : IAsyncLifetime
         {
             var service = sp.GetRequiredService<IOrdenService>();
             await service.AsignarPilotoAsync("0012", _app.PilotA, "manager-a", "Gestor", next.OrdenId);
-            await Assert.ThrowsAsync<InvalidOperationException>(() => service.ConfirmarRecolectaAsync("0012", "pilot-a", "Piloto", first.OrdenId));
+            await Assert.ThrowsAnyAsync<InvalidOperationException>(() => service.ConfirmarRecolectaAsync("0012", "pilot-a", "Piloto", first.OrdenId));
             await service.ConfirmarRecolectaAsync("0012", "pilot-a", "Piloto", next.OrdenId);
             await service.ConfirmarEntregaAsync("0012", "0034", "pilot-a", "Piloto", next.OrdenId);
             Assert.Equal(2, await sp.GetRequiredService<ApplicationDbContext>().OrdenesEntrega.CountAsync(o => o.Estado == EstadoOrden.Entregada));

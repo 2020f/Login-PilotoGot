@@ -34,7 +34,7 @@ public sealed class PanelNavigationTests : IAsyncLifetime
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             var html = await response.Content.ReadAsStringAsync();
             Assert.DoesNotContain("/SuperAdmin/Finanzas", html);
-            Assert.DoesNotContain("/SuperAdmin/Auditoria", html);
+            Assert.Contains("/SuperAdmin/Auditoria", html);
             Assert.DoesNotContain("Carlos Admin", html);
             foreach (Match script in Regex.Matches(html, "<script[^>]*src=\"(/[^\"]+\\.js(?:\\?[^\"]*)?)\""))
                 Assert.Equal(HttpStatusCode.OK, (await adminClient.GetAsync(WebUtility.HtmlDecode(script.Groups[1].Value))).StatusCode);

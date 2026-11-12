@@ -1,10 +1,6 @@
-﻿@page
+@page
 @model AccessDeniedModel
 @{
-    ViewData["Title"] = "Access denied";
+    ViewData["Title"] = "No tienes autorización";
 }
-
-<header>
-    <h1 class="text-danger">@ViewData["Title"]</h1>
-    <p class="text-danger">You do not have access to this resource.</p>
-</header>
+<partial name="/Areas/Identity/Pages/Account/_AccessDeniedContent.cshtml" model="Model" />

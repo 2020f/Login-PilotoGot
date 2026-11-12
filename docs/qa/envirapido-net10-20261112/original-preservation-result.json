@@ -1,0 +1,50 @@
+{
+  "capturedUtc": "2026-11-12T21:56:37.4663516Z",
+  "orderCutoff": 17,
+  "codeCutoff": 35,
+  "originalOrders": 17,
+  "originalCodes": 35,
+  "checks": [
+    {
+      "field": "OrdenesHash",
+      "unchanged": true
+    },
+    {
+      "field": "CodigosHash",
+      "unchanged": true
+    },
+    {
+      "field": "ParadasHash",
+      "unchanged": true
+    },
+    {
+      "field": "RutasHash",
+      "unchanged": true
+    },
+    {
+      "field": "RutaOrdenesHash",
+      "unchanged": true
+    },
+    {
+      "field": "PuntosHash",
+      "unchanged": true
+    },
+    {
+      "field": "IdentidadesHash",
+      "unchanged": true
+    },
+    {
+      "field": "RolesHash",
+      "unchanged": true
+    },
+    {
+      "field": "FacturasHash",
+      "unchanged": true
+    },
+    {
+      "field": "PagosHash",
+      "unchanged": true
+    }
+  ],
+  "allOriginalFingerprintsUnchanged": true
+}

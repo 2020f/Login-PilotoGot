@@ -206,8 +206,10 @@ public sealed class OrderReliabilityTests : IAsyncLifetime
         });
         using var shop = await _app.LoginAsync("shop-a");
         var listed = await shop.GetFromJsonAsync<List<OrdenTiendaDto>>("/api/tienda/ordenes");
-        Assert.Equal(200, listed!.Count);
-        Assert.All(listed, o => Assert.Equal("Entregada", o.Estado));
+        Assert.Equal(54, listed!.Count); // Todas las cuatro activas y cincuenta terminales recientes.
+        Assert.Equal(50, listed.Count(o => o.Estado == "Entregada"));
+        Assert.Equal(new[] { "Asignada", "Creada", "Incidente", "Recolectada" },
+            listed.Where(o => o.Estado != "Entregada").Select(o => o.Estado).OrderBy(s => s));
         var summary = await shop.GetFromJsonAsync<ResumenOrdenesTiendaDto>("/api/tienda/ordenes/resumen");
         Assert.Equal(new ResumenOrdenesTiendaDto(1, 1, 1, 1, 1, 3), summary);
     }

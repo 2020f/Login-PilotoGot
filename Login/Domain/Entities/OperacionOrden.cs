@@ -12,6 +12,7 @@ public sealed class OperacionOrden
     [MaxLength(30)] public string Tipo { get; set; } = "CrearOrden";
     [MaxLength(64)] public string Clave { get; set; } = "";
     [MaxLength(64)] public string PayloadHash { get; set; } = "";
+    public string? ResultadoJson { get; set; }
     public int OrdenEntregaId { get; set; }
     public OrdenEntrega OrdenEntrega { get; set; } = null!;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

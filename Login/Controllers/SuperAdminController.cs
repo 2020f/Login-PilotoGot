@@ -5,6 +5,7 @@ using Login.Data;
 using Login.Application.Services;
 using Login.Domain.Entities;
 using Login.Domain.Enums;
+using Login.Domain.Operations;
 using Login.ViewModels.SuperAdmin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -14,17 +15,22 @@ using Microsoft.EntityFrameworkCore;
 namespace Login.Controllers
 {
     [Authorize(Roles = "SuperAdmin")]
-    public class SuperAdminController : Controller
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public partial class SuperAdminController : Controller
     {
         private readonly ApplicationDbContext _db;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly QuotaPolicyService _quotas;
+        private readonly SaasBillingService _billing;
+        private readonly TimeProvider _clock;
 
-        public SuperAdminController(ApplicationDbContext db, UserManager<IdentityUser> userManager, QuotaPolicyService quotas)
+        public SuperAdminController(ApplicationDbContext db, UserManager<IdentityUser> userManager, QuotaPolicyService quotas, SaasBillingService billing, TimeProvider clock)
         {
             _db = db;
             _userManager = userManager;
             _quotas = quotas;
+            _billing = billing;
+            _clock = clock;
         }
 
         // =========================
@@ -35,7 +41,7 @@ namespace Login.Controllers
         [HttpGet]
         public async Task<IActionResult> Dashboard()
         {
-            var todayUtc = DateTime.SpecifyKind(DateTime.UtcNow.AddHours(-4).Date.AddHours(4), DateTimeKind.Utc);
+            var todayUtc = DateTime.SpecifyKind(_billing.Today.AddHours(4), DateTimeKind.Utc);
             var tomorrowUtc = todayUtc.AddDays(1);
             var vm = new DashboardVm
             {
@@ -45,11 +51,22 @@ namespace Login.Controllers
                 SinGestor = await _db.ClientesApp.CountAsync(c => c.GestorIdentityUserId == null),
                 ComerciosActivos = await _db.Tiendas.CountAsync(t => t.Activo),
                 PilotosActivos = await _db.Pilotos.CountAsync(p => p.Activo),
-                OrdenesAbiertas = await _db.OrdenesEntrega.CountAsync(o => o.Estado != EstadoOrden.Entregada),
+                OrdenesAbiertas = await _db.OrdenesEntrega.CountAsync(o => !EstadosEntrega.Terminales.Contains(o.Estado)),
                 OrdenesHoy = await _db.OrdenesEntrega.CountAsync(o => o.CreatedAt >= todayUtc && o.CreatedAt < tomorrowUtc),
                 EntregadasHoy = await _db.OrdenesEntrega.CountAsync(o => o.EntregadaAt >= todayUtc && o.EntregadaAt < tomorrowUtc),
-                GeneradoAt = DateTime.UtcNow
+                GeneradoAt = _clock.GetUtcNow().UtcDateTime,
+                SolicitudesPendientes = await _db.SaasPlanRequests.CountAsync(r => r.Status == "Pendiente"),
+                EmpresasPorVencer = await _db.ClientesApp.CountAsync(c => c.FechaFinPlan >= _billing.Today && c.FechaFinPlan < _billing.Today.AddDays(8))
             };
+            var invoices = await _db.SaasInvoices.AsNoTracking().Include(i => i.Payments).ToListAsync();
+            var companies = await _db.ClientesApp.AsNoTracking().Select(c => new { c.Id, c.Estado }).ToListAsync();
+            var expired = await _billing.GetExpiredStatesAsync(companies.Select(c => c.Id));
+            vm.EmpresasActivas = companies.Count(c => c.Estado == EstadoClienteApp.Activo && !expired[c.Id]);
+            vm.EmpresasBloqueadas = companies.Count - vm.EmpresasActivas;
+            vm.PendienteCobro = invoices.Where(i => i.VoidedAt == null).Sum(SaasBillingService.Balance);
+            vm.FacturasVencidas = invoices.Count(i => SaasBillingService.Status(i, _billing.Today) == "Vencida");
+            var month = new DateTime(_billing.Today.Year, _billing.Today.Month, 1);
+            vm.CobradoMes = invoices.SelectMany(i => i.Payments).Where(p => p.VoidedAt == null && p.PaidOn >= month && p.PaidOn < month.AddMonths(1)).Sum(p => p.Amount);
             Response.Headers.CacheControl = "no-store";
             return View(vm);
         }
@@ -77,9 +94,12 @@ namespace Login.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CrearPlan(PlanCreateVm input)
         {
+            if (decimal.Round(input.PrecioMensual, 2) != input.PrecioMensual) ModelState.AddModelError(nameof(input.PrecioMensual), "El precio admite hasta dos decimales.");
+            if (string.IsNullOrWhiteSpace(input.Nombre)) ModelState.AddModelError(nameof(input.Nombre), "Escribe el nombre del plan.");
             if (!ModelState.IsValid)
                 return View(input);
 
+            await using var createPlanTx = await _db.Database.BeginTransactionAsync();
             _db.Planes.Add(new Plan
             {
                 Nombre = input.Nombre.Trim(),
@@ -91,6 +111,9 @@ namespace Login.Controllers
             });
 
             await _db.SaveChangesAsync();
+            Audit(null, "PlanCreado", "Plan", "", $"Plan {input.Nombre.Trim()} creado; precio mensual DOP {input.PrecioMensual}.");
+            await _db.SaveChangesAsync();
+            await createPlanTx.CommitAsync();
             return RedirectToAction(nameof(Planes), new { ok = "Plan creado ✅" });
         }
 
@@ -119,10 +142,20 @@ namespace Login.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditarPlan(PlanEditVm input)
         {
+            if (decimal.Round(input.PrecioMensual, 2) != input.PrecioMensual) ModelState.AddModelError(nameof(input.PrecioMensual), "El precio admite hasta dos decimales.");
+            if (string.IsNullOrWhiteSpace(input.Nombre)) ModelState.AddModelError(nameof(input.Nombre), "Escribe el nombre del plan.");
             if (!ModelState.IsValid) return View(input);
 
             var plan = await _db.Planes.SingleOrDefaultAsync(p => p.Id == input.Id);
             if (plan is null) return RedirectToAction(nameof(Planes), new { error = "Plan no existe." });
+
+            if (await _db.ClientesApp.AnyAsync(c => c.PlanId == plan.Id) &&
+                (Reduces(plan.MaxTiendas, input.MaxTiendas) || Reduces(plan.MaxPilotos, input.MaxPilotos) || Reduces(plan.MaxOrdenesPorMes, input.MaxOrdenesPorMes)))
+            {
+                ModelState.AddModelError("", "Este plan tiene empresas asignadas. Crea un plan nuevo para reducir límites y cambia cada empresa con la validación de su uso actual.");
+                return View(input);
+            }
+            Audit(null, "PlanEditado", "Plan", plan.Id.ToString(), $"{plan.Nombre}: precio {plan.PrecioMensual} → {input.PrecioMensual}; límites {input.MaxTiendas}/{input.MaxPilotos}/{input.MaxOrdenesPorMes}. Las facturas emitidas conservan sus importes.");
 
             plan.Nombre = input.Nombre.Trim();
             plan.PrecioMensual = input.PrecioMensual;
@@ -143,6 +176,7 @@ namespace Login.Controllers
             if (plan is null) return RedirectToAction(nameof(Planes), new { error = "Plan no existe." });
 
             plan.Activo = !plan.Activo;
+            Audit(null, "DisponibilidadPlan", "Plan", plan.Id.ToString(), plan.Activo ? "Disponible para nuevas contrataciones." : "Retirado de nuevas contrataciones; conserva empresas actuales.");
             await _db.SaveChangesAsync();
 
             return RedirectToAction(nameof(Planes), new { ok = $"Plan {(plan.Activo ? "activado" : "desactivado")} ✅" });
@@ -177,6 +211,12 @@ namespace Login.Controllers
             return "system";
         }
 
+        private static bool Reduces(int current, int next) => next > 0 && (current == 0 || next < current);
+
+        private void Audit(int? tenant, string action, string entity, string id, string detail)
+            => _db.SaasAuditLogs.Add(new Login.Domain.Saas.SaasAuditLog { ClienteAppId = tenant, Action = action,
+                Entity = entity, EntityId = id, Detail = detail, Actor = GetAuditUser(), CreatedAt = _clock.GetUtcNow().UtcDateTime });
+
         [HttpGet]
         public async Task<IActionResult> Clientes(string? ok = null, string? error = null, string? q = null, int pagina = 1)
         {
@@ -196,7 +236,11 @@ namespace Login.Controllers
                 Estado = c.Estado.ToString(), GestorEmail = _db.Users.Where(u => u.Id == c.GestorIdentityUserId).Select(u => u.Email).FirstOrDefault(),
                 MaxTiendas = c.Plan.MaxTiendas, MaxPilotos = c.MaxPilotos ?? c.Plan.MaxPilotos,
                 TiendasCount = c.Tiendas.Count(t => t.Activo), PilotosCount = c.Pilotos.Count(p => p.Activo)
+                , Email = c.Email, FechaFinPlan = c.FechaFinPlan, ProximoCobro = c.ProximoCobro, EsTrial = c.EsTrial
             }).ToListAsync();
+            var expired = await _billing.GetExpiredStatesAsync(clientes.Select(c => c.Id));
+            foreach (var row in clientes)
+                if (row.Activo && expired[row.Id]) { row.Estado = "Vencido"; row.Activo = false; }
             ViewBag.Planes = await _db.Planes.AsNoTracking().Where(p => p.Activo).OrderBy(p => p.Nombre).ToListAsync();
             return View(new ClientesIndexVm { Ok = ok, Error = error, Clientes = clientes, Q = q, Total = total, Pagina = pagina });
         }
@@ -217,6 +261,9 @@ namespace Login.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CrearCliente(ClienteAppCreateVm input)
         {
+            ValidateSubscriptionDates(input);
+            if (string.IsNullOrWhiteSpace(input.NombreComercial)) ModelState.AddModelError(nameof(input.NombreComercial), "Escribe el nombre de la empresa.");
+            if (input.UltimoPago.HasValue || input.ProximoCobro.HasValue) ModelState.AddModelError("", "Los pagos y próximos cobros se generan desde Facturación, al registrar operaciones reales.");
             if (!ModelState.IsValid)
             {
                 ViewBag.Planes = await _db.Planes.AsNoTracking()
@@ -231,7 +278,8 @@ namespace Login.Controllers
             if (plan is null)
                 return RedirectToAction(nameof(Clientes), new { error = "Plan inválido o inactivo." });
 
-            _db.ClientesApp.Add(new ClienteApp
+            await using var createTenantTx = await _db.Database.BeginTransactionAsync();
+            var newTenant = new ClienteApp
             {
                 NombreComercial = input.NombreComercial.Trim(),
 
@@ -248,11 +296,11 @@ namespace Login.Controllers
                 RNC = string.IsNullOrWhiteSpace(input.RNC) ? null : input.RNC.Trim(),
                 ContactoResponsable = string.IsNullOrWhiteSpace(input.ContactoResponsable) ? null : input.ContactoResponsable.Trim(),
 
-                FechaInicioPlan = input.FechaInicioPlan ?? DateTime.UtcNow, // ✅ si viene null -> hoy
-                FechaFinPlan = input.FechaFinPlan,
+                FechaInicioPlan = input.EsTrial ? (input.FechaInicioPlan ?? _billing.Today).Date : _billing.Today,
+                FechaFinPlan = input.EsTrial ? input.FechaFinPlan?.Date : _billing.Today,
 
-                UltimoPago = input.UltimoPago,
-                ProximoCobro = input.ProximoCobro,
+                UltimoPago = null,
+                ProximoCobro = null,
 
                 EsTrial = input.EsTrial,
 
@@ -263,17 +311,22 @@ namespace Login.Controllers
                 Observaciones = string.IsNullOrWhiteSpace(input.Observaciones) ? null : input.Observaciones.Trim(),
 
                 // Auditoría (no cambia lógica, solo deja rastro)
-                UpdatedAt = DateTime.UtcNow,
+                UpdatedAt = _clock.GetUtcNow().UtcDateTime,
                 UpdatedBy = GetAuditUser()
-            });
+            };
+            _db.ClientesApp.Add(newTenant);
 
             await _db.SaveChangesAsync();
+            Audit(newTenant.Id, "EmpresaCreada", "ClienteApp", newTenant.Id.ToString(), $"Empresa creada con plan {plan.Nombre}. Sin pago registrado.");
+            await _db.SaveChangesAsync();
+            await createTenantTx.CommitAsync();
             return RedirectToAction(nameof(Clientes), new { ok = "ClienteApp creado ✅ (falta crear su gestor)" });
         }
 
         [HttpGet]
-        public async Task<IActionResult> EditarCliente(int id)
+        public async Task<IActionResult> EditarCliente(int id, string? error = null)
         {
+            if (!string.IsNullOrWhiteSpace(error)) ModelState.AddModelError("", error);
             var cliente = await _db.ClientesApp.AsNoTracking()
                 .SingleOrDefaultAsync(c => c.Id == id);
 
@@ -323,6 +376,8 @@ namespace Login.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditarCliente(ClienteAppEditVm input)
         {
+            if (string.IsNullOrWhiteSpace(input.NombreComercial)) ModelState.AddModelError(nameof(input.NombreComercial), "Escribe el nombre de la empresa.");
+            if (!Enum.IsDefined(input.Estado)) ModelState.AddModelError(nameof(input.Estado), "Selecciona un estado válido.");
             if (!ModelState.IsValid)
             {
                 ViewBag.Planes = await _db.Planes.AsNoTracking()
@@ -337,15 +392,22 @@ namespace Login.Controllers
             if (cliente is null)
                 return RedirectToAction(nameof(Clientes), new { error = "ClienteApp no existe." });
 
+            if (input.PlanId != cliente.PlanId)
+                return RedirectToAction(nameof(DetalleCliente), new { id = cliente.Id, error = "Cambia el plan desde Suscripción para validar límites y registrar el motivo." });
+
+            await using var editTx = await _quotas.BeginTenantMutationAsync(cliente.Id, requireActive: false);
+            await _db.Entry(cliente).ReloadAsync();
+            if (input.PlanId != cliente.PlanId)
+                return RedirectToAction(nameof(DetalleCliente), new { id = cliente.Id, error = "El plan cambió mientras editabas. Revisa la suscripción actual y vuelve a guardar." });
+
             var plan = await _db.Planes.AsNoTracking()
-                .SingleOrDefaultAsync(p => p.Id == input.PlanId && p.Activo);
+                .SingleOrDefaultAsync(p => p.Id == cliente.PlanId);
             if (plan is null)
                 return RedirectToAction(nameof(Clientes), new { error = "Plan inválido o inactivo." });
 
             cliente.NombreComercial = input.NombreComercial.Trim();
             cliente.Ubicacion = string.IsNullOrWhiteSpace(input.Ubicacion) ? null : input.Ubicacion.Trim();
             cliente.Telefono = string.IsNullOrWhiteSpace(input.Telefono) ? null : input.Telefono.Trim();
-            cliente.PlanId = input.PlanId;
             cliente.Estado = input.Estado;
 
             // =========================
@@ -355,14 +417,8 @@ namespace Login.Controllers
             cliente.RNC = string.IsNullOrWhiteSpace(input.RNC) ? null : input.RNC.Trim();
             cliente.ContactoResponsable = string.IsNullOrWhiteSpace(input.ContactoResponsable) ? null : input.ContactoResponsable.Trim();
 
-            // ✅ si viene null -> hoy, pero sin destruir lo que ya exista
-            cliente.FechaInicioPlan = input.FechaInicioPlan ?? cliente.FechaInicioPlan ?? DateTime.UtcNow;
-            cliente.FechaFinPlan = input.FechaFinPlan;
-
-            cliente.UltimoPago = input.UltimoPago;
-            cliente.ProximoCobro = input.ProximoCobro;
-
-            cliente.EsTrial = input.EsTrial;
+            // Cobertura, prueba y fechas de pago se gestionan por el libro SaaS;
+            // la edición del perfil no puede simular un pago ni ampliar su vigencia.
 
             cliente.MaxUsuarios = input.MaxUsuarios;
             cliente.MaxOrdenesMes = input.MaxOrdenesMes;
@@ -371,11 +427,37 @@ namespace Login.Controllers
             cliente.Observaciones = string.IsNullOrWhiteSpace(input.Observaciones) ? null : input.Observaciones.Trim();
 
             // Auditoría automática
-            cliente.UpdatedAt = DateTime.UtcNow;
+            cliente.UpdatedAt = _clock.GetUtcNow().UtcDateTime;
             cliente.UpdatedBy = GetAuditUser();
 
+            var effectivePilots = input.MaxPilotos ?? plan.MaxPilotos;
+            var effectiveOrders = input.MaxOrdenesMes ?? plan.MaxOrdenesPorMes;
+            var monthStart = DateTime.SpecifyKind(new DateTime(_billing.Today.Year, _billing.Today.Month, 1).AddHours(4), DateTimeKind.Utc);
+            if ((effectivePilots > 0 && await _db.Pilotos.CountAsync(p => p.ClienteAppId == cliente.Id && p.Activo) > effectivePilots)
+                || (input.MaxUsuarios is > 0 && await _quotas.CountUsersAsync(cliente.Id) > input.MaxUsuarios)
+                || (effectiveOrders > 0 && await _db.OrdenesEntrega.CountAsync(o => o.ClienteAppId == cliente.Id && o.CreatedAt >= monthStart && o.CreatedAt < monthStart.AddMonths(1)) > effectiveOrders))
+                return RedirectToAction(nameof(EditarCliente), new { id = cliente.Id, error = "Los límites nuevos son menores que el uso actual. Ajusta el plan sin eliminar usuarios ni órdenes." });
+            Audit(cliente.Id, "EmpresaEditada", "ClienteApp", cliente.Id.ToString(), $"Perfil actualizado. Estado {cliente.Estado}. Límites efectivos pilotos/órdenes/usuarios {effectivePilots}/{effectiveOrders}/{input.MaxUsuarios ?? 0}.");
             await _db.SaveChangesAsync();
+            await editTx.CommitAsync();
             return RedirectToAction(nameof(Clientes), new { ok = "ClienteApp actualizado ✅" });
+        }
+
+        private void ValidateSubscriptionDates(ClienteAppCreateVm input)
+        {
+            if ((input.FechaInicioPlan.HasValue && input.FechaInicioPlan.Value.Year is < 2000 or > 2100)
+                || (input.FechaFinPlan.HasValue && input.FechaFinPlan.Value.Year is < 2000 or > 2100))
+            { ModelState.AddModelError("", "Las fechas de suscripción deben estar entre 2000 y 2100."); return; }
+            if (!input.EsTrial && input.FechaFinPlan?.Date > _billing.Today)
+                ModelState.AddModelError(nameof(input.FechaFinPlan), "La cobertura de pago se genera al confirmar una factura. Sólo un período de prueba explícito admite una fecha de fin inicial.");
+            if (!input.EsTrial && input.FechaInicioPlan?.Date > _billing.Today)
+                ModelState.AddModelError(nameof(input.FechaInicioPlan), "El inicio de una suscripción pagada se establece desde su factura; no se concede cobertura futura desde el alta.");
+            if (input.EsTrial && input.FechaFinPlan?.Date > (input.FechaInicioPlan?.Date ?? _billing.Today).AddDays(90))
+                ModelState.AddModelError(nameof(input.FechaFinPlan), "La prueba no puede superar 90 días; una suscripción pagada se renueva desde Facturación.");
+            if (input.FechaFinPlan.HasValue && input.FechaFinPlan.Value.Date < (input.FechaInicioPlan?.Date ?? _billing.Today))
+                ModelState.AddModelError(nameof(input.FechaFinPlan), "El fin debe ser igual o posterior al inicio.");
+            if (input.EsTrial && !input.FechaFinPlan.HasValue)
+                ModelState.AddModelError(nameof(input.FechaFinPlan), "Una prueba necesita fecha de vencimiento.");
         }
 
 
@@ -645,6 +727,7 @@ namespace Login.Controllers
 
             // ✅ amarrar gestor al tenant
             cliente.GestorIdentityUserId = user.Id;
+            Audit(cliente.Id, "GestorCreado", "Usuario", user.Id, $"Gestor {email} vinculado sólo a esta empresa.");
             await _db.SaveChangesAsync();
 
             await tx.CommitAsync();

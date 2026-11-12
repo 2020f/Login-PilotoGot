@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using Login.Application.Interfaces;
+using Login.Application.Exceptions;
+using Login.Application.Operations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,32 +23,61 @@ namespace Login.Controllers.Api
             _logger = logger;
         }
 
-        public sealed record ConfirmarRecolectaRequest(string CodigoB, int? OrdenId = null);
-        public sealed record ConfirmarEntregaRequest(string CodigoB, string CodigoC, int? OrdenId = null);
+        public sealed record ConfirmarRecolectaRequest(string CodigoB, int? OrdenId = null, string? OperacionId = null);
+        public sealed record ConfirmarEntregaRequest(string? CodigoB, string CodigoC, int? OrdenId = null);
+        public sealed record ConfirmarParadaRequest(string CodigoC, string OperacionId);
         public sealed record UbicacionRequest(double Latitud, double Longitud);
         public sealed record EstadoRequest(bool EnLinea);
 
         private string GetUserId()
             => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+        private bool SoportaParadas => int.TryParse(Request.Headers["X-Contrato-Ordenes"].ToString(), out var v) && v >= 3;
+
+        [HttpGet("capacidades")]
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Capacidades() => Ok(new { versionContrato = 3, multiparada = true,
+            cierreSoloC = true, confirmacionParadaIdempotente = true });
+
+        [HttpPost("ordenes/{ordenId:int}/paradas/{paradaId:int}/confirmar-entrega")]
+        [EnableRateLimiting("CodigosEntrega")]
+        public async Task<IActionResult> ConfirmarParada(int ordenId, int paradaId, [FromBody] ConfirmarParadaRequest request)
+            => await RunAsync(() => _svc.ConfirmarEntregaParadaAsync(GetUserId(), ordenId, paradaId,
+                request.CodigoC, request.OperacionId));
 
         [HttpGet("mi-orden")]
         public async Task<IActionResult> MiOrden()
-            => await RunAsync(() => _svc.GetOrdenActualAsync(GetUserId()));
+            => await RunAsync(async () => (await _svc.GetOrdenesAsync(GetUserId()))
+                .FirstOrDefault(o => SoportaParadas || o.Paradas.Count <= 1));
+
+        [HttpGet("historial")]
+        public async Task<IActionResult> Historial(int pagina = 1, int tamano = 30)
+            => await RunAsync(() => _svc.GetHistorialAsync(GetUserId(), pagina, tamano));
+
+        [HttpGet("historial/{ordenId:int}")]
+        public async Task<IActionResult> Historica(int ordenId)
+            => await RunAsync(() => _svc.GetOrdenHistoricaAsync(GetUserId(), ordenId));
 
         [HttpGet("mis-ordenes")]
         public async Task<IActionResult> MisOrdenes()
-            => await RunAsync(() => _svc.GetOrdenesAsync(GetUserId()));
+            => await RunAsync(async () => (await _svc.GetOrdenesAsync(GetUserId()))
+                .Where(o => SoportaParadas || o.Paradas.Count <= 1).ToList());
 
         [HttpGet("ordenes/{ordenId:int}")]
         public async Task<IActionResult> OrdenDetalle(int ordenId)
-            => await RunAsync(() => _svc.GetOrdenDetalleAsync(GetUserId(), ordenId));
+            => await RunAsync(async () => {
+                var orden = await _svc.GetOrdenDetalleAsync(GetUserId(), ordenId);
+                return orden is not null && (SoportaParadas || orden.Paradas.Count <= 1) ? orden : null;
+            });
 
         [HttpPost("confirmar-recolecta")]
         [EnableRateLimiting("CodigosEntrega")]
         public async Task<IActionResult> ConfirmarRecolecta([FromBody] ConfirmarRecolectaRequest request)
             => await RunAsync(async () =>
             {
-                await _svc.ConfirmarRecolectaAsync(GetUserId(), request.CodigoB, request.OrdenId);
+                if (!SoportaParadas && request.OrdenId.HasValue
+                    && (await _svc.GetOrdenDetalleAsync(GetUserId(), request.OrdenId.Value))?.Paradas.Count > 1)
+                    throw new InvalidOperationException("Actualiza la app para recoger una orden con varias paradas.");
+                await _svc.ConfirmarRecolectaAsync(GetUserId(), request.CodigoB, request.OrdenId, request.OperacionId);
                 return new { ok = true };
             });
 
@@ -55,7 +86,7 @@ namespace Login.Controllers.Api
         public async Task<IActionResult> ConfirmarEntrega([FromBody] ConfirmarEntregaRequest request)
             => await RunAsync(async () =>
             {
-                await _svc.ConfirmarEntregaAsync(GetUserId(), request.CodigoB, request.CodigoC, request.OrdenId);
+                await _svc.ConfirmarEntregaAsync(GetUserId(), request.CodigoB ?? "", request.CodigoC, request.OrdenId);
                 return new { ok = true };
             });
 
@@ -63,12 +94,16 @@ namespace Login.Controllers.Api
 
         [HttpGet("ordenes-auto")]
         public async Task<IActionResult> OrdenesAuto()
-            => await RunAsync(() => _svc.GetOrdenesAutoAsync(GetUserId()));
+            => await RunAsync(async () => (await _svc.GetOrdenesAutoAsync(GetUserId()))
+                .Where(o => SoportaParadas || o.TotalParadas <= 1).ToList());
 
         [HttpPost("ordenes-auto/{ordenId:int}/aceptar")]
         public async Task<IActionResult> AceptarOrdenAuto(int ordenId)
             => await RunAsync(async () =>
             {
+                if (!SoportaParadas && (await _svc.GetOrdenesAutoAsync(GetUserId()))
+                    .Any(o => o.OrdenId == ordenId && o.TotalParadas > 1))
+                    throw new InvalidOperationException("Actualiza la app para aceptar una orden con varias paradas.");
                 await _svc.AceptarOrdenAutoAsync(GetUserId(), ordenId);
                 return new { ok = true };
             });
@@ -111,6 +146,18 @@ namespace Login.Controllers.Api
             {
                 var result = await action();
                 return Ok(result);
+            }
+            catch (OperationsException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.Message });
+            }
+            catch (OperacionOrdenConflictoException ex)
+            {
+                return Conflict(new { error = ex.Message });
+            }
+            catch (OrdenSolicitudRechazadaException ex)
+            {
+                return BadRequest(new { error = ex.Message, solicitudRechazada = true });
             }
             catch (InvalidOperationException ex)
             {

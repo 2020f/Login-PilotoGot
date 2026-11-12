@@ -84,7 +84,7 @@ public sealed class StoreContextAndAccessTests : IAsyncLifetime
         response.EnsureSuccessStatusCode();
         Assert.True(response.Headers.CacheControl?.NoStore);
         var contract = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(2, contract.GetProperty("versionContrato").GetInt32());
+        Assert.Equal(3, contract.GetProperty("versionContrato").GetInt32());
         Assert.True(contract.GetProperty("creacionIdempotente").GetBoolean());
         Assert.True(contract.GetProperty("contextoTienda").GetBoolean());
         shop.DefaultRequestHeaders.Remove("X-Tienda-Id");

@@ -20,14 +20,17 @@ namespace Login.Controllers
         private readonly ApplicationDbContext _db;
         private readonly IOrdenService _ordenService;
         private readonly IUserContextService _userCtx;
+        private readonly ITiendaAppService _tiendaService;
         private readonly ILogger<TiendaController> _logger;
 
-        public TiendaController(ApplicationDbContext db, IOrdenService ordenService, IUserContextService userCtx, ILogger<TiendaController> logger)
+        public TiendaController(ApplicationDbContext db, IOrdenService ordenService, IUserContextService userCtx, ILogger<TiendaController> logger,
+            ITiendaAppService tiendaService)
         {
             _db = db;
             _ordenService = ordenService;
             _userCtx = userCtx;
             _logger = logger;
+            _tiendaService = tiendaService;
         }
 
         private string GetUserId()
@@ -267,7 +270,8 @@ namespace Login.Controllers
             // ✅ Regla: no se puede borrar si tiene órdenes
             var tieneOrdenes = await _db.OrdenesEntrega
                 .AsNoTracking()
-                .AnyAsync(o => o.UsuarioFinalId == u.Id);
+                .AnyAsync(o => o.UsuarioFinalId == u.Id)
+                || await _db.ParadasEntrega.AsNoTracking().AnyAsync(p => p.UsuarioFinalId == u.Id);
 
             if (tieneOrdenes)
                 return RedirectToAction(nameof(UsuariosFinales), new { error = "No puedes eliminar: este usuario final ya tiene órdenes." });
@@ -299,7 +303,8 @@ namespace Login.Controllers
 
             var tieneOrdenes = await _db.OrdenesEntrega
                 .AsNoTracking()
-                .AnyAsync(o => o.UsuarioFinalId == u.Id);
+                .AnyAsync(o => o.UsuarioFinalId == u.Id)
+                || await _db.ParadasEntrega.AsNoTracking().AnyAsync(p => p.UsuarioFinalId == u.Id);
 
             if (tieneOrdenes)
                 return RedirectToAction(nameof(UsuariosFinales), new { error = "No puedes eliminar: este usuario final ya tiene órdenes." });
@@ -364,6 +369,11 @@ namespace Login.Controllers
                 catch { return RedirectToAction(nameof(SeleccionarTienda)); }
             }
             if (tienda is null) return Forbid();
+            if (!input.EsEscala && input.UsuarioFinalId <= 0) ModelState.AddModelError(nameof(input.UsuarioFinalId), "Selecciona el destinatario.");
+            if (input.EsEscala && (input.Destinatarios.Count < 2 || input.Destinatarios.Count > 100))
+                ModelState.AddModelError(nameof(input.Destinatarios), "Una orden con escalas requiere entre 2 y 100 destinatarios.");
+            if (input.EsEscala && input.Destinatarios.Select(d => d.UsuarioFinalId).Distinct().Count() != input.Destinatarios.Count)
+                ModelState.AddModelError(nameof(input.Destinatarios), "Selecciona cada destinatario una sola vez.");
             if (!ModelState.IsValid)
             {
                 input.Error = "Revisa los datos de la orden.";
@@ -373,7 +383,8 @@ namespace Login.Controllers
             try
             {
                 var res = await _ordenService.CrearOrdenAsync(tienda.ClienteAppId, tienda.Id, input.UsuarioFinalId,
-                    input.NotaPedido, GetUserId(), "Cliente", input.OperacionId);
+                    input.NotaPedido, GetUserId(), "Cliente", input.OperacionId,
+                    input.EsEscala ? input.Destinatarios.Select(d => new OrdenDestinatarioRequest(d.UsuarioFinalId, d.Instrucciones)).ToList() : null);
                 return RedirectToAction(nameof(Comprobante), new { ordenId = res.OrdenId, tiendaId = tienda.Id });
             }
             catch (InvalidOperationException ex) { input.Error = ex.Message; }
@@ -389,38 +400,40 @@ namespace Login.Controllers
 
         [HttpGet]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public async Task<IActionResult> Comprobante(int ordenId)
+        public async Task<IActionResult> Comprobante(int ordenId, int? tiendaId = null)
         {
-            var vm = await ConstruirComprobanteAsync(ordenId);
+            var vm = await ConstruirComprobanteAsync(ordenId, tiendaId);
             return vm is null ? NotFound() : View(vm);
         }
 
         [HttpGet]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public async Task<IActionResult> QrCodigos(int ordenId)
+        public async Task<IActionResult> QrCodigos(int ordenId, int? tiendaId = null)
         {
-            var vm = await ConstruirComprobanteAsync(ordenId);
+            var vm = await ConstruirComprobanteAsync(ordenId, tiendaId);
             return vm is null ? NotFound() : PartialView("_ModalQrCodigos", vm);
         }
 
-        private async Task<QrCodigosVm?> ConstruirComprobanteAsync(int ordenId)
+        private async Task<QrCodigosVm?> ConstruirComprobanteAsync(int ordenId, int? tiendaId)
         {
-            Tienda tienda;
-            try { tienda = await GetTiendaActivaAsync(); }
-            catch { return null; }
-            var orden = await _db.OrdenesEntrega.AsNoTracking().Include(o => o.UsuarioFinal).Include(o => o.Codigos)
-                .SingleOrDefaultAsync(o => o.Id == ordenId && o.TiendaId == tienda.Id && o.ClienteAppId == tienda.ClienteAppId);
+            var actor = GetUserId();
+            var orden = await _db.OrdenesEntrega.AsNoTracking().Include(o => o.Tienda).Include(o => o.UsuarioFinal).Include(o => o.Codigos)
+                .Include(o => o.Paradas).ThenInclude(p => p.Codigos)
+                .SingleOrDefaultAsync(o => o.Id == ordenId && (!tiendaId.HasValue || o.TiendaId == tiendaId.Value)
+                    && o.Tienda.Activo && o.ClienteApp.Estado == EstadoClienteApp.Activo
+                    && _db.UsuariosTienda.Any(m => m.IdentityUserId == actor && m.TiendaId == o.TiendaId && m.Activo));
             if (orden is null) return null;
             return new QrCodigosVm
             {
-                OrdenId = orden.Id, TiendaId = tienda.Id, NumeroOrdenA = orden.NumeroOrdenA, CodigoA = orden.CodigoA,
+                OrdenId = orden.Id, TiendaId = orden.TiendaId, NumeroOrdenA = orden.NumeroOrdenA, CodigoA = orden.CodigoA,
                 Estado = orden.Estado.ToString(),
                 CodigoB = orden.Codigos.Single(c => c.Tipo == TipoCodigo.B_Recoleccion).Codigo,
-                CodigoC = orden.Codigos.Single(c => c.Tipo == TipoCodigo.C_Finalizacion).Codigo,
-                UsuarioFinalNombre = orden.DatosEntregaCongelados ? orden.DestinoNombre : orden.UsuarioFinal.Nombre,
-                DireccionUbicacion = orden.DatosEntregaCongelados ? orden.DestinoDireccion : orden.UsuarioFinal.DireccionUbicacion,
-                MapaLink = orden.DatosEntregaCongelados ? orden.DestinoMapaLink : orden.UsuarioFinal.MapaLink,
-                Descripcion = orden.NotaPedido
+                CodigoC = orden.Paradas.Count <= 1 ? orden.Codigos.FirstOrDefault(c => c.Tipo == TipoCodigo.C_Finalizacion)?.Codigo ?? "" : "",
+                UsuarioFinalNombre = orden.Paradas.Count > 1 ? $"{orden.Paradas.Count} destinatarios" : orden.DatosEntregaCongelados ? orden.DestinoNombre : orden.UsuarioFinal?.Nombre ?? "",
+                DireccionUbicacion = orden.Paradas.Count > 1 ? "Consulta las paradas y sus códigos individuales." : orden.DatosEntregaCongelados ? orden.DestinoDireccion : orden.UsuarioFinal?.DireccionUbicacion ?? "",
+                MapaLink = orden.Paradas.Count > 1 ? null : orden.DatosEntregaCongelados ? orden.DestinoMapaLink : orden.UsuarioFinal?.MapaLink,
+                Descripcion = orden.NotaPedido,
+                Paradas = orden.Paradas.OrderBy(p => p.Posicion).Select(p => new QrParadaVm { Id = p.Id, Posicion = p.Posicion, Nombre = p.Nombre, Direccion = p.Direccion, Estado = p.Estado.ToString(), CodigoC = p.Codigos.Single(c => c.Tipo == TipoCodigo.C_Finalizacion).Codigo }).ToList()
             };
         }
 
@@ -429,37 +442,28 @@ namespace Login.Controllers
     // ==========================
 
     [HttpGet]
-        public async Task<IActionResult> Ordenes(string? ok = null, string? error = null)
+        public async Task<IActionResult> Ordenes(string? ok = null, string? error = null, int paginaHistorial = 1,
+            int tamanoHistorial = 30, string? buscarHistorial = null)
         {
             Tienda tienda;
             try { tienda = await GetTiendaActivaAsync(); }
             catch { return RedirectToAction(nameof(SeleccionarTienda)); }
 
+            PaginaOrdenesTiendaDto historial;
+            try { historial = await _tiendaService.GetHistorialOrdenesAsync(GetUserId(), paginaHistorial, tamanoHistorial, buscarHistorial); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            var activas = await _tiendaService.GetOrdenesActivasAsync(GetUserId());
             var vm = new OrdenesTiendaVm
             {
                 TiendaId = tienda.Id,
-                Ordenes = await _db.OrdenesEntrega.AsNoTracking()
-                    .Include(o => o.UsuarioFinal)
-                    .Where(o => o.TiendaId == tienda.Id)
-                    .OrderByDescending(o => o.CreatedAt)
-                    .Take(200)
-                    .Select(o => new OrdenTiendaRowVm
-                    {
-                        OrdenId = o.Id,
-                        NumeroOrdenA = o.NumeroOrdenA,
-                    CodigoA = o.CodigoA,
-                        Estado = o.Estado.ToString(),
-                        EstadoNum = (int)o.Estado,
-                        UsuarioFinal = o.DatosEntregaCongelados ? o.DestinoNombre : o.UsuarioFinal.Nombre,
-                        CreatedAt = o.CreatedAt,
-                        AssignedAt = o.AssignedAt,
-                        RecolectadaAt = o.RecolectadaAt,
-                        EntregadaAt = o.EntregadaAt,
-                        Precio = o.Precio,
-                        DistanciaKm = o.DistanciaKm
-                    })
-                    .ToListAsync()
+                Activas = activas.Select(OrdenTiendaRow).ToList(),
+                Historial = historial.Items.Select(OrdenTiendaRow).ToList(),
+                PaginaHistorial = historial.Pagina, TamanoHistorial = historial.Tamano,
+                TotalHistorial = historial.Total, TotalPaginasHistorial = historial.TotalPaginas,
+                BuscarHistorial = buscarHistorial?.Trim(),
+                Resumen = await _tiendaService.GetResumenOrdenesAsync(GetUserId())
             };
+            vm.Ordenes = vm.Activas.Concat(vm.Historial).ToList();
 
             // mensajes por querystring
             // (si tu vm no tiene Ok/Error, no pasa nada, puedes ignorarlos)
@@ -468,5 +472,13 @@ namespace Login.Controllers
 
             return View(vm);
         }
+
+        private static OrdenTiendaRowVm OrdenTiendaRow(OrdenTiendaDto o) => new()
+        {
+            OrdenId = o.OrdenId, NumeroOrdenA = o.NumeroOrdenA, CodigoA = o.CodigoA,
+            Estado = o.Estado, EstadoNum = o.EstadoNum, UsuarioFinal = o.UsuarioFinal,
+            CreatedAt = o.CreatedAt, AssignedAt = o.AssignedAt, RecolectadaAt = o.RecolectadaAt,
+            EntregadaAt = o.EntregadaAt, Precio = o.Precio, DistanciaKm = o.DistanciaKm
+        };
     }
 }

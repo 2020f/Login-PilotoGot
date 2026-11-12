@@ -1,0 +1,63 @@
+@model Login.ViewModels.SuperAdmin.SistemaVm
+@{ Layout = "_LayoutSuperAdmin"; ViewData["Title"] = "Estado del sistema"; }
+<div class="sa-page-head">
+<div>
+<h2>Estado del sistema</h2>
+<p>Comprueba los servicios y controles necesarios para administrar Envirapido.</p>
+</div>
+<a class="sa-btn" asp-action="Sistema">Actualizar comprobación</a>
+</div>
+<div class="sa-grid-equal">
+<section class="sa-card sa-card-pad">
+<h3>Servicios e integraciones</h3>
+<div class="sa-readiness"><div><strong>Runtime .NET @Model.RuntimeVersion</strong><p>Compatibilidad con el ciclo de soporte de Microsoft.</p></div><span class="sa-pill @(Model.RuntimeEnSoporte ? "sa-pill-ok" : "sa-pill-bad")">@(Model.RuntimeEnSoporte ? "En soporte" : "Requiere actualización")</span></div>
+@if(!Model.RuntimeEnSoporte){<div class="sa-notice sa-notice-warning">Actualizar a un runtime con soporte antes de producción. <a href="https://dotnet.microsoft.com/en-us/platform/support/policy" target="_blank" rel="noopener noreferrer">Consultar política oficial</a>.</div>}
+<div class="sa-readiness">
+<div>
+<strong>Base de datos</strong>
+<p>Conectividad del servidor con su base configurada.</p>
+</div>
+<span class="sa-pill @(Model.BaseDisponible ? "sa-pill-ok" : "sa-pill-bad")">@(Model.BaseDisponible ? "Disponible" : "No disponible")</span>
+</div>
+<div class="sa-readiness">
+<div>
+<strong>Esquema de datos</strong>
+<p>Comprueba si existen migraciones pendientes.</p>
+</div>
+<span class="sa-pill @(Model.MigracionesPendientes ? "sa-pill-warn" : "sa-pill-ok")">@(Model.MigracionesPendientes ? "Revisar migraciones" : "Sin pendientes")</span>
+</div>
+<div class="sa-readiness">
+<div>
+<strong>Correo transaccional</strong>
+<p>Configuración para confirmaciones y recuperación de cuentas.</p>
+</div>
+<span class="sa-pill @(Model.CorreoConfigurado ? "sa-pill-info" : "sa-pill-warn")">@(Model.CorreoConfigurado ? "Configurado" : "Sin configurar")</span>
+</div>
+<div class="sa-readiness">
+<div>
+<strong>Mapas</strong>
+<p>Configuración de mapas y recorridos de la operación.</p>
+</div>
+<span class="sa-pill @(Model.MapasConfigurados ? "sa-pill-info" : "sa-pill-warn")">@(Model.MapasConfigurados ? "Configurados" : "Sin configurar")</span>
+</div>
+<p class="sa-sub sa-section-gap">Configurado indica presencia de configuración; no sustituye una prueba real de entrega de correo o del proveedor de mapas.</p>
+</section>
+<section class="sa-card sa-card-pad">
+<h3>Seguridad y entorno</h3>
+<dl class="sa-definition">
+<dt>Entorno</dt>
+<dd>@Model.Entorno</dd>
+<dt>Superadministradores</dt>
+<dd>@Model.SuperAdministradores</dd>
+<dt>Usuarios con bloqueo de acceso</dt>
+<dd>@Model.UsuariosBloqueados</dd>
+<dt>Última comprobación</dt>
+<dd>@Model.ComprobadoAt.AddHours(-4).ToString("dd/MM/yyyy HH:mm:ss")</dd>
+<dt>Zona de presentación</dt>
+<dd>Santo Domingo (UTC−4)</dd>
+</dl>
+<div class="sa-notice sa-section-gap">Los cambios administrativos requieren un usuario autorizado. Los cobros y decisiones conservan auditoría; cada empresa mantiene su aislamiento.</div>
+<a class="sa-btn" asp-action="Auditoria">Consultar auditoría</a>
+</section>
+</div>
+<div class="sa-notice sa-notice-warning sa-section-gap">Esta vista no ejecuta despliegues ni copias de seguridad. La preparación de producción requiere validar el entorno de destino, sus integraciones, respaldo y recuperación.</div>

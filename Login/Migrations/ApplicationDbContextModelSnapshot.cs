@@ -145,6 +145,9 @@ namespace Login.Migrations
                     b.Property<int>("OrdenEntregaId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("ParadaEntregaId")
+                        .HasColumnType("int");
+
                     b.Property<bool>("Reservado")
                         .HasColumnType("bit");
 
@@ -161,14 +164,24 @@ namespace Login.Migrations
 
                     b.HasIndex("Codigo");
 
+                    b.HasIndex("ParadaEntregaId")
+                        .IsUnique()
+                        .HasFilter("[ParadaEntregaId] IS NOT NULL");
+
                     b.HasIndex("OrdenEntregaId", "Tipo")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[ParadaEntregaId] IS NULL");
+
+                    b.HasIndex("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId");
 
                     b.HasIndex("ClienteAppId", "Tipo", "Codigo")
                         .IsUnique()
                         .HasFilter("[Reservado] = 1");
 
-                    b.ToTable("CodigosEntrega");
+                    b.ToTable("CodigosEntrega", t =>
+                        {
+                            t.HasCheckConstraint("CK_CodigoEntrega_ParadaTipo", "([Tipo] = 1 AND [ParadaEntregaId] IS NULL) OR [Tipo] = 2");
+                        });
                 });
 
             modelBuilder.Entity("Login.Domain.Entities.HistorialOrden", b =>
@@ -240,6 +253,9 @@ namespace Login.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ResultadoJson")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Tipo")
                         .IsRequired()
@@ -344,6 +360,9 @@ namespace Login.Migrations
                     b.Property<int>("Estado")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("FinalizadaAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("NotaPedido")
                         .HasMaxLength(400)
                         .HasColumnType("nvarchar(400)");
@@ -385,7 +404,7 @@ namespace Login.Migrations
                     b.Property<int>("TiendaId")
                         .HasColumnType("int");
 
-                    b.Property<int>("UsuarioFinalId")
+                    b.Property<int?>("UsuarioFinalId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -398,12 +417,88 @@ namespace Login.Migrations
 
                     b.HasIndex("ClienteAppId", "CodigoA")
                         .IsUnique()
-                        .HasFilter("[CodigoA] IS NOT NULL AND [Estado] <> 4");
+                        .HasFilter("[CodigoA] IS NOT NULL AND [Estado] <> 4 AND [Estado] <> 6 AND [Estado] <> 7 AND [Estado] <> 8");
 
                     b.HasIndex("ClienteAppId", "NumeroOrdenA")
                         .IsUnique();
 
                     b.ToTable("OrdenesEntrega");
+                });
+
+            modelBuilder.Entity("Login.Domain.Entities.ParadaEntrega", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DevueltaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Direccion")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<DateTime?>("EntregadaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Instrucciones")
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<double?>("Latitud")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Longitud")
+                        .HasColumnType("float");
+
+                    b.Property<string>("MapaLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("OrdenEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Posicion")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Telefono")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("TiendaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsuarioFinalId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrdenEntregaId", "Posicion")
+                        .IsUnique();
+
+                    b.HasIndex("TiendaId", "UsuarioFinalId");
+
+                    b.HasIndex("ClienteAppId", "OrdenEntregaId", "TiendaId");
+
+                    b.ToTable("ParadasEntrega");
                 });
 
             modelBuilder.Entity("Login.Domain.Entities.Piloto", b =>
@@ -454,8 +549,6 @@ namespace Login.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ClienteAppId");
 
                     b.ToTable("Pilotos");
                 });
@@ -538,8 +631,6 @@ namespace Login.Migrations
                         .HasColumnType("nvarchar(30)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ClienteAppId");
 
                     b.ToTable("Tiendas");
                 });
@@ -648,8 +739,6 @@ namespace Login.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TiendaId");
-
                     b.ToTable("UsuariosFinales");
                 });
 
@@ -683,6 +772,1350 @@ namespace Login.Migrations
                         .IsUnique();
 
                     b.ToTable("UsuariosTienda");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.ActividadIncidenciaOperativa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Accion")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IncidenciaId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Texto")
+                        .IsRequired()
+                        .HasMaxLength(1500)
+                        .HasColumnType("nvarchar(1500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId", "IncidenciaId");
+
+                    b.ToTable("ActividadesIncidencia");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.CobroOperativo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ConciliadoAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EntregadoEmpresaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Importe")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ImporteEntregadoEmpresa")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ImporteVerificado")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("LiquidacionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nota")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("OrdenEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ParadaEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PilotoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RecibidoEmpresaPor")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Referencia")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("ReferenciaEntregaEmpresa")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("TiendaId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("ClienteAppId", "Id");
+
+                    b.HasIndex("ClienteAppId", "LiquidacionId");
+
+                    b.HasIndex("ClienteAppId", "PilotoId");
+
+                    b.HasIndex("ClienteAppId", "Referencia")
+                        .IsUnique();
+
+                    b.HasIndex("ClienteAppId", "TiendaId");
+
+                    b.HasIndex("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId");
+
+                    b.ToTable("CobrosOperativos");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.DatosEnvioOperativos", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CanceladaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CompromisoEntrega")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MotivoCancelacion")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("NotasOperativas")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("OrdenEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Paquetes")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("PesoKg")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Prioridad")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ProgramadaPara")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Referencia")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Servicio")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int?>("ZonaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("ClienteAppId", "Id");
+
+                    b.HasIndex("ClienteAppId", "OrdenEntregaId")
+                        .IsUnique();
+
+                    b.ToTable("DatosEnviosOperativos");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.DevolucionOperativa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Abierta")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("AutorizadaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DecididaPor")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("IniciadaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("NotaDecision")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ObservacionesRecepcion")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("OrdenEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ParadaEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PilotoId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RecibidaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RecibidaPor")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("SolicitadaPor")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("TiendaRecepcionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("ClienteAppId", "Id");
+
+                    b.HasIndex("ClienteAppId", "ParadaEntregaId")
+                        .IsUnique()
+                        .HasFilter("[Abierta] = 1");
+
+                    b.HasIndex("ClienteAppId", "PilotoId");
+
+                    b.HasIndex("ClienteAppId", "TiendaRecepcionId");
+
+                    b.HasIndex("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId");
+
+                    b.ToTable("DevolucionesOperativas");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.EventoOperativo", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("RecursoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId");
+
+                    b.ToTable("EventosOperativos");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.IncidenciaOperativa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("ClaveDeteccion")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("Efecto")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("OrdenEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ParadaEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Prioridad")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReglaVersion")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("ReportadaPor")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Resolucion")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ResponsableId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ResueltaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("RutaId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("VenceAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId", "ClaveDeteccion")
+                        .IsUnique()
+                        .HasFilter("[ClaveDeteccion] IS NOT NULL");
+
+                    b.HasIndex("ClienteAppId", "RutaId");
+
+                    b.HasIndex("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId");
+
+                    b.ToTable("IncidenciasOperativas", t =>
+                        {
+                            t.HasCheckConstraint("CK_Incidencia_Ambito", "([OrdenEntregaId] IS NOT NULL OR [RutaId] IS NOT NULL) AND ([ParadaEntregaId] IS NULL OR [OrdenEntregaId] IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.LiquidacionOperativa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Ajustes")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("AprobadaPor")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Comisiones")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("Conciliada")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CuentaUltimos4")
+                        .HasMaxLength(4)
+                        .HasColumnType("nvarchar(4)");
+
+                    b.Property<DateOnly>("Desde")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("EfectivoCompensado")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Entregas")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly?>("FechaPago")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("FechaProgramada")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("Hasta")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("Incentivos")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("MetodoPago")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("Moneda")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<decimal>("Neto")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("PagadaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("PilotoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReferenciaPago")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<decimal>("Servicios")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("TiendaId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId", "PilotoId");
+
+                    b.HasIndex("ClienteAppId", "TiendaId");
+
+                    b.ToTable("LiquidacionesOperativas", t =>
+                        {
+                            t.HasCheckConstraint("CK_Liquidacion_Beneficiario", "([PilotoId] IS NOT NULL AND [TiendaId] IS NULL) OR ([PilotoId] IS NULL AND [TiendaId] IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.MovimientoOperativo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("BasesJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ClaveOrigen")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Concepto")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("Importe")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("LiquidacionId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("OrdenEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ParadaEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ReglaId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReglaVersion")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int?>("RutaId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("ClienteAppId", "Id");
+
+                    b.HasIndex("ClienteAppId", "ClaveOrigen")
+                        .IsUnique();
+
+                    b.HasIndex("ClienteAppId", "LiquidacionId");
+
+                    b.HasIndex("ClienteAppId", "ReglaId");
+
+                    b.HasIndex("ClienteAppId", "RutaId");
+
+                    b.HasIndex("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId");
+
+                    b.ToTable("MovimientosOperativos", t =>
+                        {
+                            t.HasCheckConstraint("CK_Movimiento_Parada", "[ParadaEntregaId] IS NULL OR [OrdenEntregaId] IS NOT NULL");
+                        });
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.OperacionEnvirapido", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActorId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Clave")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ResultadoJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId", "ActorId", "Tipo", "Clave")
+                        .IsUnique();
+
+                    b.ToTable("OperacionesEnvirapido");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.PosicionPilotoOperativa", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CapturadoAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DispositivoId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<double>("Latitud")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Longitud")
+                        .HasColumnType("float");
+
+                    b.Property<int>("PilotoId")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("Precision")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("RecibidoAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("Secuencia")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId", "PilotoId", "CapturadoAt");
+
+                    b.HasIndex("ClienteAppId", "PilotoId", "DispositivoId", "Secuencia")
+                        .IsUnique();
+
+                    b.ToTable("PosicionesPilotosOperativas");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.PuntoRutaOperativa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("LlegadaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OrdenEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ParadaEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Posicion")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RutaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RutaOrdenId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RutaId", "Posicion")
+                        .IsUnique();
+
+                    b.HasIndex("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId");
+
+                    b.HasIndex("ClienteAppId", "RutaId", "OrdenEntregaId");
+
+                    b.ToTable("PuntosRutaOperativos", t =>
+                        {
+                            t.HasCheckConstraint("CK_PuntoRuta_Tipo", "([Tipo] = 1 AND [ParadaEntregaId] IS NULL) OR ([Tipo] IN (2, 3) AND [ParadaEntregaId] IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.ReglaIncidenciaOperativa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activa")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("DetectarDemora")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Efecto")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MinutosResolucion")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Prioridad")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("ClienteAppId", "Id");
+
+                    b.HasIndex("ClienteAppId", "Categoria")
+                        .IsUnique();
+
+                    b.ToTable("ReglasIncidencia");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.ReglaRemuneracionOperativa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activa")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("ComisionPorcentaje")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("ImporteFijo")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("IncentivoFijo")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("PorcentajeTarifa")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Unidad")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ReglasRemuneracion");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.RutaOperativa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("Fecha")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("FinalizadaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("IniciadaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<bool>("PermitirReordenarPiloto")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("PilotoId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int?>("ZonaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId", "PilotoId");
+
+                    b.HasIndex("ClienteAppId", "ZonaId");
+
+                    b.ToTable("RutasOperativas");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.RutaOrdenOperativa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OrdenEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RutaId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Vigente")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId", "OrdenEntregaId")
+                        .IsUnique()
+                        .HasFilter("[Vigente] = 1");
+
+                    b.ToTable("RutaOrdenesOperativas");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.ZonaOperativa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activa")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("AvisoPorcentaje")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Capacidad")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("HoraFin")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
+                    b.Property<string>("HoraInicio")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PoligonoJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<double>("SuperficieKm2")
+                        .HasColumnType("float");
+
+                    b.Property<string>("UnidadCapacidad")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId", "Nombre")
+                        .IsUnique();
+
+                    b.ToTable("ZonasOperativas");
+                });
+
+            modelBuilder.Entity("Login.Domain.Saas.SaasAuditLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("After")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Before")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Detail")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Entity")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("OperationKey")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId", "CreatedAt");
+
+                    b.HasIndex("ClienteAppId", "Action", "OperationKey")
+                        .IsUnique()
+                        .HasFilter("[OperationKey] IS NOT NULL");
+
+                    b.ToTable("SaasAuditLogs");
+                });
+
+            modelBuilder.Entity("Login.Domain.Saas.SaasInvoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Concept")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime>("PeriodEnd")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .HasColumnType("date");
+
+                    b.Property<string>("VoidReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("VoidedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId", "DueDate");
+
+                    b.HasIndex("ClienteAppId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("SaasInvoices", t =>
+                        {
+                            t.HasCheckConstraint("CK_SaasInvoice_AmountPeriod", "[Amount] > 0 AND [PeriodEnd] >= [PeriodStart]");
+                        });
+                });
+
+            modelBuilder.Entity("Login.Domain.Saas.SaasPayment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("PaidOn")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ReferenceKey")
+                        .IsRequired()
+                        .HasMaxLength(140)
+                        .HasColumnType("nvarchar(140)");
+
+                    b.Property<string>("VoidReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("VoidedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("ClienteAppId", "InvoiceId");
+
+                    b.HasIndex("ClienteAppId", "ReferenceKey")
+                        .IsUnique();
+
+                    b.ToTable("SaasPayments", t =>
+                        {
+                            t.HasCheckConstraint("CK_SaasPayment_Amount", "[Amount] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Login.Domain.Saas.SaasPlanRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("PreviousPlanId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("RequestedBy")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("RequestedPlanId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Resolution")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ResolutionKey")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<bool?>("ResolutionResetOverrides")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ResolvedBy")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId")
+                        .IsUnique()
+                        .HasFilter("[Status] = 'Pendiente'");
+
+                    b.HasIndex("RequestedPlanId");
+
+                    b.HasIndex("ClienteAppId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("SaasPlanRequests", t =>
+                        {
+                            t.HasCheckConstraint("CK_SaasPlanRequest_Status", "[Status] IN ('Pendiente','Aprobada','Rechazada')");
+                        });
+                });
+
+            modelBuilder.Entity("Login.Domain.Saas.SaasSubscription", b =>
+                {
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("BaselineEnd")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("BaselineStart")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("BaselineTrial")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ClienteAppId");
+
+                    b.ToTable("SaasSubscriptions");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -904,13 +2337,22 @@ namespace Login.Migrations
 
                     b.HasOne("Login.Domain.Entities.OrdenEntrega", "OrdenEntrega")
                         .WithMany("Codigos")
-                        .HasForeignKey("OrdenEntregaId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.ParadaEntrega", "ParadaEntrega")
+                        .WithMany("Codigos")
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "OrdenEntregaId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ClienteApp");
 
                     b.Navigation("OrdenEntrega");
+
+                    b.Navigation("ParadaEntrega");
                 });
 
             modelBuilder.Entity("Login.Domain.Entities.HistorialOrden", b =>
@@ -984,14 +2426,34 @@ namespace Login.Migrations
                     b.HasOne("Login.Domain.Entities.UsuarioFinal", "UsuarioFinal")
                         .WithMany("Ordenes")
                         .HasForeignKey("UsuarioFinalId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ClienteApp");
 
                     b.Navigation("Piloto");
 
                     b.Navigation("Tienda");
+
+                    b.Navigation("UsuarioFinal");
+                });
+
+            modelBuilder.Entity("Login.Domain.Entities.ParadaEntrega", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.UsuarioFinal", "UsuarioFinal")
+                        .WithMany()
+                        .HasForeignKey("TiendaId", "UsuarioFinalId")
+                        .HasPrincipalKey("TiendaId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.OrdenEntrega", "OrdenEntrega")
+                        .WithMany("Paradas")
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId", "TiendaId")
+                        .HasPrincipalKey("ClienteAppId", "Id", "TiendaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("OrdenEntrega");
 
                     b.Navigation("UsuarioFinal");
                 });
@@ -1049,6 +2511,441 @@ namespace Login.Migrations
                         .IsRequired();
 
                     b.Navigation("Tienda");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.ActividadIncidenciaOperativa", b =>
+                {
+                    b.HasOne("Login.Domain.Operations.IncidenciaOperativa", "Incidencia")
+                        .WithMany("Actividad")
+                        .HasForeignKey("ClienteAppId", "IncidenciaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Incidencia");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.CobroOperativo", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Operations.LiquidacionOperativa", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "LiquidacionId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Entities.OrdenEntrega", "OrdenEntrega")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.Piloto", "Piloto")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "PilotoId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.Tienda", "Tienda")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "TiendaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.ParadaEntrega", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "OrdenEntregaId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ClienteApp");
+
+                    b.Navigation("OrdenEntrega");
+
+                    b.Navigation("Piloto");
+
+                    b.Navigation("Tienda");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.DatosEnvioOperativos", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.OrdenEntrega", "OrdenEntrega")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ClienteApp");
+
+                    b.Navigation("OrdenEntrega");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.DevolucionOperativa", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.OrdenEntrega", "OrdenEntrega")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.Piloto", "Piloto")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "PilotoId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.Tienda", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "TiendaRecepcionId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Entities.ParadaEntrega", "ParadaEntrega")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "OrdenEntregaId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ClienteApp");
+
+                    b.Navigation("OrdenEntrega");
+
+                    b.Navigation("ParadaEntrega");
+
+                    b.Navigation("Piloto");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.EventoOperativo", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.IncidenciaOperativa", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.OrdenEntrega", "OrdenEntrega")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Operations.RutaOperativa", "Ruta")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "RutaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Entities.ParadaEntrega", "ParadaEntrega")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "OrdenEntregaId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ClienteApp");
+
+                    b.Navigation("OrdenEntrega");
+
+                    b.Navigation("ParadaEntrega");
+
+                    b.Navigation("Ruta");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.LiquidacionOperativa", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.Piloto", "Piloto")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "PilotoId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Entities.Tienda", "Tienda")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "TiendaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ClienteApp");
+
+                    b.Navigation("Piloto");
+
+                    b.Navigation("Tienda");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.MovimientoOperativo", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Operations.LiquidacionOperativa", "Liquidacion")
+                        .WithMany("Movimientos")
+                        .HasForeignKey("ClienteAppId", "LiquidacionId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.OrdenEntrega", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Operations.ReglaRemuneracionOperativa", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "ReglaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Operations.RutaOperativa", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "RutaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Entities.ParadaEntrega", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "OrdenEntregaId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ClienteApp");
+
+                    b.Navigation("Liquidacion");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.OperacionEnvirapido", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.PosicionPilotoOperativa", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.Piloto", "Piloto")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "PilotoId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Piloto");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.PuntoRutaOperativa", b =>
+                {
+                    b.HasOne("Login.Domain.Operations.RutaOperativa", "Ruta")
+                        .WithMany("Puntos")
+                        .HasForeignKey("ClienteAppId", "RutaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.ParadaEntrega", "ParadaEntrega")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "OrdenEntregaId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Operations.RutaOrdenOperativa", "RutaOrden")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "RutaId", "OrdenEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "RutaId", "OrdenEntregaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ParadaEntrega");
+
+                    b.Navigation("Ruta");
+
+                    b.Navigation("RutaOrden");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.ReglaIncidenciaOperativa", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ClienteApp");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.ReglaRemuneracionOperativa", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ClienteApp");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.RutaOperativa", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.Piloto", "Piloto")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "PilotoId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Operations.ZonaOperativa", "Zona")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "ZonaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ClienteApp");
+
+                    b.Navigation("Piloto");
+
+                    b.Navigation("Zona");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.RutaOrdenOperativa", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.OrdenEntrega", "OrdenEntrega")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Operations.RutaOperativa", "Ruta")
+                        .WithMany("Ordenes")
+                        .HasForeignKey("ClienteAppId", "RutaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("OrdenEntrega");
+
+                    b.Navigation("Ruta");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.ZonaOperativa", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ClienteApp");
+                });
+
+            modelBuilder.Entity("Login.Domain.Saas.SaasAuditLog", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ClienteApp");
+                });
+
+            modelBuilder.Entity("Login.Domain.Saas.SaasInvoice", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ClienteApp");
+                });
+
+            modelBuilder.Entity("Login.Domain.Saas.SaasPayment", b =>
+                {
+                    b.HasOne("Login.Domain.Saas.SaasInvoice", "Invoice")
+                        .WithMany("Payments")
+                        .HasForeignKey("ClienteAppId", "InvoiceId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
+                });
+
+            modelBuilder.Entity("Login.Domain.Saas.SaasPlanRequest", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.Plan", "RequestedPlan")
+                        .WithMany()
+                        .HasForeignKey("RequestedPlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ClienteApp");
+
+                    b.Navigation("RequestedPlan");
+                });
+
+            modelBuilder.Entity("Login.Domain.Saas.SaasSubscription", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithOne()
+                        .HasForeignKey("Login.Domain.Saas.SaasSubscription", "ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ClienteApp");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -1114,6 +3011,13 @@ namespace Login.Migrations
                     b.Navigation("Codigos");
 
                     b.Navigation("Historial");
+
+                    b.Navigation("Paradas");
+                });
+
+            modelBuilder.Entity("Login.Domain.Entities.ParadaEntrega", b =>
+                {
+                    b.Navigation("Codigos");
                 });
 
             modelBuilder.Entity("Login.Domain.Entities.Piloto", b =>
@@ -1136,6 +3040,28 @@ namespace Login.Migrations
             modelBuilder.Entity("Login.Domain.Entities.UsuarioFinal", b =>
                 {
                     b.Navigation("Ordenes");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.IncidenciaOperativa", b =>
+                {
+                    b.Navigation("Actividad");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.LiquidacionOperativa", b =>
+                {
+                    b.Navigation("Movimientos");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.RutaOperativa", b =>
+                {
+                    b.Navigation("Ordenes");
+
+                    b.Navigation("Puntos");
+                });
+
+            modelBuilder.Entity("Login.Domain.Saas.SaasInvoice", b =>
+                {
+                    b.Navigation("Payments");
                 });
 #pragma warning restore 612, 618
         }

@@ -15,6 +15,7 @@
     </div>
 
     <div style="margin-top:15px;">
+        @if(User.IsInRole("Gestor")){<p><a href="/Suscripcion">Consultar suscripción y solicitar cambio de plan</a></p>}
         <!-- Logout por Identity (normal en proyectos con Identity UI) -->
         <form method="post" action="/Identity/Account/Logout">
             @Html.AntiForgeryToken()

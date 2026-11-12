@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Login.Application.Interfaces;
 using Login.Data;
 using Login.Domain.Enums;
+using Login.Domain.Operations;
 using Login.ViewModels.Piloto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,11 +18,13 @@ namespace Login.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly IOrdenService _ordenService;
+        private readonly IPilotoAppService _app;
 
-        public PilotoController(ApplicationDbContext db, IOrdenService ordenService)
+        public PilotoController(ApplicationDbContext db, IOrdenService ordenService, IPilotoAppService app)
         {
             _db = db;
             _ordenService = ordenService;
+            _app = app;
         }
 
         private async Task<Login.Domain.Entities.Piloto?> GetPilotoLogueadoAsync(string identityUserId)
@@ -43,41 +46,7 @@ namespace Login.Controllers
             var piloto = await GetPilotoLogueadoAsync(userId);
             if (piloto is null) return Forbid();
 
-            // ✅ Menú inicial: TODAS las órdenes activas del piloto (Asignada + Recolectada)
-            var ordenes = await _db.OrdenesEntrega
-                .AsNoTracking()
-                .Include(o => o.Tienda)
-                .Include(o => o.UsuarioFinal)
-                .Include(o => o.Codigos)
-                .Where(o => o.ClienteAppId == piloto.ClienteAppId && o.PilotoId == piloto.Id &&
-                            (o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada))
-                .OrderByDescending(o => o.AssignedAt ?? o.CreatedAt)
-                .Select(o => new MisOrdenesRowVm
-                {
-                    OrdenId = o.Id,
-                    NumeroOrdenA = o.NumeroOrdenA,
-                    CodigoA = o.CodigoA,
-                    Estado = o.Estado.ToString(),
-                    CreatedAt = o.CreatedAt,
-
-                    PuedeVerDestinoFinal = o.Estado == EstadoOrden.Recolectada,
-
-                    // TIENDA (pickup)
-                    TiendaNombre = o.DatosEntregaCongelados ? o.RecogidaNombre : o.Tienda.Nombre,
-                    TiendaDireccion = o.DatosEntregaCongelados ? o.RecogidaDireccion : o.Tienda.Direccion,
-                    TiendaTelefono = o.DatosEntregaCongelados ? o.RecogidaTelefono : o.Tienda.Telefono,
-                    NotaPedido = o.NotaPedido,
-
-                    // USUARIO FINAL (delivery)
-                    UsuarioFinalNombre = o.DatosEntregaCongelados ? o.DestinoNombre : o.UsuarioFinal.Nombre,
-                    UsuarioFinalDireccion = o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoDireccion : o.UsuarioFinal.DireccionUbicacion) : "",
-                    UsuarioFinalMapaLink = o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoMapaLink : o.UsuarioFinal.MapaLink) : null,
-                    UsuarioFinalTelefono = o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoTelefono : o.UsuarioFinal.Telefono) : "",
-
-                    Precio = o.Precio,
-                    DistanciaKm = o.DistanciaKm
-                })
-                .ToListAsync();
+            var ordenes = (await _app.GetOrdenesAsync(userId)).Select(Map).ToList();
 
             vm.Ordenes = ordenes;
 
@@ -97,39 +66,8 @@ namespace Login.Controllers
             var piloto = await GetPilotoLogueadoAsync(userId);
             if (piloto is null) return Forbid();
 
-            // ✅ Validación dura: la orden debe ser de este piloto
-            var orden = await _db.OrdenesEntrega
-                .AsNoTracking()
-                .Include(o => o.Tienda)
-                .Include(o => o.UsuarioFinal)
-                .Include(o => o.Codigos)
-                .Where(o => o.ClienteAppId == piloto.ClienteAppId && o.PilotoId == piloto.Id &&
-                            o.Id == id &&
-                            (o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada))
-                .Select(o => new MisOrdenesRowVm
-                {
-                    OrdenId = o.Id,
-                    NumeroOrdenA = o.NumeroOrdenA,
-                    CodigoA = o.CodigoA,
-                    Estado = o.Estado.ToString(),
-                    CreatedAt = o.CreatedAt,
-
-                    PuedeVerDestinoFinal = o.Estado == EstadoOrden.Recolectada,
-
-                    TiendaNombre = o.DatosEntregaCongelados ? o.RecogidaNombre : o.Tienda.Nombre,
-                    TiendaDireccion = o.DatosEntregaCongelados ? o.RecogidaDireccion : o.Tienda.Direccion,
-                    TiendaTelefono = o.DatosEntregaCongelados ? o.RecogidaTelefono : o.Tienda.Telefono,
-                    NotaPedido = o.NotaPedido,
-
-                    UsuarioFinalNombre = o.DatosEntregaCongelados ? o.DestinoNombre : o.UsuarioFinal.Nombre,
-                    UsuarioFinalDireccion = o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoDireccion : o.UsuarioFinal.DireccionUbicacion) : "",
-                    UsuarioFinalMapaLink = o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoMapaLink : o.UsuarioFinal.MapaLink) : null,
-                    UsuarioFinalTelefono = o.Estado == EstadoOrden.Recolectada ? (o.DatosEntregaCongelados ? o.DestinoTelefono : o.UsuarioFinal.Telefono) : "",
-
-                    Precio = o.Precio,
-                    DistanciaKm = o.DistanciaKm
-                })
-                .FirstOrDefaultAsync();
+            var detalle = await _app.GetOrdenDetalleAsync(userId, id);
+            var orden = detalle is null ? null : Map(detalle);
 
             if (orden is null)
                 return RedirectToAction(nameof(Index), new { error = "Orden no encontrada o no está asignada a ti." });
@@ -138,6 +76,15 @@ namespace Login.Controllers
 
             return View("Detalle", vm);
         }
+
+        private static MisOrdenesRowVm Map(OrdenPilotoDto o) => new() {
+            OrdenId = o.OrdenId, NumeroOrdenA = o.NumeroOrdenA, CodigoA = o.CodigoA, Estado = o.Estado,
+            CreatedAt = o.CreatedAt, PuedeVerDestinoFinal = o.PuedeVerDestinoFinal, TiendaNombre = o.TiendaNombre,
+            TiendaDireccion = o.TiendaDireccion, TiendaTelefono = o.TiendaTelefono, NotaPedido = o.NotaPedido,
+            UsuarioFinalNombre = o.UsuarioFinalNombre, UsuarioFinalDireccion = o.UsuarioFinalDireccion,
+            UsuarioFinalTelefono = o.UsuarioFinalTelefono, UsuarioFinalMapaLink = o.UsuarioFinalMapaLink,
+            Precio = o.Precio, DistanciaKm = o.DistanciaKm, Paradas = o.Paradas,
+            PuedeRecoger = o.PuedeRecoger, BloqueoRecogida = o.BloqueoRecogida };
 
         // POST: /Piloto/ConfirmarRecolecta  (escaneo/pegar B)
         [HttpPost]
@@ -155,23 +102,9 @@ namespace Login.Controllers
             var piloto = await GetPilotoLogueadoAsync(userId);
             if (piloto is null) return Forbid();
 
-            // ✅ Validación dura: el B debe pertenecer a una orden ASIGNADA de este piloto
-            var ordenValida = await _db.OrdenesEntrega
-                .AsNoTracking()
-                .Include(o => o.Codigos)
-                .AnyAsync(o =>
-                    o.PilotoId == piloto.Id &&
-                    o.Estado == EstadoOrden.Asignada &&
-                    o.ClienteAppId == piloto.ClienteAppId &&
-                    (input.OrdenId == null || o.Id == input.OrdenId) &&
-                    o.Codigos.Any(c => c.Tipo == TipoCodigo.B_Recoleccion && c.Codigo == input.CodigoB));
-
-            if (!ordenValida)
-                return RedirectToAction(nameof(Index), new { error = "Ese B no corresponde a una orden asignada a ti." });
-
             try
             {
-                await _ordenService.ConfirmarRecolectaAsync(input.CodigoB, userId, "Piloto", input.OrdenId);
+                await _ordenService.ConfirmarRecolectaAsync(input.CodigoB, userId, "Piloto", input.OrdenId, input.OperacionId);
 
                 // Buscar la orden para redirigir al detalle (destino final desbloqueado)
                 var ordenId = await _db.CodigosEntrega
@@ -193,7 +126,7 @@ namespace Login.Controllers
             }
         }
 
-        // POST: /Piloto/ConfirmarEntrega  (C + escaneo/pegar B otra vez)
+        // POST: /Piloto/ConfirmarEntrega (C por parada; B+C sólo para clientes anteriores)
         [HttpPost]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("CodigosEntrega")]
@@ -209,23 +142,16 @@ namespace Login.Controllers
             var piloto = await GetPilotoLogueadoAsync(userId);
             if (piloto is null) return Forbid();
 
-            // ✅ Validación dura: debe ser su orden y estar RECOLECTADA
-            var ordenValida = await _db.OrdenesEntrega
-                .AsNoTracking()
-                .Include(o => o.Codigos)
-                .AnyAsync(o =>
-                    o.PilotoId == piloto.Id &&
-                    o.Estado == EstadoOrden.Recolectada &&
-                    o.ClienteAppId == piloto.ClienteAppId &&
-                    (input.OrdenId == null || o.Id == input.OrdenId) &&
-                    o.Codigos.Any(c => c.Tipo == TipoCodigo.B_Recoleccion && c.Codigo == input.CodigoB));
-
-            if (!ordenValida)
-                return RedirectToAction(nameof(Index), new { error = "No puedes cerrar: la orden no está recolectada o no es tuya." });
-
             try
             {
-                await _ordenService.ConfirmarEntregaAsync(input.CodigoB, input.CodigoC, userId, "Piloto", input.OrdenId);
+                if (input.OrdenId.HasValue && input.ParadaId.HasValue)
+                {
+                    var result = await _ordenService.ConfirmarEntregaParadaAsync(input.OrdenId.Value, input.ParadaId.Value,
+                        input.CodigoC, userId, input.OperacionId);
+                    if (!EstadosEntrega.EsTerminal(System.Enum.Parse<EstadoOrden>(result.EstadoOrden)))
+                        return RedirectToAction(nameof(Detalle), new { id = result.OrdenId, ok = "Parada entregada" });
+                }
+                else await _ordenService.ConfirmarEntregaAsync(input.CodigoB, input.CodigoC, userId, "Piloto", input.OrdenId);
                 return RedirectToAction(nameof(Index), new { ok = "Entrega confirmada ✅" });
             }
             catch (System.Exception ex)

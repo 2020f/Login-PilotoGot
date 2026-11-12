@@ -1,0 +1,41 @@
+@model Login.ViewModels.Envirapido.PanelVm
+@using Microsoft.AspNetCore.WebUtilities
+@using System.Text.Json
+@functions {
+    string Link(Login.ViewModels.Envirapido.PanelVm m, string key, string? value)
+    {
+        var q = new Dictionary<string, string?> { ["tab"] = m.Tab, ["buscar"] = m.Buscar, ["estado"] = m.Estado, ["fecha"] = m.Fecha?.ToString("yyyy-MM-dd"), ["comercioId"] = m.ComercioId?.ToString(), ["repartidorId"] = m.RepartidorId?.ToString(), ["pagina"] = m.Pagina.ToString(), ["porPagina"] = m.PorPagina.ToString(), ["orden"] = m.Orden };
+        if(m.ZonaId.HasValue)q["zonaId"]=m.ZonaId.Value.ToString();if(m.Demorados)q["demorados"]="true";q[key] = value; if (key != "pagina") q["pagina"] = "1";
+        return QueryHelpers.AddQueryString(m.Seccion == "Pedidos" ? "/Operaciones/Pedidos" : "/Operaciones", q);
+    }
+}
+<div class="ev-card" data-ev-orders data-updated="@Model.ActualizadoUtc.ToString("O")">
+    <div class="ev-card-head"><h2>@(Model.Seccion == "Pedidos" ? "Pedidos" : "Entregas en curso") <span class="ev-count">@Model.Total</span></h2>
+        <div class="ev-chips">
+            @foreach (var state in new[] { ("", "Todos"), ("Creada", "Por asignar"), ("Pendientes", "Pendientes"), ("Asignada", "Recogiendo"), ("Recolectada", "En ruta"), ("Entregada", "Entregados"), ("Cancelada", "Cancelados"), ("Incidente", "Con incidencia") })
+            { <a class="ev-chip @(string.Equals(Model.Estado ?? "", state.Item1, StringComparison.Ordinal) ? "active" : "")" href="@Link(Model,"estado",state.Item1)">@state.Item2 <span class="ev-count">@(Model.ConteosEstado.GetValueOrDefault(state.Item1))</span></a> }
+        </div>
+        <details class="ev-details-menu"><summary class="ev-btn small" aria-label="Seleccionar columnas">Columnas ⌄</summary><div>
+            @foreach (var col in new[] { ("comercio", "Comercio"), ("destinatario", "Destinatario"), ("piloto", "Repartidor"), ("eta", "ETA") }) { <label><input type="checkbox" checked data-ev-column="@col.Item1" /> @col.Item2</label> }
+        </div></details>
+    </div>
+    <div class="ev-selection" data-ev-selection hidden><strong><span data-ev-selection-count>0</span> pedidos seleccionados</strong><small>Este filtro · incluye otras páginas</small><button type="button" class="ev-btn" data-ev-bulk-assign>Asignar repartidor</button><button type="button" class="ev-btn" data-ev-labels>Imprimir etiquetas</button><button type="button" class="ev-btn" data-ev-export-selection>Exportar selección</button><button type="button" class="ev-btn ghost" data-ev-deselect>Deseleccionar</button></div>
+    <div class="ev-table-scroll"><table class="ev-table">
+        <thead><tr><th><input class="ev-check" type="checkbox" data-ev-select-page aria-label="Seleccionar pedidos de esta página" /></th><th><a href="@Link(Model,"orden",Model.Orden == "antiguos" ? "recientes" : "antiguos")">Pedido ↕</a></th><th data-col="comercio"><a href="@Link(Model,"orden","comercio")">Comercio ↕</a></th><th data-col="destinatario">Destinatario</th><th data-col="piloto">Repartidor</th><th>Zona</th><th>Estado</th><th data-col="eta">ETA</th><th>Acción</th></tr></thead>
+        <tbody>
+            @foreach (var p in Model.Pedidos)
+            {
+                <tr data-order-id="@p.Id"><td><input class="ev-check" type="checkbox" value="@p.Id" data-ev-select-order aria-label="Seleccionar pedido @p.Codigo" /></td><td><a class="ev-order-code" href="/Operaciones/Pedido/@p.Id">EV-@p.Codigo</a><span class="ev-secondary"><time datetime="@p.CreadoUtc.ToString("O")" data-ev-datetime>@p.CreadoUtc.AddHours(-4).ToString("dd MMM HH:mm")</time></span></td><td data-col="comercio">@p.Comercio</td><td data-col="destinatario">@p.Destinatario<span class="ev-secondary" title="@p.Direccion">@p.Direccion</span></td><td data-col="piloto">@(p.Piloto ?? "Sin asignar")</td><td>@(p.Datos?.ZonaId is int zona&&Model.Zonas.TryGetValue(zona,out var nombreZona)?nombreZona:"Sin zona")</td><td><span class="ev-badge @(p.Demorada?"red":p.ClaseEstado)">@(p.Demorada?"Demorada":p.EtiquetaEstado)</span>@if(p.Demorada){<span class="ev-secondary">@p.EtiquetaEstado</span>}</td><td data-col="eta"><span class="ev-secondary" data-ev-eta>@(p.Estado == "Entregada" ? "Completado" : p.EsTerminal ? "Finalizado" : "Sin estimación")</span></td><td><div class="ev-table-actions"><a href="/Operaciones/Pedido/@p.Id">Ver</a><details class="ev-details-menu"><summary aria-label="Acciones del pedido @p.Codigo">···</summary><div><a href="/Operaciones/Pedido/@p.Id?tab=Historial">Ver historial</a>@if (p.PuedeAsignar) { <button type="button" data-ev-assign="@p.Id" data-order-label="EV-@p.Codigo">Asignar repartidor</button> }<a href="/Operaciones/Incidencias?ordenId=@p.Id">Reportar incidencia</a>@if(p.PuedeCancelar){<button type="button" data-ev-cancel="@p.Id">Cancelar pedido</button>}</div></details></div></td></tr>
+            }
+            @if (Model.Pedidos.Count == 0) { <tr><td colspan="9"><div class="ev-empty"><strong>No hay pedidos para estos filtros</strong>Cambia el período o los filtros para consultar otras órdenes.</div></td></tr> }
+        </tbody>
+    </table></div>
+    <div class="ev-table-footer"><span>Mostrando @(Model.Total == 0 ? 0 : (Model.Pagina - 1) * Model.PorPagina + 1)–@Math.Min(Model.Pagina * Model.PorPagina, Model.Total) de @Model.Total pedidos</span>
+        <div class="ev-actions"><label>Por página <select class="ev-select" data-ev-page-size>@foreach (var size in new[] {10,25,50}) { <option value="@Link(Model,"porPagina",size.ToString())" selected="@(size == Model.PorPagina)">@size</option> }</select></label><div class="ev-pagination">
+            @if (Model.Pagina > 1) { <a href="@Link(Model,"pagina",(Model.Pagina - 1).ToString())" aria-label="Página anterior">‹</a> }
+            @for (var n = Math.Max(1,Model.Pagina-2); n <= Math.Min(Model.Paginas,Model.Pagina+2); n++) { <a class="@(n == Model.Pagina ? "active" : "")" href="@Link(Model,"pagina",n.ToString())" aria-current="@(n == Model.Pagina ? "page" : null)">@n</a> }
+            @if (Model.Pagina < Model.Paginas) { <a href="@Link(Model,"pagina",(Model.Pagina + 1).ToString())" aria-label="Página siguiente">›</a> }
+        </div></div>
+    </div><div class="ev-updated" data-ev-freshness>Actualizado ahora</div>
+    <script type="application/json" data-ev-live-summary>@Html.Raw(JsonSerializer.Serialize(new{hoy=Model.Hoy,entregasHoy=Model.EntregasHoy,porAsignar=Model.PorAsignar,pendientes=Model.Pendientes,enCurso=Model.Recogiendo+Model.EnRuta,recogiendo=Model.Recogiendo,enRuta=Model.EnRuta,entregados=Model.Entregados,incidencias=Model.Incidencias,incidenciasOrders=Model.PedidosConIncidencias,activos=Model.RepartidoresActivos,puntualidad=Model.Puntualidad,cola=Model.Cola},EnvirapidoJsonOptions.Value.JsonSerializerOptions))</script>
+</div>

@@ -1,0 +1,8 @@
+(() => {
+  const toggle=document.querySelector('[data-tp-multiple]'),list=document.querySelector('[data-tp-stop-list]'),template=document.querySelector('#tpStopTemplate');if(!toggle||!list||!template)return;
+  const single=document.querySelector('[data-tp-single-destination]'),multi=document.querySelector('[data-tp-multiple-destinations]');
+  function reindex(){Array.from(list.children).forEach((row,i)=>{row.querySelector('[data-tp-stop-label]').textContent=`Parada ${i+1}`;const person=row.querySelector('[data-tp-stop-person]'),notes=row.querySelector('[data-tp-stop-notes]');person.name=`Destinatarios[${i}].UsuarioFinalId`;person.id="tp-stop-person-"+i;row.querySelector("[data-tp-stop-label]").htmlFor=person.id;notes.setAttribute("aria-label","Instrucciones de parada "+(i+1));person.required=toggle.checked;person.disabled=!toggle.checked;notes.name=`Destinatarios[${i}].Instrucciones`;notes.disabled=!toggle.checked;row.querySelector('[data-tp-stop-remove]').disabled=list.children.length<=2;});}
+  function add(){if(list.children.length>=100)return;list.append(template.content.cloneNode(true));reindex();}
+  function mode(){single.hidden=toggle.checked;multi.hidden=!toggle.checked;const select=single.querySelector('select');select.disabled=toggle.checked;select.required=!toggle.checked;if(toggle.checked)while(list.children.length<2)add();reindex();}
+  toggle.addEventListener('change',mode);document.querySelector('[data-tp-stop-add]')?.addEventListener('click',add);list.addEventListener('click',e=>{if(e.target.closest('[data-tp-stop-remove]')&&list.children.length>2){e.target.closest('[data-tp-stop]').remove();reindex();}});mode();
+})();

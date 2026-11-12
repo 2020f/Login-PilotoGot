@@ -4,14 +4,12 @@
     ViewData["Title"] = "Vista General";
     ViewData["PageTitle"] = "Vista General";
 
-    var ordenes = Model?.Ordenes ?? new List<Login.ViewModels.Tienda.OrdenTiendaRowVm>();
+    int enProceso = Model.Resumen.Asignadas;
+    int enRuta = Model.Resumen.EnRuta;
+    int entregados = Model.Resumen.EntregadasHoy;
 
-    int enProceso  = ordenes.Count(x => x.EstadoNum == 2);
-    int enRuta     = ordenes.Count(x => x.EstadoNum == 3);
-    int entregados = ordenes.Count(x => x.EstadoNum == 4 && x.CreatedAt.Date == DateTime.UtcNow.Date);
-
-    string Pc(int n) => n switch { 2 => "st-2", 3 => "st-3", 4 => "st-4", 5 => "st-5", _ => "st-1" };
-    string Pt(int n) => n switch { 1 => "Pendiente", 2 => "Asignada", 3 => "En ruta", 4 => "Entregada", 5 => "Incidente", _ => "—" };
+    string Pc(int n) => n switch { 2 => "st-2", 3 => "st-3", 4 => "st-4", 5 => "st-5", 6 or 7 or 8 => "st-closed", _ => "st-1" };
+    string Pt(int n) => n switch { 1 => "Pendiente", 2 => "Asignada", 3 => "En ruta", 4 => "Entregada", 5 => "Incidente", 6=>"Devuelta",7=>"Cerrada con devoluciones",8=>"Cancelada", _ => "—" };
 }
 
 <div class="tp-page">
@@ -78,7 +76,7 @@
 
         <div class="tp-section-head">
             <div>
-                <div class="tp-section-title">Órdenes activas</div>
+                <div class="tp-section-title">Órdenes activas <span>(@Model.Resumen.TotalActivas)</span></div>
                 <div class="tp-section-sub">Seguimiento en tiempo real de cada envío</div>
             </div>
             <a class="tp-btn tp-btn-primary tp-btn-sm" asp-action="CrearOrden">
@@ -89,6 +87,22 @@
     </div>
 
     <div class="tp-scroll">
+        @foreach (var grupo in new[] { ("activas", Model.Activas), ("historial", Model.Historial) })
+        {
+        var ordenes = grupo.Item2;
+        <section data-tp-orders="@grupo.Item1">
+        @if (grupo.Item1 == "historial")
+        {
+            <div class="tp-section-head" style="margin-top:24px"><div><h2 class="tp-section-title">Historial <span>(@Model.TotalHistorial)</span></h2><p class="tp-section-sub">Entregadas, devueltas, cierres con devoluciones y canceladas</p></div></div>
+            <form method="get" asp-action="Ordenes" class="tp-toolbar">
+                <input type="hidden" name="paginaHistorial" value="1" />
+                <input class="tp-input" type="search" name="buscarHistorial" value="@Model.BuscarHistorial" placeholder="Buscar en el historial" aria-label="Buscar historial por pedido, destinatario o referencia" />
+                <select class="tp-select" name="tamanoHistorial" aria-label="Órdenes por página del historial">
+                    @foreach (var size in new[] { 10, 30, 50, 100 }) { <option value="@size" selected="@(Model.TamanoHistorial == size)">@size por página</option> }
+                </select>
+                <button type="submit" class="tp-btn tp-btn-outline">Buscar</button>
+            </form>
+        }
         <div class="tp-list">
             @if (!ordenes.Any())
             {
@@ -99,8 +113,8 @@
                             <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                         </svg>
                     </div>
-                    <div class="tp-empty-title">Sin órdenes aún</div>
-                    <div class="tp-empty-sub">Crea la primera orden para comenzar el seguimiento.</div>
+                    <div class="tp-empty-title">@(grupo.Item1 == "historial" ? "Sin órdenes en el historial" : "Sin órdenes activas")</div>
+                    <div class="tp-empty-sub">@(grupo.Item1 == "historial" ? "Revisa la búsqueda si esperabas otro resultado." : "Las nuevas órdenes aparecerán aquí para su seguimiento.")</div>
                     <a class="tp-btn tp-btn-primary" asp-action="CrearOrden">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                         Crear orden
@@ -112,24 +126,24 @@
                 foreach (var o in ordenes)
                 {
                     var pc = Pc(o.EstadoNum);
-                    <div class="tp-ocard @pc">
+                    <div class="tp-ocard @pc" data-order-id="@o.OrdenId">
                         <div class="tp-ocard-body">
                             <div class="tp-ocard-top">
                                 <span class="tp-ocard-id">#@o.CodigoVisibleA</span>
-                                <span class="tp-ocard-time">@o.CreatedAt.ToLocalTime().ToString("dd/MM hh:mm tt")</span>
+                                <span class="tp-ocard-time">@o.CreatedAt.AddHours(-4).ToString("dd/MM hh:mm tt")</span>
                             </div>
                             <div class="tp-ocard-name">@o.UsuarioFinal</div>
 
-                            @if (o.EstadoNum >= 2)
+                            @if (o.AssignedAt.HasValue || o.RecolectadaAt.HasValue || o.EntregadaAt.HasValue)
                             {
-                                @* EstadoNum: 2=Asignada(33%), 3=Recolectada(67%), 4+=Entregada(100%) *@
-                                var pct = o.EstadoNum >= 4 ? "p100" : o.EstadoNum >= 3 ? "p67" : "p33";
+                                @* El progreso usa eventos reales; devoluciones y cancelaciones no son entregas. *@
+                                var pct = o.EstadoNum == 4 && o.EntregadaAt.HasValue ? "p100" : o.RecolectadaAt.HasValue ? "p67" : "p33";
                                 <div class="tp-track">
                                     <div class="tp-track-bar">
                                         <div class="tp-track-fill @pct"></div>
                                     </div>
                                     <div class="tp-track-steps">
-                                        <div class="tp-track-step s-assign @(o.EstadoNum >= 2 ? "done" : "")">
+                                        <div class="tp-track-step s-assign @(o.AssignedAt.HasValue ? "done" : "")">
                                             <div class="tp-track-ico">
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                                                     <circle cx="12" cy="8" r="4"/>
@@ -137,25 +151,25 @@
                                                 </svg>
                                             </div>
                                             <div class="tp-track-lbl">Asignado</div>
-                                            <div class="tp-track-time">@(o.AssignedAt.HasValue ? o.AssignedAt.Value.ToLocalTime().ToString("hh:mm tt") : "—")</div>
+                                            <div class="tp-track-time">@(o.AssignedAt.HasValue ? o.AssignedAt.Value.AddHours(-4).ToString("hh:mm tt") : "—")</div>
                                         </div>
-                                        <div class="tp-track-step s-pick @(o.EstadoNum >= 3 ? "done" : "")">
+                                        <div class="tp-track-step s-pick @(o.RecolectadaAt.HasValue ? "done" : "")">
                                             <div class="tp-track-ico">
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                                                     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
                                                 </svg>
                                             </div>
                                             <div class="tp-track-lbl">Recogido</div>
-                                            <div class="tp-track-time">@(o.RecolectadaAt.HasValue ? o.RecolectadaAt.Value.ToLocalTime().ToString("hh:mm tt") : "—")</div>
+                                            <div class="tp-track-time">@(o.RecolectadaAt.HasValue ? o.RecolectadaAt.Value.AddHours(-4).ToString("hh:mm tt") : "—")</div>
                                         </div>
-                                        <div class="tp-track-step s-done @(o.EstadoNum >= 4 ? "done" : "")">
+                                        <div class="tp-track-step s-done @(o.EstadoNum == 4 && o.EntregadaAt.HasValue ? "done" : "")">
                                             <div class="tp-track-ico">
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
                                                 </svg>
                                             </div>
                                             <div class="tp-track-lbl">Entregado</div>
-                                            <div class="tp-track-time">@(o.EntregadaAt.HasValue ? o.EntregadaAt.Value.ToLocalTime().ToString("hh:mm tt") : "—")</div>
+                                            <div class="tp-track-time">@(o.EntregadaAt.HasValue ? o.EntregadaAt.Value.AddHours(-4).ToString("hh:mm tt") : "—")</div>
                                         </div>
                                     </div>
                                 </div>
@@ -175,7 +189,17 @@
                 }
             }
         </div>
+        @if (grupo.Item1 == "historial" && Model.TotalPaginasHistorial > 0)
+        {
+            <nav class="tp-form-foot" aria-label="Paginación del historial">
+                <span class="tp-form-foot-hint">Página @Model.PaginaHistorial de @Model.TotalPaginasHistorial · @Model.TotalHistorial órdenes</span>
+                <div class="tp-form-actions">
+                    @if (Model.PaginaHistorial > 1) { <a class="tp-btn tp-btn-outline tp-btn-sm" asp-action="Ordenes" asp-route-paginaHistorial="@(Model.PaginaHistorial - 1)" asp-route-tamanoHistorial="@Model.TamanoHistorial" asp-route-buscarHistorial="@Model.BuscarHistorial">Anterior</a> }
+                    @if (Model.PaginaHistorial < Model.TotalPaginasHistorial) { <a class="tp-btn tp-btn-outline tp-btn-sm" asp-action="Ordenes" asp-route-paginaHistorial="@(Model.PaginaHistorial + 1)" asp-route-tamanoHistorial="@Model.TamanoHistorial" asp-route-buscarHistorial="@Model.BuscarHistorial">Siguiente</a> }
+                </div>
+            </nav>
+        }
+        </section>
+        }
     </div>
 </div>
-
-<div id="tpModalHost"></div>

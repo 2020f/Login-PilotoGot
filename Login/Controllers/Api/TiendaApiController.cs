@@ -21,7 +21,8 @@ namespace Login.Controllers.Api
             _logger = logger;
         }
 
-        public sealed record CrearOrdenRequest(int UsuarioFinalId, string? NotaPedido, string? OperacionId = null);
+        public sealed record CrearOrdenRequest(int UsuarioFinalId = 0, string? NotaPedido = null, string? OperacionId = null,
+            IReadOnlyList<OrdenDestinatarioRequest>? Destinatarios = null);
         public sealed record CrearUsuarioFinalRequest(string Nombre, string DireccionUbicacion, string Telefono, string? Notas, string? MapaLink);
         public sealed record EditarUsuarioFinalRequest(string Nombre, string DireccionUbicacion, string Telefono, string? Notas, string? MapaLink, bool Activo);
         public sealed record SetTiendaActivaRequest(int TiendaId);
@@ -34,7 +35,8 @@ namespace Login.Controllers.Api
         [HttpGet("capacidades")]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Capacidades()
-            => Ok(new { versionContrato = 2, creacionIdempotente = true, contextoTienda = true });
+            => Ok(new { versionContrato = 3, creacionIdempotente = true, contextoTienda = true,
+                multiparada = true, cierreSoloC = true, confirmacionParadaIdempotente = true });
 
         [HttpGet("tiendas")]
         public async Task<IActionResult> Tiendas()
@@ -84,6 +86,10 @@ namespace Login.Controllers.Api
         public async Task<IActionResult> Ordenes()
             => await RunAsync(() => _svc.GetOrdenesAsync(GetUserId()));
 
+        [HttpGet("ordenes/historial")]
+        public async Task<IActionResult> HistorialOrdenes(int pagina = 1, int tamano = 30, string? buscar = null)
+            => await RunAsync(() => _svc.GetHistorialOrdenesAsync(GetUserId(), pagina, tamano, buscar));
+
         [HttpGet("ordenes/resumen")]
         public async Task<IActionResult> ResumenOrdenes()
             => await RunAsync(() => _svc.GetResumenOrdenesAsync(GetUserId()));
@@ -94,7 +100,8 @@ namespace Login.Controllers.Api
 
         [HttpPost("ordenes")]
         public async Task<IActionResult> CrearOrden([FromBody] CrearOrdenRequest request)
-            => await RunAsync(() => _svc.CrearOrdenAsync(GetUserId(), request.UsuarioFinalId, request.NotaPedido, request.OperacionId));
+            => await RunAsync(() => _svc.CrearOrdenAsync(GetUserId(), request.UsuarioFinalId, request.NotaPedido,
+                request.OperacionId, request.Destinatarios));
 
         // ---------- Helper ----------
 

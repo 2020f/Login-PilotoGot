@@ -42,12 +42,14 @@
                         <input type="hidden" asp-for="OperacionId" />
 
                         <div class="tp-form-steps">
+                            <div class="tp-step-block"><label style="display:flex;gap:9px;align-items:center"><input asp-for="EsEscala" data-tp-multiple /> Una orden con varios destinatarios (escalas)</label><span class="tp-step-hint">Un mismo piloto recoge la orden con B y confirma cada entrega con su C individual.</span></div>
+                            <div asp-validation-summary="All" class="tp-val"></div>
                             <div class="tp-step-block">
                                 <div class="tp-step-label-num">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                                     Paso 1 — Destinatario
                                 </div>
-                                <div class="tp-select-row">
+                                <div class="tp-select-row" data-tp-single-destination hidden="@Model.EsEscala">
                                     <select class="tp-select" asp-for="UsuarioFinalId" asp-items="Model.UsuariosFinales">
                                         <option value="">Seleccione un destinatario...</option>
                                     </select>
@@ -57,6 +59,17 @@
                                     </button>
                                 </div>
                                 <span class="tp-val" asp-validation-for="UsuarioFinalId"></span>
+                                <div data-tp-multiple-destinations hidden="@(!Model.EsEscala)">
+                                    <div data-tp-stop-list>
+                                    @for (var i = 0; i < Model.Destinatarios.Count; i++)
+                                    {
+                                        <div data-tp-stop style="border:1px solid #dce5e9;border-radius:8px;padding:12px;margin:10px 0">
+                                            <label data-tp-stop-label>Parada @(i+1)</label><select asp-for="Destinatarios[i].UsuarioFinalId" asp-items="Model.UsuariosFinales" class="tp-select" data-tp-stop-person><option value="">Selecciona el destinatario...</option></select>
+                                            <textarea asp-for="Destinatarios[i].Instrucciones" class="tp-textarea" rows="2" maxlength="400" placeholder="Instrucciones de esta parada" data-tp-stop-notes></textarea><button type="button" class="tp-link-btn" data-tp-stop-remove>Quitar parada</button>
+                                        </div>
+                                    }
+                                    </div><button type="button" class="tp-link-btn" data-tp-stop-add>+ Añadir destinatario</button><span asp-validation-for="Destinatarios" class="tp-val"></span>
+                                </div>
                             </div>
 
                             <div class="tp-step-block">
@@ -97,7 +110,9 @@
 </div>
 
 @await Html.PartialAsync("_ModalUsuarioFinalCreate", new Login.ViewModels.Tienda.UsuarioFinalCreateVm())
+<template id="tpStopTemplate"><div data-tp-stop style="border:1px solid #dce5e9;border-radius:8px;padding:12px;margin:10px 0"><label data-tp-stop-label></label><select class="tp-select" data-tp-stop-person><option value="">Selecciona el destinatario...</option>@foreach(var item in Model.UsuariosFinales){<option value="@item.Value">@item.Text</option>}</select><textarea class="tp-textarea" rows="2" maxlength="400" placeholder="Instrucciones de esta parada" data-tp-stop-notes></textarea><button type="button" class="tp-link-btn" data-tp-stop-remove>Quitar parada</button></div></template>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/tienda-escalas.js" asp-append-version="true"></script>
 }

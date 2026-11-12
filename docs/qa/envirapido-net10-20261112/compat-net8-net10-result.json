@@ -1,0 +1,36 @@
+{
+  "outcome": "PASS",
+  "checkedAtUtc": "2026-11-12T21:47:10.7654983Z",
+  "sourceRuntime": "8,0,2526,11203 @Commit: b753199016332cbf257e70c417aa5d1d02202dc7",
+  "destinationRuntime": "10,0,1526,53008 @Commit: 8e0f8ed2312954727f8919d7d1c2f78b483b4ee7",
+  "database": "PilotGoTest_4612d89bd20d464394bd3724a9fea91a",
+  "checks": [
+    {
+      "userId": "pilot-b",
+      "role": "Piloto",
+      "jwtIssuedNet8AcceptedNet10": true,
+      "originalJwtAfterRefresh": 200,
+      "authorizedRead": 200,
+      "foreignRoleDenied": 403,
+      "foreignTenantRead": 204,
+      "refreshIssuedNet8AcceptedNet10": true,
+      "refreshedJwtAccepted": 200,
+      "oldRefreshReplayDenied": 401
+    },
+    {
+      "userId": "shop-b",
+      "role": "Cliente",
+      "jwtIssuedNet8AcceptedNet10": true,
+      "originalJwtAfterRefresh": 200,
+      "authorizedRead": 200,
+      "foreignRoleDenied": 403,
+      "foreignTenantRead": 400,
+      "refreshIssuedNet8AcceptedNet10": true,
+      "refreshedJwtAccepted": 200,
+      "oldRefreshReplayDenied": 401
+    }
+  ],
+  "ordersChanged": false,
+  "activeAppPilotTouched": false,
+  "cookieLimit": "Las cookies y CSRF del host QA usan claves efímeras. No se afirma continuidad de cookies 8→10; se valida por separado recrear proveedores con claves y application name constantes en pruebas .NET 10."
+}

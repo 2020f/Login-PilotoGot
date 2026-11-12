@@ -10,7 +10,7 @@ namespace Login.ViewModels.SuperAdmin
         [Required, EmailAddress]
         public string Email { get; set; } = "";
 
-        [Required, MinLength(6)]
-        public string Password { get; set; } = "Admin123";
+        [Required, MinLength(12), MaxLength(128), DataType(DataType.Password)]
+        public string Password { get; set; } = "";
     }
 }

@@ -1,0 +1,12 @@
+@model Login.ViewModels.Envirapido.OperationsPageVm
+@{
+    var coverage=Model.Datos.Cobertura;
+    var shown=0;var total=0;var unit="registros";
+    if(coverage!=null){
+        if(Model.Seccion=="Rutas y zonas"){shown=coverage.RutasMostradas;total=coverage.TotalRutas;unit="rutas";}
+        else if(Model.Seccion=="Incidencias"){shown=coverage.IncidenciasMostradas;total=coverage.TotalIncidencias;unit="incidencias";}
+        else if(Model.Seccion=="Liquidaciones"&&Model.Tab=="Conciliación"){shown=coverage.CobrosMostrados;total=coverage.TotalCobros;unit="cobros";}
+        else if(Model.Seccion=="Liquidaciones"){shown=coverage.LiquidacionesMostradas;total=coverage.TotalLiquidaciones;unit="liquidaciones de empresa (repartidores y comercios)";}
+    }
+}
+@if(total>shown){<div class="ev-alert neutral" role="status"><div><strong>Consulta del período: @shown de @total @unit disponibles.</strong><br/>Se incluye todo el trabajo abierto y una parte del historial cerrado más reciente. Ajusta las fechas para consultar otros registros. Los indicadores se calculan sobre el alcance completo.</div></div>}

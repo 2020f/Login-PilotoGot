@@ -16,5 +16,15 @@ namespace Login.ViewModels.Tienda
         public string DireccionUbicacion { get; set; } = "";
         public string? MapaLink { get; set; }
         public string? Descripcion { get; set; }
+        public List<QrParadaVm> Paradas { get; set; } = new();
+    }
+    public sealed class QrParadaVm
+    {
+        public int Id { get; set; }
+        public int Posicion { get; set; }
+        public string Nombre { get; set; } = "";
+        public string Direccion { get; set; } = "";
+        public string Estado { get; set; } = "";
+        public string CodigoC { get; set; } = "";
     }
 }

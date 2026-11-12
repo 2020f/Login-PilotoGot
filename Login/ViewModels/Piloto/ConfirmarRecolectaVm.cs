@@ -4,6 +4,7 @@ namespace Login.ViewModels.Piloto
 {
     public class ConfirmarRecolectaVm
     {
+        public string? OperacionId { get; set; }
         public int? OrdenId { get; set; }
 
         [Required]

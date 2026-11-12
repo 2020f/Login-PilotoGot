@@ -11,5 +11,10 @@ public sealed class DashboardVm
     public int OrdenesHoy { get; set; }
     public int EntregadasHoy { get; set; }
     public int SinGestor { get; set; }
+    public decimal PendienteCobro { get; set; }
+    public decimal CobradoMes { get; set; }
+    public int FacturasVencidas { get; set; }
+    public int SolicitudesPendientes { get; set; }
+    public int EmpresasPorVencer { get; set; }
     public DateTime GeneradoAt { get; set; }
 }

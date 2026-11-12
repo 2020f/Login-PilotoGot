@@ -1,0 +1,84 @@
+@using System.Security.Claims
+@using Login.ViewModels.Envirapido
+@using Microsoft.EntityFrameworkCore
+@inject Login.Data.ApplicationDbContext PanelDb
+@{
+    var panel = ViewData.Model as PanelVm;
+    var empresa = ViewData["Empresa"] as string ?? panel?.Empresa;
+    if(string.IsNullOrWhiteSpace(empresa)&&User.IsInRole("Gestor")){var actorId=User.FindFirstValue(ClaimTypes.NameIdentifier);empresa=await PanelDb.ClientesApp.AsNoTracking().Where(t=>t.GestorIdentityUserId==actorId).Select(t=>t.NombreComercial).SingleOrDefaultAsync();}
+    empresa??="Empresa";
+    var seccion = ViewData["Seccion"] as string ?? panel?.Seccion ?? "Operaciones";
+    var nombre = User.Identity?.Name ?? "Administrador";
+    var menu = new[] { ("Resumen", "Resumen", "grid"), ("Operaciones", "Index", "truck"), ("Pedidos", "Pedidos", "clipboard"), ("Repartidores", "Repartidores", "user"), ("Comercios", "Comercios", "store"), ("Rutas y zonas", "Rutas", "pin"), ("Incidencias", "Incidencias", "alert"), ("Liquidaciones", "Liquidaciones", "card"), ("Reportes", "Reportes", "chart"), ("Usuarios y permisos", "Usuarios", "users"), ("Configuración", "Configuracion", "settings") };
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · Envirapido</title>
+    @if(ViewData["EnvirapidoLegacy"] is true){<link rel="stylesheet" href="~/css/gestor.css" asp-append-version="true"/>}
+    <link rel="stylesheet" href="~/css/envirapido.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/envirapido-modulos.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="ev-body" data-ev-section="@seccion" data-ev-user="@nombre">
+<svg class="ev-sprites" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="ev-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+    <symbol id="ev-truck" viewBox="0 0 24 24"><path d="M1 4h14v13H1zM15 9h4l4 5v3h-8"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/></symbol>
+    <symbol id="ev-clipboard" viewBox="0 0 24 24"><path d="M9 4H5v17h14V4h-4M8 10h8M8 14h8M8 18h5"/><rect x="9" y="2" width="6" height="4" rx="1"/></symbol>
+    <symbol id="ev-user" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3z"/></symbol>
+    <symbol id="ev-users" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M1 22v-3a8 8 0 0 1 16 0v3M16 3a4 4 0 0 1 0 8M18 14a7 7 0 0 1 5 7"/></symbol>
+    <symbol id="ev-store" viewBox="0 0 24 24"><path d="M3 10v12h18V10M1 10l3-8h16l3 8M1 10a4 4 0 0 0 6 2 4 4 0 0 0 5 0 4 4 0 0 0 5 0 4 4 0 0 0 6-2M9 22v-8h6v8"/></symbol>
+    <symbol id="ev-pin" viewBox="0 0 24 24"><path d="M20 9c0 7-8 13-8 13S4 16 4 9a8 8 0 0 1 16 0z"/><circle cx="12" cy="9" r="3"/></symbol>
+    <symbol id="ev-alert" viewBox="0 0 24 24"><path d="M12 2 1 22h22zM12 9v5M12 18h.01"/></symbol>
+    <symbol id="ev-card" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20M6 15h4"/></symbol>
+    <symbol id="ev-chart" viewBox="0 0 24 24"><path d="M3 22V11M10 22V3M17 22V8M23 22H1"/></symbol>
+    <symbol id="ev-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="m9 2-1 3-3 1-3 3 2 3-1 4 3 3 3-1 3 4 3-4 4 1 3-3-1-4 2-3-3-3-4-1-1-3z"/></symbol>
+    <symbol id="ev-search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="m15 15 7 7"/></symbol>
+    <symbol id="ev-bell" viewBox="0 0 24 24"><path d="M4 17h16l-2-4V8a6 6 0 0 0-12 0v5zM9 21h6"/></symbol>
+    <symbol id="ev-download" viewBox="0 0 24 24"><path d="M12 2v13m-5-5 5 5 5-5M3 15v7h18v-7"/></symbol>
+    <symbol id="ev-box" viewBox="0 0 24 24"><path d="m12 2 10 5v10l-10 5-10-5V7zM2 7l10 5 10-5M12 12v10M7 4l10 5"/></symbol>
+    <symbol id="ev-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m7 12 3 3 7-7"/></symbol>
+    <symbol id="ev-menu" viewBox="0 0 24 24"><path d="M3 5h18M3 12h18M3 19h18"/></symbol>
+</defs></svg>
+<button class="ev-overlay" aria-label="Cerrar menú" data-ev-close-menu hidden></button>
+<aside class="ev-sidebar" id="evSidebar" aria-label="Navegación principal">
+    <a class="ev-brand" href="/Operaciones"><svg class="ev-brand-route" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M25 3a5 5 0 0 1 5 5c0 3.5-5 8-5 8s-5-4.5-5-8a5 5 0 0 1 5-5Z"/><circle cx="25" cy="8" r="1.4"/><path d="M24 17H12a4 4 0 0 0 0 8h8l-4 5H6a3 3 0 0 1 0-6h4"/></svg><span>Envirapido</span></a>
+    <div class="ev-company" title="@empresa"><span>@empresa</span><span aria-hidden="true">⌄</span></div>
+    <nav class="ev-nav">
+        @foreach (var item in menu)
+        {
+            if (item.Item1 == "Usuarios y permisos") { <div class="ev-nav-divider"></div> }
+            <a class="ev-nav-link @(seccion == item.Item1 ? "active" : "")" href="@Url.Action(item.Item2, "Envirapido")" aria-current="@(seccion == item.Item1 ? "page" : null)">
+                <svg class="ev-icon"><use href="#ev-@item.Item3"></use></svg><span>@item.Item1</span>
+                @if (item.Item1 == "Incidencias" && panel?.Incidencias > 0) { <span class="ev-nav-count">@panel.Incidencias</span> }
+            </a>
+        }
+        <a class="ev-nav-link @(seccion == "Suscripción" ? "active" : "")" href="/Suscripcion"><svg class="ev-icon"><use href="#ev-card"></use></svg><span>Mi suscripción</span></a>
+    </nav>
+    <div class="ev-sidebar-user"><span class="ev-avatar">@(nombre[..1].ToUpperInvariant())</span><div><strong>Administrador</strong><small title="@nombre">@nombre</small></div>
+        <form asp-area="Identity" asp-page="/Account/Logout" method="post"><button class="ev-signout" type="submit" title="Cerrar sesión" aria-label="Cerrar sesión">↪</button></form>
+    </div>
+</aside>
+<div class="ev-main">
+    <header class="ev-topbar">
+        <button class="ev-icon-button ev-menu-toggle" type="button" data-ev-menu aria-controls="evSidebar" aria-expanded="false" aria-label="Abrir menú"><svg class="ev-icon"><use href="#ev-menu"></use></svg></button>
+        <div class="ev-breadcrumb"><a href="/Operaciones" aria-label="Inicio">⌂</a><span>›</span><span>@seccion</span><span>/</span><strong>@(ViewData["Subtitulo"] ?? panel?.Tab ?? ViewData["Title"])</strong></div>
+        <div class="ev-top-actions"><span class="ev-live" data-ev-sync><i></i><span>Sincronizado</span></span>
+            <form action="/Operaciones/Buscar" method="get" class="ev-global-search"><svg class="ev-icon"><use href="#ev-search"></use></svg><input name="buscar" placeholder="Buscar pedido, repartidor o comercio" maxlength="100" aria-label="Búsqueda global" /></form>
+            <a class="ev-icon-button" href="/Operaciones/Incidencias" aria-label="Notificaciones"><svg class="ev-icon"><use href="#ev-bell"></use></svg></a>
+            <a class="ev-avatar ev-profile" href="/Identity/Account/Manage" title="Perfil de @nombre"><svg class="ev-icon"><use href="#ev-user"></use></svg></a>
+        </div>
+    </header>
+    <main class="ev-content" id="evMain">
+        @if (TempData["EnvirapidoOk"] is string ok) { <div class="ev-alert green" role="status">@ok</div> }
+        @if (TempData["EnvirapidoError"] is string error) { <div class="ev-alert red" role="alert">@error</div> }
+        @RenderBody()
+    </main>
+    <footer class="ev-footer"><span>Envirapido · @empresa</span><span>Hora de República Dominicana · UTC−4</span></footer>
+</div>
+<script src="~/js/envirapido.js" asp-append-version="true" defer></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

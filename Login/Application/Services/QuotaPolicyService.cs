@@ -1,12 +1,13 @@
 using Login.Data;
 using Login.Domain.Enums;
+using Login.Domain.Operations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Login.Application.Services;
 
 /// <summary>Límites efectivos del tenant. Cero significa ilimitado; los desactivados no consumen cuota.</summary>
-public sealed class QuotaPolicyService(ApplicationDbContext db)
+public sealed class QuotaPolicyService(ApplicationDbContext db, TimeProvider? clock = null)
 {
     public sealed record EffectiveQuota(int MaxTiendas, int MaxPilotos, int MaxOrdenesMes, int MaxUsuarios);
 
@@ -35,6 +36,7 @@ public sealed class QuotaPolicyService(ApplicationDbContext db)
 
     public async Task EnsureNewStoreAsync(int tenantId, bool createsUser)
     {
+        await EnsureSubscriptionAllowsNewWorkAsync(tenantId);
         var quota = await ResolveAsync(tenantId);
         Check(quota.MaxTiendas, await db.Tiendas.CountAsync(t => t.ClienteAppId == tenantId && t.Activo) + 1, "comercios");
         if (createsUser) await EnsureUsersAsync(tenantId, quota, null, 1);
@@ -42,6 +44,7 @@ public sealed class QuotaPolicyService(ApplicationDbContext db)
 
     public async Task EnsureNewPilotAsync(int tenantId)
     {
+        await EnsureSubscriptionAllowsNewWorkAsync(tenantId);
         var quota = await ResolveAsync(tenantId);
         Check(quota.MaxPilotos, await db.Pilotos.CountAsync(t => t.ClienteAppId == tenantId && t.Activo) + 1, "pilotos");
         await EnsureUsersAsync(tenantId, quota, null, 1);
@@ -49,6 +52,7 @@ public sealed class QuotaPolicyService(ApplicationDbContext db)
 
     public async Task EnsureStoreReactivationAsync(int tenantId, int storeId)
     {
+        await EnsureSubscriptionAllowsNewWorkAsync(tenantId);
         var quota = await ResolveAsync(tenantId);
         Check(quota.MaxTiendas, await db.Tiendas.CountAsync(t => t.ClienteAppId == tenantId && t.Activo && t.Id != storeId) + 1, "comercios");
         var members = await db.UsuariosTienda.Where(u => u.TiendaId == storeId && u.Activo).Select(u => u.IdentityUserId).ToListAsync();
@@ -57,16 +61,32 @@ public sealed class QuotaPolicyService(ApplicationDbContext db)
 
     public async Task EnsurePilotReactivationAsync(int tenantId, int pilotId, string userId)
     {
+        await EnsureSubscriptionAllowsNewWorkAsync(tenantId);
         var quota = await ResolveAsync(tenantId);
         Check(quota.MaxPilotos, await db.Pilotos.CountAsync(t => t.ClienteAppId == tenantId && t.Activo && t.Id != pilotId) + 1, "pilotos");
         await EnsureUsersAsync(tenantId, quota, new[] { userId });
     }
 
     public async Task EnsureMembershipAsync(int tenantId, string userId)
-        => await EnsureUsersAsync(tenantId, await ResolveAsync(tenantId), new[] { userId });
+    {
+        await EnsureSubscriptionAllowsNewWorkAsync(tenantId);
+        await EnsureUsersAsync(tenantId, await ResolveAsync(tenantId), new[] { userId });
+    }
 
     public async Task EnsureNewUserAsync(int tenantId)
-        => await EnsureUsersAsync(tenantId, await ResolveAsync(tenantId), null, 1);
+    {
+        await EnsureSubscriptionAllowsNewWorkAsync(tenantId);
+        await EnsureUsersAsync(tenantId, await ResolveAsync(tenantId), null, 1);
+    }
+
+    // Vencimiento comercial separado de suspensión manual: finalizar una entrega,
+    // cobrar, consultar y solicitar renovación siguen disponibles.
+    public async Task EnsureSubscriptionAllowsNewWorkAsync(int tenantId)
+    {
+        var billing = new SaasBillingService(db, this, clock ?? TimeProvider.System);
+        if (await billing.IsExpiredAsync(tenantId))
+            throw new InvalidOperationException("La suscripción está vencida o aún no ha iniciado. Contacta al gestor para renovar; las entregas en curso pueden finalizarse.");
+    }
 
     public async Task<int> CountUsersAsync(int tenantId) => (await ActiveUserIdsAsync(tenantId)).Count;
 
@@ -94,13 +114,13 @@ public sealed class QuotaPolicyService(ApplicationDbContext db)
 
     public async Task EnsureNoOpenStoreOrdersAsync(int tenantId, int storeId)
     {
-        if (await db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && o.TiendaId == storeId && o.Estado != EstadoOrden.Entregada))
+        if (await db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && o.TiendaId == storeId && !EstadosEntrega.Terminales.Contains(o.Estado)))
             throw new InvalidOperationException("El comercio tiene órdenes abiertas. Finalízalas antes de desactivarlo.");
     }
 
     public async Task EnsureNoOpenPilotOrdersAsync(int tenantId, int pilotId)
     {
-        if (await db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && o.PilotoId == pilotId && o.Estado != EstadoOrden.Entregada))
+        if (await db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && o.PilotoId == pilotId && !EstadosEntrega.Terminales.Contains(o.Estado)))
             throw new InvalidOperationException("El piloto tiene órdenes abiertas. Finalízalas antes de desactivarlo.");
     }
 }

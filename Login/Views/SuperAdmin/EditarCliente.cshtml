@@ -1,389 +1,133 @@
-﻿@model Login.ViewModels.SuperAdmin.ClienteAppEditVm
+@model Login.ViewModels.SuperAdmin.ClienteAppEditVm
 @using Login.Domain.Enums
-@{
-    Layout = "_LayoutSuperAdmin";
-    ViewData["Title"] = "Editar Cliente";
-}
-
-<div class="sa-modal-backdrop" id="saModalEditarCliente">
-    <div class="sa-modal" role="dialog" aria-modal="true">
-
-        <div class="sa-modal-head">
-            <div>
-                <h3>Editar ClienteApp</h3>
-                <p>Modificar datos generales del cliente.</p>
-            </div>
-
-            <a class="sa-modal-close" href="/SuperAdmin/Clientes" title="Cerrar">×</a>
-        </div>
-
-        <form method="post" asp-action="EditarCliente">
-            @Html.AntiForgeryToken()
-            <input type="hidden" asp-for="Id" />
-
-            <div class="sa-modal-body">
-                <div style="display:grid; gap:14px;">
-
-                    <!-- =========================
-                         DATOS PRINCIPALES
-                    ========================== -->
-                    <div>
-                        <div class="sa-sub" style="font-weight:800;">Nombre Comercial</div>
-                        <input class="sa-input" asp-for="NombreComercial"
-                               style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                        <span asp-validation-for="NombreComercial" class="sa-sub" style="color:#e11d48;"></span>
-                    </div>
-
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                        <div>
-                            <div class="sa-sub" style="font-weight:800;">Ubicación</div>
-                            <input class="sa-input" asp-for="Ubicacion"
-                                   placeholder="Ej: Santo Domingo, RD"
-                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                            <span asp-validation-for="Ubicacion" class="sa-sub" style="color:#e11d48;"></span>
-                        </div>
-
-                        <div>
-                            <div class="sa-sub" style="font-weight:800;">Teléfono</div>
-                            <input class="sa-input" asp-for="Telefono"
-                                   placeholder="Ej: 809-555-1234"
-                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                            <span asp-validation-for="Telefono" class="sa-sub" style="color:#e11d48;"></span>
-                        </div>
-                    </div>
-
-                    <!-- =========================
-                         CONTACTO / FISCAL (NUEVO)
-                    ========================== -->
-                    <div class="sa-card sa-card-pad" style="background:#ffffff;">
-                        <div class="sa-sub" style="font-weight:900; color:#0f172a; margin-bottom:10px;">
-                            Contacto y datos fiscales (opcional)
-                        </div>
-
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                            <div>
-                                <div class="sa-sub" style="font-weight:800;">Email</div>
-                                <input class="sa-input" asp-for="Email"
-                                       placeholder="Ej: admin@empresa.com"
-                                       style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                                <span asp-validation-for="Email" class="sa-sub" style="color:#e11d48;"></span>
-                            </div>
-
-                            <div>
-                                <div class="sa-sub" style="font-weight:800;">RNC</div>
-                                <input class="sa-input" asp-for="RNC"
-                                       placeholder="Ej: 1-31-12345-6"
-                                       style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                                <span asp-validation-for="RNC" class="sa-sub" style="color:#e11d48;"></span>
-                            </div>
-                        </div>
-
-                        <div style="margin-top:12px;">
-                            <div class="sa-sub" style="font-weight:800;">Contacto Responsable</div>
-                            <input class="sa-input" asp-for="ContactoResponsable"
-                                   placeholder="Ej: Juan Pérez (Encargado)"
-                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                            <span asp-validation-for="ContactoResponsable" class="sa-sub" style="color:#e11d48;"></span>
-                        </div>
-                    </div>
-
-                    <!-- =========================
-                         PLAN (EXISTENTE)
-                    ========================== -->
-                    <div>
-                        <div class="sa-sub" style="font-weight:800;">Plan</div>
-                        <select class="sa-input" asp-for="PlanId"
-                                style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
-                            @foreach (var p in (List<Login.Domain.Entities.Plan>)ViewBag.Planes)
-                            {
-                                <option value="@p.Id">@p.Nombre</option>
-                            }
-                        </select>
-                    </div>
-
-                    <!-- =========================
-                         ESTADO (EXISTENTE)
-                    ========================== -->
-                    <div>
-                        <div class="sa-sub" style="font-weight:800;">Estado</div>
-                        <select class="sa-input" asp-for="Estado"
-                                style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
-                            <option value="@EstadoClienteApp.Activo">Activo</option>
-                            <option value="@EstadoClienteApp.Suspendido">Suspendido</option>
-                            <option value="@EstadoClienteApp.Vencido">Vencido</option>
-                        </select>
-                    </div>
-
-                    <!-- =========================
-                         SUSCRIPCIÓN (NUEVO)
-                    ========================== -->
-                    <div class="sa-card sa-card-pad" style="background:#ffffff;">
-                        <div class="sa-sub" style="font-weight:900; color:#0f172a; margin-bottom:10px;">
-                            Configuración de suscripción (opcional)
-                        </div>
-
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                            <div>
-                                <div class="sa-sub" style="font-weight:800;">Fecha Inicio Plan</div>
-                                <input class="sa-input" asp-for="FechaInicioPlan" type="date"
-                                       style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                                <span asp-validation-for="FechaInicioPlan" class="sa-sub" style="color:#e11d48;"></span>
-                            </div>
-
-                            <div>
-                                <div class="sa-sub" style="font-weight:800;">Fecha Fin Plan</div>
-                                <input class="sa-input" asp-for="FechaFinPlan" type="date"
-                                       style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                                <span asp-validation-for="FechaFinPlan" class="sa-sub" style="color:#e11d48;"></span>
-                            </div>
-                        </div>
-
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px;">
-                            <div>
-                                <div class="sa-sub" style="font-weight:800;">Último Pago</div>
-                                <input class="sa-input" asp-for="UltimoPago" type="date"
-                                       style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                                <span asp-validation-for="UltimoPago" class="sa-sub" style="color:#e11d48;"></span>
-                            </div>
-
-                            <div>
-                                <div class="sa-sub" style="font-weight:800;">Próximo Cobro</div>
-                                <input class="sa-input" asp-for="ProximoCobro" type="date"
-                                       style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                                <span asp-validation-for="ProximoCobro" class="sa-sub" style="color:#e11d48;"></span>
-                            </div>
-                        </div>
-
-                        <div style="margin-top:12px; display:flex; align-items:center; gap:10px;">
-                            <input asp-for="EsTrial" type="checkbox" style="width:18px; height:18px;" />
-                            <div class="sa-sub" style="font-weight:800;">Es Trial (Prueba)</div>
-                            <span asp-validation-for="EsTrial" class="sa-sub" style="color:#e11d48;"></span>
-                        </div>
-                    </div>
-
-                    <!-- =========================
-                         OBSERVACIONES (NUEVO)
-                    ========================== -->
-                    <div class="sa-card sa-card-pad" style="background:#ffffff;">
-                        <div class="sa-sub" style="font-weight:900; color:#0f172a; margin-bottom:10px;">
-                            Observaciones (opcional)
-                        </div>
-
-                        <textarea class="sa-input" asp-for="Observaciones"
-                                  placeholder="Notas internas: condiciones especiales, acuerdos, etc."
-                                  rows="3"
-                                  style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0; resize:vertical;"></textarea>
-                        <span asp-validation-for="Observaciones" class="sa-sub" style="color:#e11d48;"></span>
-                    </div>
-
-                </div>
-            </div>
-
-<div class="sa-card sa-card-pad" style="margin:16px;"><h3>Excepciones de cuota</h3><p>Pilotos y órdenes: vacío usa plan; cero es ilimitado. Usuarios: vacío o cero es ilimitado, e incluye gestor, pilotos y accesos de comercios activos.</p><label>Máximo de pilotos<input class="sa-input" asp-for="MaxPilotos" type="number" min="0" /></label><label>Órdenes por mes<input class="sa-input" asp-for="MaxOrdenesMes" type="number" min="0" /></label><label>Usuarios activos<input class="sa-input" asp-for="MaxUsuarios" type="number" min="0" /></label></div>
-            <div class="sa-modal-foot">
-                <a class="sa-btn" href="/SuperAdmin/Clientes">Cancelar</a>
-                <button class="sa-btn sa-btn-primary" type="submit">💾 Guardar Cambios</button>
-            </div>
-        </form>
-    </div>
+@{ Layout = "_LayoutSuperAdmin"; ViewData["Title"] = "Editar empresa"; }
+<div class="sa-form-container">
+<div class="sa-page-head">
+<div>
+<h2>Editar empresa</h2>
+<p>Actualiza contacto, condiciones de acceso y excepciones de cuota.</p>
 </div>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-    <script>
-        (function () {
-            const backdrop = document.getElementById("saModalEditarCliente");
-            if (!backdrop) return;
-
-            backdrop.addEventListener("click", (e) => {
-                if (e.target === backdrop) {
-                    window.location.href = "/SuperAdmin/Clientes";
-                }
-            });
-
-            document.addEventListener("keydown", (e) => {
-                if (e.key === "Escape") {
-                    window.location.href = "/SuperAdmin/Clientes";
-                }
-            });
-        })();
-    </script>
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@* @model Login.ViewModels.SuperAdmin.ClienteAppEditVm
-@using Login.Domain.Enums
-@{
-    Layout = "_LayoutSuperAdmin";
-    ViewData["Title"] = "Editar Cliente";
-}
-
-<div class="sa-modal-backdrop" id="saModalEditarCliente">
-    <div class="sa-modal" role="dialog" aria-modal="true">
-
-        <div class="sa-modal-head">
-            <div>
-                <h3>Editar ClienteApp</h3>
-                <p>Modificar datos generales del cliente.</p>
-            </div>
-
-            <a class="sa-modal-close" href="/SuperAdmin/Clientes" title="Cerrar">×</a>
-        </div>
-
-        <form method="post" asp-action="EditarCliente">
-            @Html.AntiForgeryToken()
-            <input type="hidden" asp-for="Id" />
-
-            <div class="sa-modal-body">
-                <div style="display:grid; gap:14px;">
-
-                    <div>
-                        <div class="sa-sub" style="font-weight:800;">Nombre Comercial</div>
-                        <input class="sa-input" asp-for="NombreComercial"
-                               style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                        <span asp-validation-for="NombreComercial" class="sa-sub" style="color:#e11d48;"></span>
-                    </div>
-
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                        <div>
-                            <div class="sa-sub" style="font-weight:800;">Ubicación</div>
-                            <input class="sa-input" asp-for="Ubicacion"
-                                   placeholder="Ej: Santo Domingo, RD"
-                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                            <span asp-validation-for="Ubicacion" class="sa-sub" style="color:#e11d48;"></span>
-                        </div>
-
-                        <div>
-                            <div class="sa-sub" style="font-weight:800;">Teléfono</div>
-                            <input class="sa-input" asp-for="Telefono"
-                                   placeholder="Ej: 809-555-1234"
-                                   style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                            <span asp-validation-for="Telefono" class="sa-sub" style="color:#e11d48;"></span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="sa-sub" style="font-weight:800;">Plan</div>
-                        <select class="sa-input" asp-for="PlanId"
-                                style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
-                            @foreach (var p in (List<Login.Domain.Entities.Plan>)ViewBag.Planes)
-                            {
-                                <option value="@p.Id">@p.Nombre</option>
-                            }
-                        </select>
-                    </div>
-
-                    <div>
-                        <div class="sa-sub" style="font-weight:800;">Estado</div>
-                        <select class="sa-input" asp-for="Estado"
-                                style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
-                            <option value="@EstadoClienteApp.Activo">Activo</option>
-                            <option value="@EstadoClienteApp.Suspendido">Suspendido</option>
-                            <option value="@EstadoClienteApp.Vencido">Vencido</option>
-                        </select>
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="sa-modal-foot">
-                <a class="sa-btn" href="/SuperAdmin/Clientes">Cancelar</a>
-                <button class="sa-btn sa-btn-primary" type="submit">💾 Guardar Cambios</button>
-            </div>
-        </form>
-    </div>
+<a class="sa-btn" asp-action="DetalleCliente" asp-route-id="@Model.Id">← Volver a empresa</a>
 </div>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-    <script>
-        (function () {
-            const backdrop = document.getElementById("saModalEditarCliente");
-            if (!backdrop) return;
-
-            backdrop.addEventListener("click", (e) => {
-                if (e.target === backdrop) {
-                    window.location.href = "/SuperAdmin/Clientes";
-                }
-            });
-
-            document.addEventListener("keydown", (e) => {
-                if (e.key === "Escape") {
-                    window.location.href = "/SuperAdmin/Clientes";
-                }
-            });
-        })();
-    </script>
-}
- *@
+<div class="sa-card sa-card-pad">
+<form asp-action="EditarCliente" method="post">@Html.AntiForgeryToken()<input type="hidden" asp-for="Id" />
+<input type="hidden" asp-for="PlanId" />
+<div asp-validation-summary="All">
+</div>
+<section class="sa-form-section">
+<h3>Datos de la empresa</h3>
+<p>Identificación y contacto principal para administrar la cuenta.</p>
+<div class="sa-form-grid">
+<div class="sa-field sa-field-full">
+<label asp-for="NombreComercial">Nombre comercial</label>
+<input asp-for="NombreComercial" maxlength="120" required />
+<span asp-validation-for="NombreComercial">
+</span>
+</div>
+<div class="sa-field">
+<label asp-for="Ubicacion">Ubicación</label>
+<input asp-for="Ubicacion" maxlength="250" />
+<span asp-validation-for="Ubicacion">
+</span>
+</div>
+<div class="sa-field">
+<label asp-for="Telefono">Teléfono</label>
+<input asp-for="Telefono" type="tel" maxlength="30" />
+<span asp-validation-for="Telefono">
+</span>
+</div>
+<div class="sa-field">
+<label asp-for="Email">Correo de contacto</label>
+<input asp-for="Email" type="email" maxlength="150" />
+<span asp-validation-for="Email">
+</span>
+</div>
+<div class="sa-field">
+<label asp-for="RNC">RNC</label>
+<input asp-for="RNC" maxlength="20" />
+<span asp-validation-for="RNC">
+</span>
+</div>
+<div class="sa-field sa-field-full">
+<label asp-for="ContactoResponsable">Persona responsable</label>
+<input asp-for="ContactoResponsable" maxlength="120" />
+<span asp-validation-for="ContactoResponsable">
+</span>
+</div>
+</div>
+</section>
+<section class="sa-form-section">
+<h3>Cuenta y plan</h3>
+<p>Para cambiar de plan utiliza la ficha de empresa. El sistema validará el uso actual y registrará la decisión.</p>
+<a class="sa-btn" asp-action="DetalleCliente" asp-route-id="@Model.Id" asp-fragment="cambiar-plan">Cambiar plan</a>
+<div class="sa-field sa-section-gap">
+<label asp-for="Estado">Estado operativo</label>
+<select asp-for="Estado">
+<option value="@EstadoClienteApp.Activo">Activo</option>
+<option value="@EstadoClienteApp.Suspendido">Suspendido</option>@if(Model.Estado == EstadoClienteApp.Vencido) { <option value="@EstadoClienteApp.Vencido">Vencido (estado anterior)</option> }</select>
+<span asp-validation-for="Estado">
+</span>
+</div>
+</section>
+<section class="sa-form-section">
+<h3>Cobertura de suscripción</h3>
+<dl class="sa-definition">
+<dt>Inicio</dt>
+<dd>@(Model.FechaInicioPlan?.ToString("dd/MM/yyyy") ?? "Sin fecha")</dd>
+<dt>Fin de cobertura</dt>
+<dd>@(Model.FechaFinPlan?.ToString("dd/MM/yyyy") ?? "Sin fecha establecida")</dd>
+<dt>Prueba</dt>
+<dd>@(Model.EsTrial ? "Sí" : "No")</dd>
+</dl>
+<p class="sa-sub">La cobertura se administra mediante facturas y pagos confirmados. Editar la empresa no modifica su historial de cobros.</p>
+</section>
+<section class="sa-form-section">
+<h3>Cobros registrados</h3>
+<dl class="sa-definition">
+<dt>Último pago</dt>
+<dd>@(Model.UltimoPago?.ToString("dd/MM/yyyy") ?? "Sin pagos registrados")</dd>
+<dt>Próximo cobro</dt>
+<dd>@(Model.ProximoCobro?.ToString("dd/MM/yyyy") ?? "Sin fecha establecida")</dd>
+</dl>
+<p class="sa-sub">Información calculada desde facturación. No se marca una factura como pagada al editar una fecha.</p>
+</section>
+<section class="sa-form-section">
+<h3>Excepciones de cuota</h3>
+<p>Pilotos y órdenes: vacío usa el plan; cero es ilimitado. Usuarios: vacío o cero es ilimitado e incluye gestor, pilotos y accesos activos de comercios.</p>
+<div class="sa-form-grid">
+<div class="sa-field">
+<label asp-for="MaxPilotos">Máximo de pilotos</label>
+<input asp-for="MaxPilotos" type="number" min="0" />
+<span asp-validation-for="MaxPilotos">
+</span>
+</div>
+<div class="sa-field">
+<label asp-for="MaxOrdenesMes">Órdenes por mes</label>
+<input asp-for="MaxOrdenesMes" type="number" min="0" />
+<span asp-validation-for="MaxOrdenesMes">
+</span>
+</div>
+<div class="sa-field">
+<label asp-for="MaxUsuarios">Usuarios activos</label>
+<input asp-for="MaxUsuarios" type="number" min="0" />
+<span asp-validation-for="MaxUsuarios">
+</span>
+</div>
+</div>
+</section>
+<section class="sa-form-section">
+<div class="sa-field">
+<label asp-for="Observaciones">Notas internas</label>
+<textarea asp-for="Observaciones" rows="3" maxlength="500">
+</textarea>
+<span asp-validation-for="Observaciones">
+</span>
+</div>
+</section>
+<div class="sa-form-footer">
+<a class="sa-btn" asp-action="DetalleCliente" asp-route-id="@Model.Id">Cancelar</a>
+<button class="sa-btn sa-btn-primary" type="submit">Guardar cambios</button>
+</div>
+</form>
+</div>
+</div>

@@ -16,7 +16,8 @@ namespace Login.Application.Interfaces
             string? notaPedido = null,
             string actorIdentityUserId = "System",
             string actorRol = "System",
-            string? operacionId = null);
+            string? operacionId = null,
+            IReadOnlyList<OrdenDestinatarioRequest>? destinatarios = null);
 
         /// <summary>Asigna piloto a una orden (por código B).</summary>
         Task AsignarPilotoAsync(
@@ -31,7 +32,11 @@ namespace Login.Application.Interfaces
             string codigoB,
             string actorIdentityUserId,
             string actorRol,
-            int? ordenId = null);
+            int? ordenId = null,
+            string? operacionId = null);
+
+        Task<EntregaParadaResult> ConfirmarEntregaParadaAsync(int ordenId, int paradaId, string codigoC,
+            string actorIdentityUserId, string? operacionId = null);
 
         /// <summary>Confirma entrega usando B + C (marca C como usado y cambia estado).</summary>
         Task ConfirmarEntregaAsync(
@@ -63,9 +68,21 @@ namespace Login.Application.Interfaces
         int OrdenId,
         int NumeroOrdenA,
         string CodigoB,
-        string CodigoC,
+        string? CodigoC,
         string? CodigoA = null
-    );
+    )
+    {
+        public IReadOnlyList<ParadaCreadaDto> Paradas { get; init; } = Array.Empty<ParadaCreadaDto>();
+        public bool Equals(OrdenCreadaResult? other) => other is not null && OrdenId == other.OrdenId
+            && NumeroOrdenA == other.NumeroOrdenA && CodigoB == other.CodigoB && CodigoC == other.CodigoC
+            && CodigoA == other.CodigoA && Paradas.SequenceEqual(other.Paradas);
+        public override int GetHashCode() => HashCode.Combine(OrdenId, NumeroOrdenA, CodigoB, CodigoC, CodigoA);
+    }
+
+    public sealed record OrdenDestinatarioRequest(int UsuarioFinalId, string? Instrucciones = null);
+    public sealed record ParadaCreadaDto(int ParadaId, int UsuarioFinalId, string Nombre, string CodigoC, string? Direccion = null);
+    public sealed record EntregaParadaResult(int OrdenId, int ParadaId, string EstadoParada,
+        string EstadoOrden, DateTime EntregadaAt, int Entregadas, int TotalParadas);
 
     public sealed record OrdenAutoDisponibleDto(
         int OrdenId,
@@ -76,7 +93,8 @@ namespace Login.Application.Interfaces
         string? NotaPedido,
         DateTime CreatedAt,
         double? DistanciaKm,
-        string? CodigoA = null
+        string? CodigoA = null,
+        int TotalParadas = 1
     );
 
     public sealed record OrdenPilotoView(

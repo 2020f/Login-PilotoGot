@@ -5,6 +5,7 @@ using Login.Application.Services;
 using Login.Data;
 using Login.Domain.Entities;
 using Login.Domain.Enums;
+using Login.Domain.Operations;
 using Login.ViewModels.Supervisor;
 using Login.ViewModels.Tienda;
 using Microsoft.AspNetCore.Authorization;
@@ -245,7 +246,18 @@ namespace Login.Controllers
                 return RedirectToAction(nameof(Tiendas), new { error = ex.Message });
             }
 
-            // ✅ Seguridad: la tienda debe ser del tenant del Gestor
+            // La credencial pertenece a Identity, no a una tienda. SERIALIZABLE
+            // protege también el conjunto de pertenencias/roles durante el reset:
+            // otra empresa no puede vincular esta identidad entre la guarda y el commit.
+            await using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            var tenantDisponible = await _db.ClientesApp
+                .Where(c => c.Id == clienteAppId && c.GestorIdentityUserId == GetUserId()
+                    && c.Estado == EstadoClienteApp.Activo)
+                .ExecuteUpdateAsync(s => s.SetProperty(c => c.OrdenSeq, c => c.OrdenSeq));
+            if (tenantDisponible != 1)
+                return Forbid();
+
+            // La tienda debe ser del tenant del gestor.
             var tiendaOk = await _db.Tiendas
                 .AsNoTracking()
                 .AnyAsync(t => t.Id == input.TiendaId && t.ClienteAppId == clienteAppId);
@@ -263,11 +275,31 @@ namespace Login.Controllers
             if (string.IsNullOrWhiteSpace(identityId))
                 return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, error = "La tienda no tiene usuario principal." });
 
+            // Tomar el lock de escritura antes de leer roles/pertenencias evita
+            // convertir un lock compartido de Identity en exclusivo al cambiar el sello.
+            var identityDisponible = await _db.Users.Where(u => u.Id == identityId)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.ConcurrencyStamp, u => u.ConcurrencyStamp));
+            if (identityDisponible != 1)
+                return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, error = "Usuario de la tienda no existe en Identity." });
+
             var user = await _userManager.FindByIdAsync(identityId);
             if (user is null)
                 return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, error = "Usuario de la tienda no existe en Identity." });
 
-            // ✅ Reset real de password (sin saber el actual)
+            var roles = await _userManager.GetRolesAsync(user);
+            var otraEmpresa = await _db.UsuariosTienda.AsNoTracking()
+                .AnyAsync(ut => ut.IdentityUserId == identityId && ut.Tienda.ClienteAppId != clienteAppId);
+            var otroPerfil = roles.Count != 1 || !roles.Contains("Cliente")
+                || await _db.Pilotos.AsNoTracking().AnyAsync(p => p.IdentityUserId == identityId)
+                || await _db.ClientesApp.AsNoTracking().AnyAsync(c => c.GestorIdentityUserId == identityId);
+            if (otraEmpresa || otroPerfil)
+                return RedirectToAction(nameof(EditarTienda), new {
+                    id = input.TiendaId,
+                    error = "Esta identidad tiene accesos compartidos. Su titular debe recuperar la contraseña desde la pantalla de acceso. El gestor sólo administra los accesos de su empresa."
+                });
+
+            // Sólo una identidad comercial exclusiva de esta empresa puede ser
+            // administrada aquí. El reset invalida sus sesiones mediante SecurityStamp.
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var resetRes = await _userManager.ResetPasswordAsync(user, token, input.NuevoPassword);
 
@@ -279,7 +311,11 @@ namespace Login.Controllers
 
             // ✅ Si estaba lockeado, lo desbloqueamos (por si desactivaste antes)
             user.LockoutEnd = null;
-            await _userManager.UpdateAsync(user);
+            var updateRes = await _userManager.UpdateAsync(user);
+            if (!updateRes.Succeeded)
+                return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, error = "No se pudo completar el cambio de contraseña. Inténtalo de nuevo." });
+
+            await tx.CommitAsync();
 
             return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, ok = "Password reseteado ✅" });
         }
@@ -304,7 +340,7 @@ namespace Login.Controllers
 
             var pilotos = await _db.Pilotos.AsNoTracking().Where(p => p.ClienteAppId == clienteAppId).OrderBy(p => p.Nombre)
                 .Select(p => new PilotOperationsVm { Id = p.Id, Nombre = p.Nombre, Telefono = p.Telefono, Activo = p.Activo,
-                    EnLinea = p.EnLinea, OrdenesActivas = p.Ordenes.Count(o => o.Estado != EstadoOrden.Entregada) }).ToListAsync();
+                    EnLinea = p.EnLinea, OrdenesActivas = p.Ordenes.Count(o => !EstadosEntrega.Terminales.Contains(o.Estado)) }).ToListAsync();
 
             return View(pilotos);
         }
@@ -398,7 +434,7 @@ namespace Login.Controllers
                 if (piloto == null) return NotFound();
                 if (!input.Activo) await _quotas.EnsureNoOpenPilotOrdersAsync(tenantId, piloto.Id);
                 else if (!piloto.Activo) await _quotas.EnsurePilotReactivationAsync(tenantId, piloto.Id, piloto.IdentityUserId);
-                var ocupadas = await _db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && o.PilotoId == piloto.Id && o.Estado != EstadoOrden.Entregada);
+                var ocupadas = await _db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && o.PilotoId == piloto.Id && !EstadosEntrega.Terminales.Contains(o.Estado));
                 piloto.Nombre = input.Nombre.Trim(); piloto.Telefono = input.Telefono.Trim(); piloto.Activo = input.Activo;
                 piloto.Estado = !input.Activo ? EstadoPiloto.Inactivo : ocupadas ? EstadoPiloto.Ocupado : EstadoPiloto.Disponible;
                 if (!input.Activo) piloto.EnLinea = false;
@@ -471,14 +507,14 @@ namespace Login.Controllers
             vm.Pilotos = await _db.Pilotos.AsNoTracking().Where(p => p.ClienteAppId == tenantId).OrderBy(p => p.Nombre)
                 .Select(p => new SelectListItem { Value = p.Id.ToString(), Text = p.Nombre }).ToListAsync();
             vm.Pilotos.Insert(0, new SelectListItem { Value = "", Text = "Todos" });
-            vm.Estados = Enum.GetValues<EstadoOrden>().Where(e => historial || e != EstadoOrden.Entregada)
+            vm.Estados = Enum.GetValues<EstadoOrden>().Where(e => historial || !EstadosEntrega.Terminales.Contains(e))
                 .Select(e => new SelectListItem { Value = e.ToString(), Text = e.ToString() }).ToList();
             vm.Estados.Insert(0, new SelectListItem { Value = "", Text = "Todos" });
             vm.Candidatos = await _db.Pilotos.AsNoTracking().Where(p => p.ClienteAppId == tenantId && p.Activo)
                 .OrderBy(p => p.Nombre).Select(p => new PilotOperationsVm { Id = p.Id, Nombre = p.Nombre, Telefono = p.Telefono,
-                    Activo = p.Activo, EnLinea = p.EnLinea, OrdenesActivas = p.Ordenes.Count(o => o.Estado != EstadoOrden.Entregada) }).ToListAsync();
+                    Activo = p.Activo, EnLinea = p.EnLinea, OrdenesActivas = p.Ordenes.Count(o => !EstadosEntrega.Terminales.Contains(o.Estado)) }).ToListAsync();
             var query = _db.OrdenesEntrega.AsNoTracking().Where(o => o.ClienteAppId == tenantId);
-            if (!historial) query = query.Where(o => o.Estado != EstadoOrden.Entregada);
+            if (!historial) query = query.Where(o => !EstadosEntrega.Terminales.Contains(o.Estado));
             if (tiendaId.HasValue) query = query.Where(o => o.TiendaId == tiendaId.Value);
             if (pilotoId.HasValue) query = query.Where(o => o.PilotoId == pilotoId.Value);
             if (!string.IsNullOrWhiteSpace(estado) && Enum.TryParse<EstadoOrden>(estado, out var parsed))
@@ -837,9 +873,9 @@ namespace Login.Controllers
                 {
                     Id = p.Id,
                     Nombre = p.Nombre,
-                    Estado = !p.Activo ? "Inactivo" : p.Ordenes.Any(o => o.Estado != EstadoOrden.Entregada) ? "Con entregas" : "Sin entregas",
-                    EstadoNum = !p.Activo ? 3 : p.Ordenes.Any(o => o.Estado != EstadoOrden.Entregada) ? 2 : 1,
-                    Activo = p.Activo, EnLinea = p.EnLinea, OrdenesActivas = p.Ordenes.Count(o => o.Estado != EstadoOrden.Entregada),
+                    Estado = !p.Activo ? "Inactivo" : p.Ordenes.Any(o => !EstadosEntrega.Terminales.Contains(o.Estado)) ? "Con entregas" : "Sin entregas",
+                    EstadoNum = !p.Activo ? 3 : p.Ordenes.Any(o => !EstadosEntrega.Terminales.Contains(o.Estado)) ? 2 : 1,
+                    Activo = p.Activo, EnLinea = p.EnLinea, OrdenesActivas = p.Ordenes.Count(o => !EstadosEntrega.Terminales.Contains(o.Estado)),
                     Latitud = p.Latitud,
                     Longitud = p.Longitud,
                     UltimaUbicacionAt = p.UltimaUbicacionAt

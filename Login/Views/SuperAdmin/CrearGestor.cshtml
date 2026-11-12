@@ -1,72 +1,36 @@
-﻿@model Login.ViewModels.SuperAdmin.GestorCreateVm
-@{
-    Layout = "_LayoutSuperAdmin";
-    ViewData["Title"] = "Crear Gestor";
-    ViewData["PageTitle"] = "Crear Gestor";
-}
-
-<div class="sa-modal-backdrop" id="saModalGestor">
-    <div class="sa-modal" role="dialog" aria-modal="true" aria-labelledby="saModalTitle">
-        <div class="sa-modal-head">
-            <div>
-                <h3 id="saModalTitle">Crear Gestor</h3>
-                <p>Este usuario será el administrador principal de esta empresa.</p>
-            </div>
-
-            <a class="sa-modal-close" href="/SuperAdmin/Clientes" title="Cerrar">×</a>
-        </div>
-
-        @* Errores de validación *@
-        @if (!ViewData.ModelState.IsValid)
-        {
-            <div class="sa-card sa-card-pad" style="margin: 0 18px 12px; border-color:#fecdd3;">
-                <div class="sa-sub" style="color:#b91c1c; font-weight:800;">Revisa lo siguiente:</div>
-                <ul style="margin:8px 0 0 18px; color:#b91c1c;">
-                    @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        <li>@e.ErrorMessage</li>
-                    }
-                </ul>
-            </div>
-        }
-
-        <form method="post" action="/SuperAdmin/CrearGestor">
-            @Html.AntiForgeryToken()
-            <input type="hidden" asp-for="ClienteAppId" />
-
-            <div class="sa-modal-body">
-                <div style="display:grid; gap:14px;">
-                    <div>
-                        <div class="sa-sub" style="font-weight:800; color:#334155;">Email del gestor</div>
-                        <input class="sa-input" asp-for="Email" placeholder="admin@empresa.com"
-                               style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                        <span class="sa-sub" style="color:#ef4444;" asp-validation-for="Email"></span>
-                    </div>
-
-                    <div>
-                        <div class="sa-sub" style="font-weight:800; color:#334155;">Password</div>
-                        <input class="sa-input" asp-for="Password" type="password" placeholder="••••••••"
-                               style="width:100%; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" />
-                        <span class="sa-sub" style="color:#ef4444;" asp-validation-for="Password"></span>
-                    </div>
-
-                    <div class="sa-card sa-card-pad" style="background:#f8fafc;">
-                        <div class="sa-sub">
-                            Tip: usa un password fuerte. Si el gestor lo olvida, luego lo reseteamos desde el panel.
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="sa-modal-foot">
-                <a class="sa-btn" href="/SuperAdmin/Clientes">Cancelar</a>
-                <button class="sa-btn sa-btn-primary" type="submit">👤 Crear Gestor</button>
-            </div>
-        </form>
-    </div>
+@model Login.ViewModels.SuperAdmin.GestorCreateVm
+@{ Layout = "_LayoutSuperAdmin"; ViewData["Title"] = "Asignar gestor"; }
+<div class="sa-form-container">
+<div class="sa-page-head">
+<div>
+<h2>Asignar gestor de empresa</h2>
+<p>El gestor administrará únicamente los datos de esta empresa.</p>
 </div>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/creargestor.js" asp-append-version="true"></script>
-}
+<a class="sa-btn" asp-action="DetalleCliente" asp-route-id="@Model.ClienteAppId">← Volver a empresa</a>
+</div>
+<div class="sa-card sa-card-pad">
+<form asp-action="CrearGestor" method="post">@Html.AntiForgeryToken()<input type="hidden" asp-for="ClienteAppId" />
+<div asp-validation-summary="All">
+</div>
+<div class="sa-form-grid">
+<div class="sa-field">
+<label asp-for="Email">Correo del gestor</label>
+<input asp-for="Email" type="email" autocomplete="off" required />
+<span asp-validation-for="Email">
+</span>
+</div>
+<div class="sa-field">
+<label asp-for="Password">Contraseña inicial</label>
+<input asp-for="Password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required />
+<span asp-validation-for="Password">
+</span>
+<span class="sa-sub">Al menos 12 caracteres. Comunícala al gestor por un medio privado.</span>
+</div>
+</div>
+<div class="sa-form-footer">
+<a class="sa-btn" asp-action="DetalleCliente" asp-route-id="@Model.ClienteAppId">Cancelar</a>
+<button class="sa-btn sa-btn-primary" type="submit">Crear gestor</button>
+</div>
+</form>
+</div>
+</div>

@@ -1,5 +1,5 @@
-﻿@{
-    var title = ViewData["Title"] as string ?? "PilotGo - SuperAdmin";
+@{
+    var title = ViewData["Title"] as string ?? "Envirapido - SuperAdmin";
 }
 <!DOCTYPE html>
 <html lang="es">
@@ -12,7 +12,7 @@
     @RenderSection("Styles", required: false)
 </head>
 <body class="sa-body">
-    <div class="sa-shell">
+    <a class="sa-skip" href="#saContent">Saltar al contenido</a><div class="sa-shell">
 
         <aside class="sa-sidebar" id="saSidebar" aria-label="Navegación de SuperAdmin">
             <button class="sa-menu-close" id="saMenuClose" type="button" aria-label="Cerrar menú">
@@ -35,7 +35,7 @@
 
                         <button type="submit"
                                 class="sa-btn"
-                                title="Cerrar sesión"
+                                title="Cerrar sesión" aria-label="Cerrar sesión"
                                 style="width:38px; height:38px; padding:0; display:grid; place-items:center; border-radius:12px;">
                             ↩
                         </button>
@@ -54,7 +54,7 @@
                 <partial name="_SuperAdminTopbar" />
             </header>
 
-            <section class="sa-content">
+            <section class="sa-content" id="saContent" tabindex="-1">
                 @RenderBody()
             </section>
         </main>

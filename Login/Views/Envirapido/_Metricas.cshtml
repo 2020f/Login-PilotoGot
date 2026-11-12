@@ -1,0 +1,17 @@
+@model Login.ViewModels.Envirapido.PanelVm
+<div class="ev-metrics">
+    <article class="ev-metric"><svg class="ev-icon"><use href="#ev-box"></use></svg><div><div class="ev-metric-label">@(Model.Seccion == "Pedidos" ? "Pedidos hoy" : "Entregas hoy")</div><strong data-ev-value="@(Model.Seccion=="Pedidos"?"hoy":"entregasHoy")">@((Model.Seccion=="Pedidos"?Model.Hoy:Model.EntregasHoy).ToString("N0"))</strong><small>@(Model.Seccion=="Pedidos"?"Órdenes creadas · día RD":"Paradas completadas con C · día RD")</small></div></article>
+    @if (Model.Seccion == "Pedidos")
+    {
+        <article class="ev-metric amber"><svg class="ev-icon"><use href="#ev-clipboard"></use></svg><div><div class="ev-metric-label">Por asignar</div><strong data-ev-value="porAsignar">@Model.PorAsignar.ToString("N0")</strong><small>Órdenes sin repartidor</small></div></article>
+        <article class="ev-metric"><svg class="ev-icon"><use href="#ev-truck"></use></svg><div><div class="ev-metric-label">En curso</div><strong data-ev-value="enCurso">@((Model.Recogiendo + Model.EnRuta).ToString("N0"))</strong><small>@Model.Recogiendo recogiendo · @Model.EnRuta en ruta</small></div></article>
+        <article class="ev-metric"><svg class="ev-icon"><use href="#ev-check"></use></svg><div><div class="ev-metric-label">Entregados</div><strong data-ev-value="entregados">@Model.Entregados.ToString("N0")</strong><small>Órdenes completadas</small></div></article>
+    }
+    else
+    {
+        <article class="ev-metric"><svg class="ev-icon"><use href="#ev-truck"></use></svg><div><div class="ev-metric-label">En ruta</div><strong data-ev-value="enRuta">@Model.EnRuta.ToString("N0")</strong><small>Órdenes recogidas</small></div></article>
+        <article class="ev-metric"><svg class="ev-icon"><use href="#ev-users"></use></svg><div><div class="ev-metric-label">Repartidores activos</div><strong data-ev-value="activos">@Model.RepartidoresActivos.ToString("N0")</strong><small>Con recepción de ofertas activa</small></div></article>
+        <article class="ev-metric"><svg class="ev-icon"><use href="#ev-check"></use></svg><div><div class="ev-metric-label">Entregas a tiempo</div><strong data-ev-value="puntualidad">@(Model.Puntualidad.HasValue?Model.Puntualidad.Value.ToString("N1")+"%":"—")</strong><small>@(Model.PedidosConCompromiso>0?Model.PedidosConCompromiso+" órdenes entregadas con compromiso":"Configura el compromiso de entrega")</small></div></article>
+    }
+    <article class="ev-metric amber"><svg class="ev-icon"><use href="#ev-alert"></use></svg><div><div class="ev-metric-label">@(Model.Seccion == "Pedidos" ? "Con incidencias" : "Incidencias abiertas")</div><strong data-ev-value="@(Model.Seccion=="Pedidos"?"incidenciasOrders":"incidencias")">@((Model.Seccion=="Pedidos"?Model.PedidosConIncidencias:Model.Incidencias).ToString("N0"))</strong><small>@(Model.Seccion=="Pedidos"?"Órdenes con casos abiertos":"Casos abiertos de la empresa")</small></div></article>
+</div>

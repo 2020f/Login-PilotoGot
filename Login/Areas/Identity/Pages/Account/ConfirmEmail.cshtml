@@ -1,0 +1,11 @@
+@page
+@model ConfirmEmailModel
+@{
+    ViewData["Title"] = "Confirmar correo";
+}
+<link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+<main class="auth-main"><section class="auth-card">
+    <div class="auth-kicker">Envirapido</div><h1 class="auth-title">@(Model.Confirmed ? "Correo confirmado" : "Enlace no válido")</h1>
+    <p>@(Model.Confirmed ? "Tu correo ha sido confirmado. Esta confirmación no concede roles ni acceso a nuevas empresas." : "Este enlace no es válido o ya venció. Contacta al administrador si necesitas confirmar tu correo.")</p>
+    <a class="auth-link" asp-page="./Login">Volver a iniciar sesión</a>
+</section></main>
