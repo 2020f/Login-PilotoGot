@@ -25,6 +25,7 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
 {
     private readonly string _database = Path.Combine(Path.GetTempPath(), $"pilotgo-tests-{Guid.NewGuid():N}.db");
     private readonly bool _useSqlServer = Environment.GetEnvironmentVariable("PILOTGO_TEST_SQLSERVER") == "1";
+    private readonly string _sqlInstance = Environment.GetEnvironmentVariable("PILOTGO_TEST_SQLSERVER_INSTANCE") ?? "PilotGoCodexQA_20261109";
     private readonly string _sqlDatabase = $"PilotGoTest_{Guid.NewGuid():N}";
     private bool _cleanupStarted;
     public const string Password = "Test-only-Password42!";
@@ -34,6 +35,8 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        if (!Regex.IsMatch(_sqlInstance, "^[A-Za-z0-9_-]{1,64}$"))
+            throw new InvalidOperationException("Nombre de instancia LocalDB de pruebas inválido.");
         builder.UseEnvironment("Testing");
         builder.UseSetting("Jwt:Key", JwtKey);
         builder.ConfigureTestServices(services =>
@@ -60,7 +63,7 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
             services.AddDbContext<ApplicationDbContext>(options =>
             {
                 if (_useSqlServer)
-                    options.UseSqlServer($"Server=(localdb)\\PilotGoCodexQA_20261109;Database={_sqlDatabase};Integrated Security=true;TrustServerCertificate=true");
+                    options.UseSqlServer($"Server=(localdb)\\{_sqlInstance};Database={_sqlDatabase};Integrated Security=true;TrustServerCertificate=true");
                 else
                     options.UseSqlite($"Data Source={_database};Default Timeout=30;Pooling=False");
             });

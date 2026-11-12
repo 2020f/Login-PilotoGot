@@ -36,14 +36,14 @@
 <div class="sa-card sa-card-pad" style="margin-bottom:12px;">
     <div style="display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
         <div class="sa-sub" style="font-weight:800; color:#334155;">Buscar</div>
-        <form method="get" action="/SuperAdmin/Clientes"><input name="q" value="@Model.Q" id="saClientesSearch" class="sa-input"
+        <form class="sa-company-search" method="get" action="/SuperAdmin/Clientes"><input name="q" value="@Model.Q" id="saClientesSearch" class="sa-input"
                placeholder="Buscar por empresa, email, plan o estado..."
                style="max-width:100%; width:420px; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" /><button class="sa-btn" type="submit">Buscar</button></form>
     </div>
 </div>
 
 <div class="sa-card">
-    <div class="sa-card-pad" style="padding-bottom:0;">
+    <div class="sa-card-pad sa-table-scroll" style="padding-bottom:0;" role="region" aria-label="Empresas: tabla con desplazamiento horizontal" tabindex="0">
         <table class="sa-table" id="saClientesTable">
             <thead>
                 <tr>

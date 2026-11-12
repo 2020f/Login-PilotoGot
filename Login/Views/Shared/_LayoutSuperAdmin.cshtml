@@ -11,10 +11,13 @@
     <link rel="stylesheet" href="~/css/superadmin.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
 </head>
-<body>
+<body class="sa-body">
     <div class="sa-shell">
 
-        <aside class="sa-sidebar" id="saSidebar">
+        <aside class="sa-sidebar" id="saSidebar" aria-label="Navegación de SuperAdmin">
+            <button class="sa-menu-close" id="saMenuClose" type="button" aria-label="Cerrar menú">
+                <span aria-hidden="true">×</span> Cerrar menú
+            </button>
             <partial name="_SuperAdminSidebar" />
 
             <div class="sa-sidebar-footer" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
@@ -41,8 +44,13 @@
             </div>
         </aside>
 
-        <main class="sa-main">
+        <button class="sa-menu-backdrop" id="saMenuBackdrop" type="button" aria-label="Cerrar menú" tabindex="-1" hidden></button>
+
+        <main class="sa-main" id="saMain">
             <header class="sa-topbar">
+                <button class="sa-menu-toggle" id="saMenuToggle" type="button" aria-label="Abrir menú" aria-controls="saSidebar" aria-expanded="false">
+                    <span aria-hidden="true">☰</span> Menú
+                </button>
                 <partial name="_SuperAdminTopbar" />
             </header>
 

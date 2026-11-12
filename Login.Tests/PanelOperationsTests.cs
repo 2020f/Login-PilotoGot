@@ -151,7 +151,11 @@ public sealed class PanelOperationsTests : IAsyncLifetime
         });
         using var manager = await ManagerAsync();
         var fragment = await manager.GetStringAsync("/Supervisor/OrdenesFragmento");
-        Assert.Contains("A1", fragment); Assert.DoesNotContain("B1", fragment);
+        // Los tokens CSRF son aleatorios y pueden contener "B1". Comprobar
+        // el dato de comercio renderizado, no cualquier subcadena del HTML.
+        var storeNames = Regex.Matches(fragment, "<div class=\"pg-store-name\">([^<]*)</div>")
+            .Select(m => WebUtility.HtmlDecode(m.Groups[1].Value).Trim()).ToArray();
+        Assert.Equal(new[] { "A1" }, storeNames);
         Assert.DoesNotContain(">Todos</div>", fragment);
         Assert.Equal(HttpStatusCode.NotFound, (await manager.GetAsync($"/Supervisor/DetalleOrden/{other}")).StatusCode);
         var detail = await manager.GetStringAsync($"/Supervisor/DetalleOrden/{own}");

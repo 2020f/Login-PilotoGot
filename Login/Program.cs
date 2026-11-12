@@ -20,7 +20,8 @@ builder.Services.AddScoped<ClienteAppEstadoFilter>(); // ✅ filtro tenant
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<ClienteAppEstadoFilter>(); // ✅ global: bloquea Gestor/Cliente/Piloto si tenant no está Activo
-});
+}).AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(
+    new Login.Serialization.UtcDateTimeJsonConverter()));
 
 builder.Services.AddRazorPages();
 builder.Services.AddHttpContextAccessor();

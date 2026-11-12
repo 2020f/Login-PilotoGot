@@ -546,3 +546,77 @@ body {
     justify-content: flex-end;
     gap: 10px;
 }
+
+/* Responsive SuperAdmin shell */
+.sa-sidebar { flex: 0 0 270px; position: sticky; top: 0; height: 100vh; height: 100dvh; min-height: 0; overflow-y: auto; }
+.sa-main, .sa-content { min-width: 0; max-width: 100%; }
+.sa-topbar { display: flex; align-items: flex-start; gap: 12px; }
+.sa-topbar-row { flex: 1; min-width: 0; flex-wrap: wrap; }
+.sa-page-title, .sa-topbar-actions { min-width: 0; max-width: 100%; }
+.sa-page-title h1 { overflow-wrap: anywhere; }
+.sa-search { min-width: 0; width: min(440px, 100%); }
+.sa-search label { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+.sa-search input { flex: 1; min-width: 0; }
+.sa-search .sa-btn { flex-shrink: 0; }
+.sa-content .sa-card, .sa-grid-2 > *, .sa-grid-3 > *, .sa-grid-4 > * { min-width: 0; }
+.sa-content form, .sa-content input, .sa-content textarea, .sa-content select { min-width: 0; max-width: 100%; }
+.sa-content .sa-card-pad { overflow-wrap: anywhere; }
+.sa-company-search { display: flex; align-items: center; gap: 8px; flex: 1 1 320px; flex-wrap: wrap; }
+.sa-company-search .sa-input { flex: 1 1 200px; width: auto !important; }
+.sa-table-scroll { width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+.sa-table-scroll .sa-table { min-width: 1200px; }
+.sa-table-scroll .sa-table th:nth-child(2), .sa-table-scroll .sa-table td:nth-child(2) { width: 250px; min-width: 220px; }
+.sa-table-scroll:focus-visible, .sa-menu-toggle:focus-visible, .sa-menu-close:focus-visible { outline: 3px solid #60a5fa; outline-offset: 3px; }
+.sa-sidebar-footer .sa-user { flex: 1; min-width: 0; padding-left: 0; padding-right: 0; }
+.sa-user-avatar { flex-shrink: 0; }
+.sa-user-meta { min-width: 0; }
+.sa-user-name { overflow-wrap: anywhere; }
+.sa-sidebar-footer > form { flex-shrink: 0; }
+.sa-menu-toggle, .sa-menu-close, .sa-menu-backdrop { display: none; }
+.sa-modal-head { flex-shrink: 0; }
+.sa-modal > form { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+.sa-modal > form .sa-modal-body { max-height: none; overflow: visible; }
+.sa-modal form .sa-card > label { display: inline-flex; flex-direction: column; gap: 7px; width: calc(33.333% - 12px); min-width: 0; margin: 10px 8px 4px 0; vertical-align: top; font-size: 13px; }
+.sa-modal form .sa-card > label > .sa-input { display: block; width: 100%; min-width: 0; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font: inherit; }
+.sa-modal-foot { flex-shrink: 0; flex-wrap: wrap; }
+@media (max-width: 1200px) and (min-width: 901px) {
+    .sa-grid-3, .sa-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sa-topbar-actions { flex-basis: 100%; }
+}
+@media (max-width: 900px) {
+    .sa-shell { width: 100%; min-width: 0; }
+    .sa-main { width: 100%; flex-basis: 100%; }
+    .sa-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 1100; width: min(300px, calc(100vw - 44px)); max-width: calc(100vw - 44px); height: 100vh; height: 100dvh; flex-basis: auto; transform: translateX(-100%); visibility: hidden; pointer-events: none; transition: transform .2s ease, visibility .2s ease; }
+    .sa-body.sa-menu-open { overflow: hidden; }
+    .sa-menu-open .sa-sidebar { transform: translateX(0); visibility: visible; pointer-events: auto; }
+    .sa-menu-backdrop:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 1090; border: 0; padding: 0; background: rgba(15, 23, 42, .48); cursor: pointer; }
+    .sa-menu-toggle { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: white; color: var(--text); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .sa-menu-toggle [aria-hidden] { font-size: 18px; }
+    .sa-menu-close { display: inline-flex; align-self: flex-end; align-items: center; gap: 8px; min-height: 44px; padding: 8px 10px; border: 1px solid rgba(255,255,255,.18); border-radius: 10px; background: transparent; color: #e5e7eb; font: inherit; cursor: pointer; }
+    .sa-menu-close [aria-hidden] { font-size: 22px; }
+    .sa-topbar { padding: 12px; gap: 10px; }
+    .sa-topbar-row { align-items: stretch; flex-direction: column; gap: 10px; }
+    .sa-page-title h1 { font-size: 18px; line-height: 1.4; }
+    .sa-topbar-actions, .sa-search { width: 100%; }
+    .sa-search { padding: 6px 8px; border-radius: 12px; }
+    .sa-search input { width: 0; font-size: 13px; }
+    .sa-search .sa-btn { padding: 8px 10px; font-size: 12px; }
+    .sa-content { width: 100%; padding: 12px; }
+    .sa-grid-2, .sa-grid-3, .sa-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .sa-content .sa-card > .sa-card-pad:last-child { flex-wrap: wrap; gap: 12px; }
+    .sa-modal-backdrop { padding: 10px; }
+    .sa-modal { width: 100%; max-width: 100%; max-height: 96vh; max-height: 96dvh; }
+    .sa-modal-head, .sa-modal-body, .sa-modal-foot { padding: 16px; }
+    .sa-modal-body [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+    .sa-modal form .sa-card > label { width: 100%; margin-right: 0; }
+}
+@media (max-width: 600px) {
+    .sa-grid-2, .sa-grid-3, .sa-grid-4 { grid-template-columns: 1fr; }
+    .sa-content .sa-card-pad { padding: 14px; }
+    .sa-modal-foot { flex-direction: column; align-items: stretch; }
+    .sa-modal-foot .sa-btn { width: 100%; }
+    .sa-company-search { flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sa-sidebar { transition: none; }
+}
