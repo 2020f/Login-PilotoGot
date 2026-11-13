@@ -92,7 +92,7 @@ public sealed class AuthorizationPanelTests : IAsyncLifetime
     [Fact]
     public async Task Anonymous_denial_is_readable_and_the_profile_requires_sign_in()
     {
-        using var client = app.CreateClient(new() { AllowAutoRedirect = false });
+        using var client = app.CreateClient(new() { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         var denial = await client.GetAsync("/Identity/Account/AccessDenied?ReturnUrl=//untrusted.example");
         Assert.Equal(HttpStatusCode.Forbidden, denial.StatusCode);
         var html = await denial.Content.ReadAsStringAsync();
@@ -108,7 +108,7 @@ public sealed class AuthorizationPanelTests : IAsyncLifetime
     [Fact]
     public async Task Cookie_API_denials_are_JSON_and_never_redirect_to_HTML()
     {
-        using var anonymous = app.CreateClient(new() { AllowAutoRedirect = false });
+        using var anonymous = app.CreateClient(new() { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         await AssertJsonDenial(await anonymous.GetAsync("/api/operaciones/snapshot"), HttpStatusCode.Unauthorized);
         using var shop = await app.LoginWebAsync("shop-a");
         await AssertJsonDenial(await shop.GetAsync("/api/operaciones/snapshot"), HttpStatusCode.Forbidden);
@@ -117,7 +117,7 @@ public sealed class AuthorizationPanelTests : IAsyncLifetime
     [Fact]
     public async Task Bearer_API_denials_are_JSON_and_do_not_accept_another_role()
     {
-        using var anonymous = app.CreateClient(new() { AllowAutoRedirect = false });
+        using var anonymous = app.CreateClient(new() { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         await AssertJsonDenial(await anonymous.GetAsync("/api/piloto/mis-ordenes"), HttpStatusCode.Unauthorized);
         using var shop = await app.LoginAsync("shop-a");
         await AssertJsonDenial(await shop.GetAsync("/api/piloto/mis-ordenes"), HttpStatusCode.Forbidden);
@@ -151,7 +151,7 @@ public sealed class AuthorizationPanelTests : IAsyncLifetime
     [Fact]
     public async Task Generic_exception_destination_is_public_returns_500_and_never_exposes_details()
     {
-        using var client = app.CreateClient(new() { AllowAutoRedirect = false });
+        using var client = app.CreateClient(new() { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         var response = await client.GetAsync("/Home/Error?error=secret-database-password&returnUrl=https://untrusted.example");
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         Assert.True(response.Headers.CacheControl?.NoStore);

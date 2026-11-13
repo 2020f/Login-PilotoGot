@@ -2,6 +2,11 @@
 
 Fecha: 11 de noviembre de 2026, America/Santo_Domingo.
 
+La [corrección de HTTPS y cookies](HTTPS-PROXY-DESPLIEGUE.md) incorpora proxy
+confiable y cookies `Secure`, con [QA SQL Server 254/254](../qa/https-proxy-20261112/README.md).
+Su despliegue y validación pública se comprueban aparte; no requiere otro APK ni
+una migración SQL.
+
 El [lote de publicación autorizado el 12/11/2026](PUBLICACION-GITHUB-20261112.md)
 identifica la rama de ambos repositorios, el cliente compatible y los requisitos
 para el agente de despliegue. Los recibos anteriores conservan su momento de QA;

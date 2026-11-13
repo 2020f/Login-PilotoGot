@@ -26,7 +26,7 @@ public sealed class PanelOperationsTests : IAsyncLifetime
 
     private async Task<HttpClient> ManagerAsync()
     {
-        var client = _app.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var client = _app.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         var page = await client.GetStringAsync("/Identity/Account/Login");
         var response = await client.PostAsync("/Identity/Account/Login", new FormUrlEncodedContent(new Dictionary<string, string>
         {

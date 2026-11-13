@@ -14,6 +14,9 @@ using System.Text.Json;
 using Login.Tests;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 // Entorno efímero, exclusivamente loopback, TestServer/SQL Server y cuentas ficticias.
 var useBrowserMaps = args.Contains("--mapas");
@@ -69,6 +72,14 @@ using var visual = factory.WithWebHostBuilder(web => web.ConfigureTestServices(s
     // y tokens CSRF separados, aun al probarlos en el mismo navegador.
     services.ConfigureApplicationCookie(options => options.Cookie.Name = $".EnvirapidoQA.{qaPort}.Identity");
     services.AddAntiforgery(options => options.Cookie.Name = $".EnvirapidoQA.{qaPort}.Antiforgery");
+    // Este puente de TestServer sólo escucha HTTP loopback. La excepción no
+    // forma parte del producto: Testing/Production conservan Secure=Always.
+    foreach (var scheme in new[] { IdentityConstants.ApplicationScheme, IdentityConstants.ExternalScheme,
+        IdentityConstants.TwoFactorRememberMeScheme, IdentityConstants.TwoFactorUserIdScheme })
+        services.PostConfigure<CookieAuthenticationOptions>(scheme,
+            options => options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest);
+    services.PostConfigure<AntiforgeryOptions>(options => options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest);
+    services.PostConfigure<CookieTempDataProviderOptions>(options => options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest);
     services.RemoveAll<IGoogleMapsService>();
     services.AddSingleton<IGoogleMapsService>(new QaBrowserMaps(noMaps, browserKey));
 }));

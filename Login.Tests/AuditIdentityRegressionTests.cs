@@ -44,7 +44,7 @@ public sealed class AuditIdentityRegressionTests : IAsyncLifetime
 
     private static async Task<HttpClient> LoginWebAsync(WebApplicationFactory<Program> host, string id)
     {
-        var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var client = host.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         var page = await client.GetStringAsync("/Identity/Account/Login");
         var login = await client.PostAsync("/Identity/Account/Login", new FormUrlEncodedContent(new Dictionary<string, string>
         {
@@ -200,7 +200,7 @@ public sealed class AuditIdentityRegressionTests : IAsyncLifetime
     {
         var mail = new CapturingEmail();
         using var host = RecoveryHost(mail);
-        using var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var client = host.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         var known = await RequestRecoveryAsync(client, "shop-a@example.test");
         var unknown = await RequestRecoveryAsync(client, "not-registered@example.test");
         Assert.Equal(HttpStatusCode.Redirect, known.StatusCode);
@@ -231,7 +231,7 @@ public sealed class AuditIdentityRegressionTests : IAsyncLifetime
     {
         var mail = new CapturingEmail();
         using var host = RecoveryHost(mail, expired: true);
-        using var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var client = host.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         Assert.Equal(HttpStatusCode.Redirect, (await RequestRecoveryAsync(client, "shop-a@example.test")).StatusCode);
         var result = await SubmitRecoveryAsync(client, Link(mail), ReplacementPassword);
         Assert.Equal(HttpStatusCode.OK, result.StatusCode);
@@ -248,7 +248,7 @@ public sealed class AuditIdentityRegressionTests : IAsyncLifetime
     {
         var mail = new CapturingEmail { IsConfigured = false };
         using var host = RecoveryHost(mail);
-        using var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var client = host.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         foreach (var email in new[] { "shop-a@example.test", "not-registered@example.test" })
         {
             var response = await RequestRecoveryAsync(client, email);
@@ -263,7 +263,7 @@ public sealed class AuditIdentityRegressionTests : IAsyncLifetime
     {
         var mail = new CapturingEmail { FailDelivery = true };
         using var host = RecoveryHost(mail);
-        using var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var client = host.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         var known = await RequestRecoveryAsync(client, "shop-a@example.test");
         var unknown = await RequestRecoveryAsync(client, "not-registered@example.test");
         Assert.Equal(HttpStatusCode.Redirect, known.StatusCode);
@@ -301,7 +301,7 @@ public sealed class AuditIdentityRegressionTests : IAsyncLifetime
     {
         var mail = new CapturingEmail { IsConfigured = false };
         using var host = RecoveryHost(mail);
-        using var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var client = host.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         var page = await client.GetStringAsync("/Identity/Account/Register");
         var response = await client.PostAsync("/Identity/Account/Register", new FormUrlEncodedContent(new Dictionary<string, string>
         {

@@ -4,6 +4,7 @@ using System.Threading.RateLimiting;
 using Login.Application.Interfaces;
 using Login.Application.Services;
 using Login.Data;
+using Login.Configuration;
 using Login.Filters;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -120,6 +121,9 @@ builder.Services.ConfigureApplicationCookie(options =>
     };
 });
 
+// HTTPS original sólo desde el proxy inmediato autorizado; cookies seguras.
+builder.Services.AddTransportSecurity(builder.Configuration, builder.Environment);
+
 // 5) App services
 builder.Services.Configure<Login.Services.AccountEmailOptions>(builder.Configuration.GetSection("Email"));
 builder.Services.AddTransient<Login.Services.IAccountEmailSender, EmailSender>();
@@ -170,6 +174,7 @@ builder.Services.AddRateLimiter(options =>
 var app = builder.Build();
 
 // Middleware
+app.UseForwardedHeaders();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

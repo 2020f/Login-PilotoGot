@@ -53,7 +53,7 @@ public sealed class Net10AuthCompatibilityTests : IAsyncLifetime
                 { UserId = user.Id, LoginProvider = "PilotGoMobile", Name = sessionId, Value = legacyDocument });
             await db.SaveChangesAsync();
         });
-        using var client = app.CreateClient(new() { AllowAutoRedirect = false });
+        using var client = app.CreateClient(new() { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         var renewed = await client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken = refresh });
         Assert.Equal(HttpStatusCode.OK, renewed.StatusCode);
         var json = await renewed.Content.ReadFromJsonAsync<JsonElement>();

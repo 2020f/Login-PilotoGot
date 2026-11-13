@@ -36,6 +36,8 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
 
     public PilotGoFactory(string? existingSqlDatabase = null)
     {
+        // La suite exige las cookies Secure reales también en Testing.
+        ClientOptions.BaseAddress = new Uri("https://localhost");
         if (existingSqlDatabase is null) return;
         if (!_useSqlServer || !Regex.IsMatch(existingSqlDatabase, "^PilotGoTest_[a-f0-9]{32}$", RegexOptions.CultureInvariant))
             throw new ArgumentException("Sólo se puede adjuntar una base SQL Server QA con nombre PilotGoTest_<GUID>.", nameof(existingSqlDatabase));
@@ -174,7 +176,7 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
 
     public async Task<HttpClient> LoginWebAsync(string id)
     {
-        var client = CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var client = CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         var html = await client.GetStringAsync("/Identity/Account/Login");
         var token = Regex.Match(html, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"");
         Assert.True(token.Success, "El login web debe emitir un token CSRF.");

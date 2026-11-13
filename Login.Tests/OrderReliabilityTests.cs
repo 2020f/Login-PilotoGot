@@ -274,7 +274,7 @@ public sealed class OrderReliabilityTests : IAsyncLifetime
     [Fact]
     public async Task Web_creation_redirect_contains_identifiers_and_replaying_the_form_does_not_duplicate()
     {
-        using var web = _app.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var web = _app.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         var loginHtml = await web.GetStringAsync("/Identity/Account/Login");
         var login = await web.PostAsync("/Identity/Account/Login", new FormUrlEncodedContent(new Dictionary<string, string>
         {

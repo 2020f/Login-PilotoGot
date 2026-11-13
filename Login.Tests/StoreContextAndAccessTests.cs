@@ -146,7 +146,7 @@ public sealed class StoreContextAndAccessTests : IAsyncLifetime
     [Fact]
     public async Task Failed_web_logins_lock_the_account_and_block_mobile_login_too()
     {
-        using var client = _app.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var client = _app.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
         for (var attempt = 0; attempt < 5; attempt++)
         {
             var page = await client.GetStringAsync("/Identity/Account/Login");
