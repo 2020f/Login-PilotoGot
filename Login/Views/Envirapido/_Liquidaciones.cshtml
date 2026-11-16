@@ -4,7 +4,22 @@
 var d=Model.Datos;var indicators=d.Indicadores;var sums=Model.Tab=="Repartidores"?indicators?.LiquidacionesPilotosPorEstado:Model.Tab=="Comercios"?indicators?.LiquidacionesComerciosPorEstado:indicators?.LiquidacionesPorEstado;var lista=Model.Tab=="Comercios"?d.Liquidaciones.Where(l=>l.TiendaId.HasValue):d.Liquidaciones.Where(l=>l.PilotoId.HasValue);var current=lista.FirstOrDefault(l=>l.Id==Model.Id)??lista.OrderByDescending(l=>l.Id).FirstOrDefault();
 string Amount(decimal n)=>"RD$ "+n.ToString("N2");string Label(string s)=>s=="EnRevision"?"En revisión":s;
 }
+@if(Model.Tab=="Conciliación")
+{
+    var cash=indicators?.CobrosPeriodo;
+    <div class="ev-metrics">
+        <article class="ev-metric" data-ev-cash-metric="registered"><svg class="ev-icon"><use href="#ev-card"></use></svg><div><div class="ev-metric-label">Cobros registrados</div><strong class="ev-money-metric">@(cash!=null?Amount(cash.ImporteRegistrado):"—")</strong><small>@(cash?.Cantidad.ToString()??"—") cobros del período</small></div></article>
+        <article class="ev-metric blue" data-ev-cash-metric="verified"><svg class="ev-icon"><use href="#ev-card"></use></svg><div><div class="ev-metric-label">Importe verificado</div><strong class="ev-money-metric">@(cash!=null?Amount(cash.ImporteVerificado):"—")</strong><small>@(cash?.Conciliados.ToString()??"—") conciliados · @(cash!=null?(cash.Cantidad-cash.Conciliados).ToString():"—") por conciliar</small></div></article>
+        <article class="ev-metric green" data-ev-cash-metric="received"><svg class="ev-icon"><use href="#ev-card"></use></svg><div><div class="ev-metric-label">Recibido en empresa</div><strong class="ev-money-metric">@(cash!=null?Amount(cash.ImporteRecibidoEmpresa):"—")</strong><small>@(cash?.RecibidosEmpresa.ToString()??"—") recepciones registradas</small></div></article>
+        <article class="ev-metric amber" data-ev-cash-metric="pending"><svg class="ev-icon"><use href="#ev-card"></use></svg><div><div class="ev-metric-label">Pendiente de recibir</div><strong class="ev-money-metric">@(cash!=null?Amount(cash.ImportePendienteRecepcion):"—")</strong><small>@(cash?.PendientesRecepcion.ToString()??"—") cobros verificados sin recibir</small></div></article>
+        <article class="ev-metric amber" data-ev-cash-metric="differences"><svg class="ev-icon"><use href="#ev-card"></use></svg><div><div class="ev-metric-label">Diferencias detectadas</div><strong class="ev-money-metric">@(cash!=null?Amount(cash.DiferenciasAbsolutas):"—")</strong><small>Total absoluto · @(cash?.ConDiferencias.ToString()??"—") cobros</small></div></article>
+    </div>
+    <p class="ev-secondary">Cobros registrados en el período seleccionado, según la hora de República Dominicana. Pendiente de recibir incluye sólo importes ya verificados.</p>
+}
+else
+{
 <div class="ev-metrics"><article class="ev-metric"><svg class="ev-icon"><use href="#ev-card"></use></svg><div><div class="ev-metric-label">Neto del período</div><strong class="ev-money-metric">@(sums!=null?Amount(sums.Values.Sum(x=>x.Neto)):"—")</strong><small>@(sums?.Values.Sum(x=>x.Cantidad).ToString()??"—") liquidaciones · @(Model.Tab is "Repartidores" or "Comercios"?Model.Tab.ToLowerInvariant():"empresa")</small></div></article>@foreach(var state in new[]{("EnRevision","En revisión","amber"),("Aprobada","Aprobado por pagar","green"),("Programada","Programado","blue"),("Pagada","Pagado","green")}){var summary=sums?.GetValueOrDefault(state.Item1,new ResumenLiquidacionesEstado(0,0m));<article class="ev-metric @state.Item3"><svg class="ev-icon"><use href="#ev-card"></use></svg><div><div class="ev-metric-label">@state.Item2</div><strong class="ev-money-metric">@(summary!=null?Amount(summary.Neto):"—")</strong><small>@(summary?.Cantidad.ToString()??"—") liquidaciones</small></div></article>}</div>
+}
 @if(Model.Tab=="Reglas de liquidación"){@await Html.PartialAsync("_Reglas",Model)}
 else if(Model.Tab=="Conciliación")
 {

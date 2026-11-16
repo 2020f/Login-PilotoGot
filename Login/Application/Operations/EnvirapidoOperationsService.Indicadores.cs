@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Login.Application.Operations;
 
 public sealed record ResumenLiquidacionesEstado(int Cantidad, decimal Neto);
+public sealed record ResumenCobrosPeriodo(int Cantidad, decimal ImporteRegistrado,
+    int Conciliados, decimal ImporteVerificado, int RecibidosEmpresa, decimal ImporteRecibidoEmpresa,
+    int PendientesRecepcion, decimal ImportePendienteRecepcion, int ConDiferencias, decimal DiferenciasAbsolutas);
 public sealed record IndicadoresOperativos(DateTime ActualizadoAt, DateOnly? Desde, DateOnly? Hasta,
     int ZonasActivas, int RutasEnCurso, int ParadasPendientes, int ZonasAltaCarga,
     IReadOnlyDictionary<string, int> IncidenciasPorEstado, int IncidenciasAbiertas,
@@ -12,7 +15,8 @@ public sealed record IndicadoresOperativos(DateTime ActualizadoAt, DateOnly? Des
     int IncidenciasResueltasHoy, IReadOnlyDictionary<string, ResumenLiquidacionesEstado> LiquidacionesPorEstado,
     int TotalLiquidaciones, decimal NetoPeriodo,
     IReadOnlyDictionary<string, ResumenLiquidacionesEstado> LiquidacionesPilotosPorEstado,
-    IReadOnlyDictionary<string, ResumenLiquidacionesEstado> LiquidacionesComerciosPorEstado);
+    IReadOnlyDictionary<string, ResumenLiquidacionesEstado> LiquidacionesComerciosPorEstado,
+    ResumenCobrosPeriodo? CobrosPeriodo = null);
 
 public sealed partial class EnvirapidoOperationsService
 {
@@ -56,12 +60,29 @@ public sealed partial class EnvirapidoOperationsService
         var settlementStates = ResumenPorEstado(moneyRows.Select(l => (l.Estado, l.Neto)));
         var pilotStates = ResumenPorEstado(moneyRows.Where(l => l.PilotoId.HasValue).Select(l => (l.Estado, l.Neto)));
         var storeStates = ResumenPorEstado(moneyRows.Where(l => l.TiendaId.HasValue).Select(l => (l.Estado, l.Neto)));
+        // La conciliación resume los cobros, no las liquidaciones. Mismo período
+        // de creación que su tabla, pero sin heredar su límite de filas mostradas.
+        var cashRows = await db.CobrosOperativos.AsNoTracking().Where(c => c.ClienteAppId == tenant
+            && (!actor.EsPiloto || c.PilotoId == actor.PilotoId)
+            && (!from.HasValue || c.CreatedAt >= from.Value) && (!until.HasValue || c.CreatedAt < until.Value))
+            .Select(c => new { c.Importe, c.ImporteVerificado, c.ConciliadoAt,
+                c.EntregadoEmpresaAt, c.ImporteEntregadoEmpresa }).ToListAsync();
+        var verifiedCash = cashRows.Where(c => c.ConciliadoAt.HasValue && c.ImporteVerificado.HasValue).ToList();
+        var receivedCash = cashRows.Where(c => c.EntregadoEmpresaAt.HasValue).ToList();
+        var pendingCash = verifiedCash.Where(c => !c.EntregadoEmpresaAt.HasValue).ToList();
+        var differences = verifiedCash.Where(c => c.Importe != c.ImporteVerificado).ToList();
+        var cashSummary = new ResumenCobrosPeriodo(cashRows.Count, cashRows.Sum(c => c.Importe),
+            verifiedCash.Count, verifiedCash.Sum(c => c.ImporteVerificado!.Value),
+            receivedCash.Count, receivedCash.Sum(c => c.ImporteEntregadoEmpresa ?? 0m),
+            pendingCash.Count, pendingCash.Sum(c => c.ImporteVerificado!.Value), differences.Count,
+            differences.Sum(c => Math.Abs(c.Importe - c.ImporteVerificado!.Value)));
         var zoneCount = await db.ZonasOperativas.AsNoTracking().CountAsync(z => z.ClienteAppId == tenant && z.Activa
             && (!actor.EsPiloto || db.RutasOperativas.Any(r => r.ClienteAppId == tenant && r.PilotoId == actor.PilotoId && r.ZonaId == z.Id)));
         var highLoad = await ZonasAltaCargaActualesAsync(actor);
         return new(now, desde, hasta, zoneCount, routeCount, pendingStops, highLoad, incidentStates,
             incidentStates.Where(x => x.Key != nameof(EstadoIncidencia.Resuelta)).Sum(x => x.Value), critical, withoutOwner,
-            overdue, resolvedToday, settlementStates, moneyRows.Count, moneyRows.Sum(l => l.Neto), pilotStates, storeStates);
+            overdue, resolvedToday, settlementStates, moneyRows.Count, moneyRows.Sum(l => l.Neto), pilotStates, storeStates,
+            cashSummary);
     }
 
     private static IReadOnlyDictionary<string, ResumenLiquidacionesEstado> ResumenPorEstado(IEnumerable<(EstadoLiquidacion Estado, decimal Neto)> rows)
