@@ -409,10 +409,10 @@ namespace Login.Controllers
                 Telefono = piloto.Telefono,
                 Estado = piloto.Estado,
                 Activo = piloto.Activo,
-                EmailPiloto = user?.Email
+                EmailPiloto = user?.Email ?? string.Empty
             };
 
-            return View(vm);
+            return await RenderPilotoEditAsync(vm, piloto, user);
         }
 
 
@@ -425,25 +425,103 @@ namespace Login.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditarPiloto(Login.ViewModels.Supervisor.PilotoEditVm input)
         {
-            if (!ModelState.IsValid) return View(input);
             var tenantId = await GetClienteAppIdDelGestorAsync();
+            Piloto? piloto = null;
+            IdentityUser? user = null;
             try
             {
-                await using var tx = await _quotas.BeginTenantMutationAsync(tenantId);
-                var piloto = await _db.Pilotos.SingleOrDefaultAsync(p => p.Id == input.Id && p.ClienteAppId == tenantId);
+                // Identity es global. Bloquear primero empresa e identidad y
+                // comprobar sus vínculos dentro de la misma transacción.
+                await using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+                var tenantDisponible = await _db.ClientesApp
+                    .Where(c => c.Id == tenantId && c.GestorIdentityUserId == GetUserId()
+                        && c.Estado == EstadoClienteApp.Activo)
+                    .ExecuteUpdateAsync(s => s.SetProperty(c => c.OrdenSeq, c => c.OrdenSeq));
+                if (tenantDisponible != 1) return Forbid();
+                piloto = await _db.Pilotos.SingleOrDefaultAsync(p => p.Id == input.Id && p.ClienteAppId == tenantId);
                 if (piloto == null) return NotFound();
+                var identityDisponible = await _db.Users.Where(u => u.Id == piloto.IdentityUserId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(u => u.ConcurrencyStamp, u => u.ConcurrencyStamp));
+                user = identityDisponible == 1 ? await _userManager.FindByIdAsync(piloto.IdentityUserId) : null;
+                if (!ModelState.IsValid) return await RenderPilotoEditAsync(input, piloto, user);
+
+                var email = input.EmailPiloto.ToLowerInvariant();
+                var cambiaCorreo = !string.Equals(user?.Email, email, StringComparison.OrdinalIgnoreCase);
+                var cambiaPassword = !string.IsNullOrEmpty(input.NuevoPassword);
+                var cambiaAcceso = cambiaCorreo || cambiaPassword;
+                if (cambiaAcceso && !await PuedeAdministrarAccesoPilotoAsync(piloto, user))
+                {
+                    ModelState.AddModelError("", AccesoPilotoCompartido);
+                    return await RenderPilotoEditAsync(input, piloto, user);
+                }
                 if (!input.Activo) await _quotas.EnsureNoOpenPilotOrdersAsync(tenantId, piloto.Id);
                 else if (!piloto.Activo) await _quotas.EnsurePilotReactivationAsync(tenantId, piloto.Id, piloto.IdentityUserId);
                 var ocupadas = await _db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && o.PilotoId == piloto.Id && !EstadosEntrega.Terminales.Contains(o.Estado));
+
+                if (cambiaCorreo)
+                {
+                    // El login admite UserName además de Email: cambiar ambos
+                    // evita que el correo anterior siga sirviendo como alias.
+                    EnsurePilotIdentityUpdate(await _userManager.SetUserNameAsync(user!, email));
+                    EnsurePilotIdentityUpdate(await _userManager.SetEmailAsync(user!, email));
+                }
+                if (cambiaPassword)
+                {
+                    var token = await _userManager.GeneratePasswordResetTokenAsync(user!);
+                    EnsurePilotIdentityUpdate(await _userManager.ResetPasswordAsync(user!, token, input.NuevoPassword!));
+                }
                 piloto.Nombre = input.Nombre.Trim(); piloto.Telefono = input.Telefono.Trim(); piloto.Activo = input.Activo;
                 piloto.Estado = !input.Activo ? EstadoPiloto.Inactivo : ocupadas ? EstadoPiloto.Ocupado : EstadoPiloto.Disponible;
                 if (!input.Activo) piloto.EnLinea = false;
                 await _db.SaveChangesAsync(); await tx.CommitAsync();
-                return RedirectToAction(nameof(Pilotos), new { ok = "Piloto actualizado." });
+                return RedirectToAction(nameof(Pilotos), new { ok = cambiaAcceso
+                    ? "Piloto y acceso actualizados. El piloto debe volver a iniciar sesión en la app."
+                    : "Piloto actualizado." });
             }
-            catch (InvalidOperationException ex) { ModelState.AddModelError("", ex.Message); return View(input); }
+            catch (InvalidOperationException ex) { ModelState.AddModelError("", ex.Message); }
+            catch (DbUpdateException)
+            {
+                ModelState.AddModelError("", "No se pudieron guardar los cambios. El correo puede estar en uso o los datos cambiaron. Recarga la página e inténtalo de nuevo.");
+            }
+            if (piloto is null)
+                return RedirectToAction(nameof(Pilotos), new { error = "No se pudo guardar el piloto. Recarga la página e inténtalo de nuevo." });
+            return await RenderPilotoEditAsync(input, piloto, user);
         }
 
+        private const string AccesoPilotoCompartido = "Esta cuenta tiene accesos compartidos o un perfil administrativo. Solo puedes cambiar las credenciales de un piloto exclusivo de tu empresa. Su titular puede recuperar la contraseña desde la pantalla de acceso.";
+
+        private async Task<bool> PuedeAdministrarAccesoPilotoAsync(Piloto piloto, IdentityUser? user)
+        {
+            if (user is null) return false;
+            var roles = await _userManager.GetRolesAsync(user);
+            return roles.Count == 1 && roles.Contains("Piloto")
+                && !await _db.Pilotos.AnyAsync(p => p.IdentityUserId == user.Id && p.Id != piloto.Id)
+                && !await _db.UsuariosTienda.AnyAsync(u => u.IdentityUserId == user.Id)
+                && !await _db.UsuariosClienteApp.AnyAsync(u => u.IdentityUserId == user.Id)
+                && !await _db.ClientesApp.AnyAsync(c => c.GestorIdentityUserId == user.Id);
+        }
+
+        private static void EnsurePilotIdentityUpdate(IdentityResult result)
+        {
+            if (result.Succeeded) return;
+            if (result.Errors.Any(e => e.Code is "DuplicateEmail" or "DuplicateUserName"))
+                throw new InvalidOperationException("Ese correo ya está en uso. Usa otro.");
+            throw new InvalidOperationException("No se pudo actualizar el acceso del piloto. Revisa el correo y los requisitos de la nueva contraseña.");
+        }
+
+        private async Task<IActionResult> RenderPilotoEditAsync(PilotoEditVm input, Piloto piloto, IdentityUser? user)
+        {
+            Response.Headers.CacheControl = "no-store";
+            input.Estado = piloto.Estado;
+            input.PuedeEditarAcceso = await PuedeAdministrarAccesoPilotoAsync(piloto, user);
+            input.MotivoAccesoBloqueado = input.PuedeEditarAcceso ? null : AccesoPilotoCompartido;
+            // Conservar los errores, nunca devolver contraseñas en el HTML.
+            input.NuevoPassword = null;
+            input.ConfirmarPassword = null;
+            foreach (var key in new[] { nameof(input.NuevoPassword), nameof(input.ConfirmarPassword) })
+                if (ModelState.ContainsKey(key)) ModelState.SetModelValue(key, null, null);
+            return View(nameof(EditarPiloto), input);
+        }
 
 
 

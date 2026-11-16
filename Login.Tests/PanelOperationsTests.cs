@@ -57,7 +57,8 @@ public sealed class PanelOperationsTests : IAsyncLifetime
         {
             var response = await PostAsync(manager, $"/Supervisor/{route}", new()
             {
-                ["Id"] = _app.PilotA.ToString(), ["Nombre"] = "Piloto A", ["Telefono"] = "8090001", ["Activo"] = "false"
+                ["Id"] = _app.PilotA.ToString(), ["Nombre"] = "Piloto A", ["Telefono"] = "8090001", ["Activo"] = "false",
+                ["EmailPiloto"] = "pilot-a@example.test"
             });
             Assert.True(response.StatusCode is HttpStatusCode.Redirect or HttpStatusCode.OK);
             await _app.InScopeAsync(async sp => Assert.True((await sp.GetRequiredService<ApplicationDbContext>().Pilotos.FindAsync(_app.PilotA))!.Activo));
@@ -114,7 +115,8 @@ public sealed class PanelOperationsTests : IAsyncLifetime
         using var manager = await ManagerAsync();
         var response = await PostAsync(manager, "/Supervisor/EditarPiloto", new()
         {
-            ["Id"] = _app.PilotA.ToString(), ["Nombre"] = "Piloto A", ["Telefono"] = "8090001", ["Activo"] = "true"
+            ["Id"] = _app.PilotA.ToString(), ["Nombre"] = "Piloto A", ["Telefono"] = "8090001", ["Activo"] = "true",
+            ["EmailPiloto"] = "pilot-a@example.test"
         });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("Límite", WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()));
