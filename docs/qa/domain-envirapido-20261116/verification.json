@@ -1,0 +1,45 @@
+{
+  "status": "SIGNED_CANDIDATE_PENDING_DOMAIN_ROUTING_AND_PUBLIC_APP_QA",
+  "mobileCommit": "cd96b205da886627452cf5dc2cbec4b940bf6b93",
+  "mobileTree": "23847846ed7d4cd1fdd30e2c3e3903b642cddb15",
+  "appVersion": "2.0.1",
+  "versionCode": 9,
+  "package": "com.pilotgo.app",
+  "api": "https://envirapido.com",
+  "legacyApiKeptForInstalledVersions": "https://pilotogoapp.zapflow77.dpdns.org",
+  "apkSha256": "c977a823214dd958920b347de420a394363ab7dc3a5ae79a4134e0b5ab8cf268",
+  "apkBytes": 72978221,
+  "originalCertificateSha256": "773d72ba127d16a95f032d520d37162708ea8676bf2f7e3e48168f751724e487",
+  "signatureVerified": true,
+  "alignment16KVerified": true,
+  "architectures": [
+    "armeabi-v7a",
+    "arm64-v8a",
+    "x86_64"
+  ],
+  "validatedSourceFiles": 83,
+  "sourceFingerprintMatches": true,
+  "flutterTests": {
+    "failed": 0,
+    "scope": "HTTP and native-storage mocks; session, pending order/action, GPS and existing regressions",
+    "concurrency": 1,
+    "passed": 99
+  },
+  "flutterAnalyze": "No issues found",
+  "validationRetainedFromPreparation": true,
+  "publicAuthenticatedDomainQaPassed": false,
+  "publicDomainObservationAtUtc": "2026-11-17T02:28:17.8651297+00:00",
+  "publicDomainObservation": {
+    "legacyAnonymousHttpsChecksPassed": true,
+    "anonymousApiStatus": 200,
+    "rootStatus": 522,
+    "anonymousApiJson": false
+  },
+  "productionDataModified": false,
+  "databaseMigrationRequiredForDomain": false,
+  "testedLimits": [
+    "No new public-domain login/orders performed",
+    "No emulator or physical APK update performed for this candidate",
+    "Native GPS test with one-second lease passed isolated and sequential; initial parallel run failed under load"
+  ]
+}

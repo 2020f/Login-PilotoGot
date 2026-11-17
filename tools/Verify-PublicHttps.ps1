@@ -1,5 +1,5 @@
 param(
-    [uri]$BaseUrl = 'https://pilotogoapp.zapflow77.dpdns.org',
+    [uri]$BaseUrl = 'https://envirapido.com',
     [string]$ReceiptPath,
     [switch]$RequireSuccess
 )
