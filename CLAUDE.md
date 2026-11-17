@@ -1,5 +1,11 @@
 # CLAUDE.md
 
+## Actualización de portada interactiva
+
+Leer primero **[DESPLEGAR-PORTADA.md](DESPLEGAR-PORTADA.md)** para esta entrega.
+Si el portal base ya funciona, actualizar sólo Next; no repetir migraciones ni
+publicar/reiniciar CRM o API. Las demás vistas, app y multitenant se conservan.
+
 ## Portal comercial: entrega y despliegue
 
 Antes de desplegar el portal, leer **[DESPLEGAR-PORTAL.md](DESPLEGAR-PORTAL.md)**.

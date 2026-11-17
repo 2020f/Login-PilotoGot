@@ -1,13 +1,108 @@
-import Image from "next/image";
 import { MarketingLayout, ContactCta } from "@/components/site";
+import { HomeHero } from "@/components/home-hero";
+import { HomeRoleExplorer } from "@/components/home-role-explorer";
+import { HomeReveal } from "@/components/home-reveal";
 import { Icon } from "@/components/icon";
 import { Plans } from "@/components/plans";
 import { loadCatalog } from "@/lib/catalog.server";
+import { portalUrl } from "@/lib/config";
+import styles from "./home.module.css";
 
 export const dynamic = "force-dynamic";
 export const metadata = { alternates: { canonical: "/" } };
 
+const questions = [
+  ["¿Estoy contratando un servicio de mensajería?", "Envirapido es software para gestionar tu operación de última milla. Tu empresa organiza sus comercios, pilotos y entregas."],
+  ["¿Mi cuenta web sirve para entrar al CRM o a la app?", "La cuenta del portal permite consultar tu solicitud, vigencia y descargas autorizadas. Administración entrega por separado las credenciales de la operación."],
+  ["¿Cómo se confirma el pago?", "Los pagos se realizan fuera del portal y se validan manualmente. Reportar un pago no lo marca como confirmado ni activa el acceso automáticamente."],
+  ["¿Puedo descargar la app desde mi cuenta?", "Sí, cuando administración haya aprobado tu acceso y tu vigencia esté activa, podrás descargar la versión Android privada que se encuentre publicada."]
+];
+
+function RouteArtwork() {
+  return <div className={styles.routeArtwork} aria-hidden="true">
+    <span className={styles.routeSource}><Icon name="building" /></span>
+    <svg viewBox="0 0 420 104" fill="none">
+      <path d="M28 66H100C139 66 130 28 170 28H237C278 28 259 76 303 76H389" stroke="#d2eae4" strokeWidth="5" />
+      <path className={styles.routeTrail} d="M28 66H100C139 66 130 28 170 28H237C278 28 259 76 303 76H389" stroke="#02998f" strokeWidth="3" strokeDasharray="7 9" />
+      {[[100, 66], [213, 28], [327, 76]].map(([x, y], i) => <g key={x}><circle cx={x} cy={y} r="17" fill="white" stroke="#04968d" strokeWidth="2" /><text x={x} y={y + 4} fill="#06796f" textAnchor="middle" fontSize="12" fontFamily="Arial" fontWeight="700">{i + 1}</text></g>)}
+    </svg>
+    <div className={styles.routeLegend}><span>Una recogida</span><span>Varios destinatarios</span></div>
+  </div>;
+}
+
 export default async function HomePage() {
   const { catalog, unavailable } = await loadCatalog();
-  return <MarketingLayout><section className="hero"><div className="container hero-grid"><div className="hero-copy"><span className="eyebrow">SOFTWARE DE ÚLTIMA MILLA</span><h1>Cada entrega,<br />bajo control.</h1><p>Conecta comercios, pilotos y tu operación en un solo lugar.</p><div className="button-row"><a className="button" href="/planes">Ver planes <Icon name="arrow" /></a><a className="button secondary" href="/contacto">Solicitar una demo</a></div></div><div className="hero-art"><Image src="/illustrations/ultima-milla-ciudad.png" alt="Ilustración de una operación de última milla con comercios, paquetes y un piloto" width={1536} height={1024} priority sizes="(max-width: 800px) 100vw, 55vw" /><span className="art-caption">Comercios, operación y pilotos conectados</span></div></div><div className="container feature-pills">{[["truck", "Pedidos sincronizados"], ["layers", "Asignación automática y manual"], ["route", "Rutas con varias paradas"], ["building", "Control por empresa"]].map(([icon, text]) => <span key={text}><Icon name={icon as "truck" | "layers" | "route" | "building"} />{text}</span>)}</div></section><section className="section connected-section"><div className="container"><div className="section-heading centered"><span className="eyebrow">UNA MISMA OPERACIÓN</span><h2>Conectados de principio a fin.</h2><p>Cada equipo tiene su espacio. Todos trabajan sobre el mismo flujo.</p></div><div className="role-grid">{[{ icon: "building", title: "Comercio", text: "Crea pedidos simples o con varios destinatarios y consulta su avance." }, { icon: "layers", title: "Centro de operaciones", text: "Coordina pedidos, asigna pilotos y organiza rutas y zonas de trabajo." }, { icon: "truck", title: "Piloto", text: "Recibe órdenes, consulta las paradas y confirma recogidas y entregas." }].map(item => <article className="role-card" key={item.title}><span className="icon-tile large"><Icon name={item.icon as "building" | "layers" | "truck"} /></span><h3>{item.title}</h3><p>{item.text}</p></article>)}</div></div></section><section className="section"><div className="container split-feature"><div className="illustration-panel"><Image src="/illustrations/operacion-conectada.png" alt="Ilustración de la coordinación entre el panel y la app móvil" width={1536} height={1024} sizes="(max-width: 800px) 100vw, 50vw" /></div><div><span className="eyebrow">VISIBILIDAD PARA DECIDIR</span><h2>Menos piezas sueltas.<br />Más claridad en cada paso.</h2><p className="lead">Organiza el trabajo desde el pedido hasta el cierre de la entrega.</p><ul className="check-list"><li><Icon name="check" />Asignación manual y recepción de ofertas automáticas.</li><li><Icon name="check" />Confirmación de recogidas y entregas por destinatario.</li><li><Icon name="check" />Incidencias y seguimiento operativo de la ruta.</li><li><Icon name="check" />Cobros y liquidaciones registrados por separado.</li></ul><a className="text-link" href="/funciones">Conocer las funciones <Icon name="arrow" /></a></div></div></section><section className="section steps-section" id="como-funciona"><div className="container"><div className="section-heading centered"><span className="eyebrow">ASÍ COMENZAMOS</span><h2>Tu operación, paso a paso.</h2></div><ol className="steps-grid">{[["Elige tu plan", "Consulta las opciones publicadas y selecciona la que se ajuste a tu negocio."], ["Cuéntanos sobre tu negocio", "Crea tu cuenta web y envía los datos de tu operación."], ["Revisamos tu solicitud", "Administración valida la solicitud y el pago realizado fuera del portal."], ["Comienza con Envirapido", "Recibe la habilitación del portal y las indicaciones para tu acceso operativo."]].map(([title, text], index) => <li key={title}><span>{String(index + 1).padStart(2, "0")}</span><h3>{title}</h3><p>{text}</p></li>)}</ol></div></section><section className="section" id="planes"><div className="container"><div className="section-heading centered"><span className="eyebrow">EL ESPACIO PARA TU NEGOCIO</span><h2>Un plan para tu operación.</h2><p>Precios y límites del catálogo vigente. Activación bajo revisión manual.</p></div><Plans catalog={catalog} unavailable={unavailable} /></div></section><section className="section faq-section"><div className="container narrow"><div className="section-heading centered"><span className="eyebrow">RESOLVEMOS TUS DUDAS</span><h2>Antes de comenzar.</h2></div>{[["¿Estoy contratando un servicio de mensajería?", "Envirapido es software para gestionar tu operación de última milla. Tu empresa organiza sus comercios, pilotos y entregas."], ["¿Mi cuenta web sirve para entrar al CRM o a la app?", "La cuenta del portal permite consultar tu solicitud, vigencia y descargas autorizadas. Administración entrega por separado las credenciales de la operación."], ["¿Cómo se confirma el pago?", "Los pagos se realizan fuera del portal y se validan manualmente. Reportar un pago no lo marca como confirmado ni activa el acceso automáticamente."], ["¿Puedo descargar la app desde mi cuenta?", "Sí, cuando administración haya aprobado tu acceso y tu vigencia esté activa, podrás descargar la versión Android privada que se encuentre publicada."]].map(([question, answer]) => <details key={question}><summary>{question}<Icon name="arrow" /></summary><p>{answer}</p></details>)}</div></section><ContactCta /></MarketingLayout>;
+  return <MarketingLayout>
+    <HomeReveal className={styles.home} progressClassName={styles.readProgress}>
+      <HomeHero />
+      <div data-home-reveal><HomeRoleExplorer /></div>
+
+      <section className={styles.possibilities} aria-labelledby="home-possibilities">
+        <div className="container">
+          <div className={styles.sectionHeading} data-home-reveal>
+            <div><span className="eyebrow">UNA OPERACIÓN CON MÁS POSIBILIDADES</span><h2 id="home-possibilities">Todo sigue su ruta.<br /><span>Tú conservas el control.</span></h2></div>
+            <p>Desde la siguiente parada hasta el cierre del día. Dale a tu equipo herramientas para trabajar conectado.</p>
+          </div>
+          <div className={styles.featureGrid}>
+            <a href="/funciones" className={styles.featureCard + " " + styles.routeCard} data-home-reveal>
+              <div className={styles.cardTop}><span className={styles.cardIcon}><Icon name="route" /></span><span className={styles.cardIndex}>01 / RECORRIDOS</span><Icon className={styles.cardArrow} name="arrow" /></div>
+              <h3>Una ruta.<br />Muchos destinos.</h3>
+              <p>Organiza recogidas y entregas con varias paradas, conservando el seguimiento de cada destinatario.</p>
+              <RouteArtwork /><span className={styles.featureLink}>Explora las rutas <Icon name="arrow" /></span>
+            </a>
+            <a href="/funciones" className={styles.featureCard} data-home-reveal>
+              <div className={styles.cardTop}><span className={styles.cardIcon}><Icon name="alert" /></span><span className={styles.cardIndex}>02 / INCIDENCIAS</span><Icon className={styles.cardArrow} name="arrow" /></div>
+              <h3>Un imprevisto.<br />El contexto a mano.</h3>
+              <p>Reporta incidencias desde la app y atiéndelas con información del pedido o la ruta.</p>
+              <div className={styles.incidentArt} aria-hidden="true"><span className={styles.incidentDot} /><div><strong>Incidencia reportada</strong><small>Pedido y ruta conectados</small></div><span className={styles.miniTag}>En atención</span></div>
+              <span className={styles.featureLink}>Conoce el seguimiento <Icon name="arrow" /></span>
+            </a>
+            <a href="/funciones" className={styles.featureCard} data-home-reveal>
+              <div className={styles.cardTop}><span className={styles.cardIcon}><Icon name="wallet" /></span><span className={styles.cardIndex}>03 / LIQUIDACIONES</span><Icon className={styles.cardArrow} name="arrow" /></div>
+              <h3>Las cuentas claras.<br />Los registros también.</h3>
+              <p>Revisa cobros, recepción de efectivo y liquidaciones. Cada confirmación conserva su propio proceso.</p>
+              <div className={styles.ledgerArt} aria-hidden="true"><span><Icon name="check" /> Cobros</span><span><Icon name="check" /> Conciliación</span><span><Icon name="check" /> Liquidaciones</span></div>
+              <span className={styles.featureLink}>Descubre la gestión <Icon name="arrow" /></span>
+            </a>
+            <a href="/funciones" className={styles.featureCard + " " + styles.companyCard} data-home-reveal>
+              <div className={styles.cardTop}><span className={styles.cardIcon}><Icon name="shield" /></span><span className={styles.cardIndex}>04 / TU EMPRESA</span><Icon className={styles.cardArrow} name="arrow" /></div>
+              <h3>Tu equipo conectado.<br />Tu espacio protegido.</h3>
+              <p>Cada empresa gestiona sus datos, comercios y pilotos con sus propios accesos y permisos.</p>
+              <div className={styles.companyArt} aria-hidden="true"><span><Icon name="building" /> Comercios</span><span className={styles.companyCenter}><Icon name="shield" /></span><span><Icon name="truck" /> Pilotos</span></div>
+              <span className={styles.featureLink}>Conoce Envirapido <Icon name="arrow" /></span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.getStarted} id="como-funciona" aria-labelledby="home-start-title">
+        <div className="container">
+          <div className={styles.centerHeading} data-home-reveal><span className="eyebrow">EL SIGUIENTE RECORRIDO ES EL TUYO</span><h2 id="home-start-title">De conocerlo<br />a ponerlo en marcha.</h2><p>Un camino claro para comenzar con Envirapido.</p></div>
+          <ol className={styles.startSteps}>
+            {[
+              { number: "01", icon: "layers" as const, title: "Elige tu plan", body: "Encuentra una opción para el tamaño de tu operación.", href: "/planes", action: "Explorar planes" },
+              { number: "02", icon: "building" as const, title: "Cuéntanos de ti", body: "Crea tu cuenta web y comparte los datos de tu negocio.", href: portalUrl("/registro"), action: "Crear mi cuenta" },
+              { number: "03", icon: "check" as const, title: "Lo revisamos contigo", body: "Administración revisa la solicitud y verifica el pago cuando corresponde.", href: portalUrl("/cuenta/solicitudes"), action: "Ver mi solicitud" },
+              { number: "04", icon: "truck" as const, title: "Comienza tu operación", body: "Con tu acceso habilitado, recibe las indicaciones y credenciales de tu equipo.", href: portalUrl("/cuenta/descargas"), action: "Consultar mi acceso" }
+            ].map(step => <li key={step.number} data-home-reveal><a href={step.href}><div className={styles.stepTop}><span>{step.number}</span><Icon name={step.icon} /></div><h3>{step.title}</h3><p>{step.body}</p><span className={styles.stepAction}>{step.action} <Icon name="arrow" /></span></a></li>)}
+          </ol>
+        </div>
+      </section>
+
+      <section className={styles.plansSection} id="planes" aria-labelledby="home-plans-title">
+        <div className="container">
+          <div className={styles.sectionHeading} data-home-reveal><div><span className="eyebrow">ESPACIO PARA LO QUE VIENE</span><h2 id="home-plans-title">Tu operación crece.<br /><span>Encuentra tu plan.</span></h2></div><p>Consulta los precios y límites del catálogo vigente. La activación y los pagos se revisan manualmente.</p></div>
+          <div className={styles.plansWrap} data-home-reveal><Plans catalog={catalog} unavailable={unavailable} /></div>
+        </div>
+      </section>
+
+      <section className={styles.faqSection} aria-labelledby="home-faq-title">
+        <div className={"container " + styles.faqGrid}>
+          <div className={styles.faqIntro} data-home-reveal><span className="eyebrow">ANTES DE DESPEGAR</span><h2 id="home-faq-title">Buenas preguntas.<br /><span>Respuestas claras.</span></h2><p>Estamos para ayudarte a encontrar la forma de trabajar con Envirapido.</p><a href="/contacto" className="text-link">Hablemos de tu negocio <Icon name="arrow" /></a></div>
+          <div className={styles.questions} data-home-reveal>{questions.map(([question, answer], index) => <details key={question}><summary><span className={styles.questionNumber}>0{index + 1}</span><span>{question}</span><span className={styles.questionToggle} aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div>
+        </div>
+      </section>
+      <div className={styles.endcap} data-home-reveal><ContactCta /></div>
+    </HomeReveal>
+  </MarketingLayout>;
 }

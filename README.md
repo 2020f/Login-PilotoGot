@@ -2,6 +2,11 @@
 
 ## Agente de despliegue: empezar aquí
 
+**Actualización más reciente: [portada interactiva](DESPLEGAR-PORTADA.md).**
+Sobre el portal base ya instalado, publicar **sólo el bundle React/Next**.
+Esta actualización no cambia las demás vistas, CRM, API, SQL, app ni multitenant.
+La guía distingue este paso de la instalación inicial descrita a continuación.
+
 El portal comercial se entrega en la rama **`codex/confiabilidad-panel-app`**.
 Desplegar el **SHA completo comunicado por el propietario**, desde un checkout
 limpio. No sustituirlo por `master`, ni actualizar a ciegas el directorio en servicio.

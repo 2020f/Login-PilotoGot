@@ -1,5 +1,10 @@
 # Handoff de despliegue · Portal comercial Envirapido
 
+> **Actualización posterior de Inicio:** consultar
+> [DESPLEGAR-PORTADA.md](DESPLEGAR-PORTADA.md). Si el portal base ya está operativo,
+> esa entrega actualiza sólo el bundle Next, sin repetir los pasos de instalación
+> inicial de CRM, API, SQL o SMTP de este documento.
+
 Entrega autorizada por el propietario para que el agente del servidor publique el
 portal en **envirapido.com**, configure **SQL separado y SMTP**, y conserve la
 operación del CRM y las aplicaciones instaladas. La publicación en GitHub no
