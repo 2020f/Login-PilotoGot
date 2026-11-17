@@ -1,5 +1,13 @@
 # CLAUDE.md
 
+## Portal comercial: entrega y despliegue
+
+Antes de desplegar el portal, leer **[DESPLEGAR-PORTAL.md](DESPLEGAR-PORTAL.md)**.
+Este cambio añade React/Next y una API con base SQL **separada**. No ejecutar las
+migraciones del portal con el proyecto Login ni sobre DefaultConnection. Preservar
+CRM, JWT/Identity, sesiones, pedidos/rutas y API móvil. Las instrucciones genéricas
+de EF que siguen corresponden al CRM, no al SQL comercial nuevo.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Build & Run

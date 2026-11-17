@@ -1,7 +1,8 @@
 param(
     [uri]$BaseUrl = 'https://envirapido.com',
     [string]$ReceiptPath,
-    [switch]$RequireSuccess
+    [switch]$RequireSuccess,
+    [ValidateSet('CrmRedirect','Marketing')][string]$RootMode = 'CrmRedirect'
 )
 $ErrorActionPreference = 'Stop'
 if ($BaseUrl.Scheme -ne 'https' -or $BaseUrl.UserInfo -or $BaseUrl.Query -or $BaseUrl.Fragment) {
@@ -21,6 +22,7 @@ try {
     $root = $client.GetAsync($origin + '/').GetAwaiter().GetResult()
     $location = $root.Headers.Location
     $resolved = if ($location) { [uri]::new([uri]($origin + '/'), $location) } else { $null }
+    $rootHtml = if ($RootMode -eq 'Marketing') { $root.Content.ReadAsStringAsync().GetAwaiter().GetResult() } else { '' }
     $login = $client.GetAsync($origin + '/Identity/Account/Login').GetAwaiter().GetResult()
     $cookies = @()
     if ($login.Headers.Contains('Set-Cookie')) {
@@ -78,8 +80,13 @@ try {
     $checks = [ordered]@{
         httpToHttpsSameHost443PreservesPathQuery = $httpRedirects.Count -eq $httpProbePaths.Count -and
             @($httpRedirects | Where-Object { !$_.passed }).Count -eq 0
-        rootRedirectRemainsHttps = [int]$root.StatusCode -eq 302 -and $resolved -and
-            $resolved.Scheme -eq 'https' -and $resolved.Authority -eq $BaseUrl.Authority
+        rootMatchesExpectedMode = if ($RootMode -eq 'Marketing') {
+            [int]$root.StatusCode -eq 200 -and !$location -and
+                $root.Content.Headers.ContentType.MediaType -eq 'text/html' -and $rootHtml -match 'Envirapido'
+        } else {
+            [int]$root.StatusCode -eq 302 -and $resolved -and
+                $resolved.Scheme -eq 'https' -and $resolved.Authority -eq $BaseUrl.Authority
+        }
         loginAvailable = [int]$login.StatusCode -eq 200
         antiforgerySecureHttpOnly = $antiforgery.Count -gt 0 -and
             @($antiforgery | Where-Object { !$_.secure -or !$_.httpOnly }).Count -eq 0
@@ -90,7 +97,7 @@ try {
     $result = [ordered]@{
         checkedUtc = [DateTimeOffset]::UtcNow.ToString('o'); origin = $origin
         passed = @($checks.Values | Where-Object { !$_ }).Count -eq 0
-        checks = $checks; rootStatus = [int]$root.StatusCode
+        checks = $checks; rootMode = $RootMode; rootStatus = [int]$root.StatusCode
         rootLocation = [string]$location; loginStatus = [int]$login.StatusCode
         cookies = $cookies; anonymousApi = @($api); httpRedirects = $httpRedirects
         scope = 'Anónimo: no acredita cookie autenticada, despliegue exacto, SQL ni flujo móvil.'

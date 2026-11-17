@@ -5,6 +5,7 @@ using Login.Application.Interfaces;
 using Login.Application.Services;
 using Login.Data;
 using Login.Configuration;
+using Login.Application.Portal;
 using Login.Filters;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -141,6 +142,9 @@ builder.Services.AddHostedService<Login.Application.Operations.OperationsAutomat
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient<Login.Application.Operations.RecorridosService>(client => client.Timeout = TimeSpan.FromSeconds(8));
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.Configure<PortalIntegrationOptions>(builder.Configuration.GetSection(PortalIntegrationOptions.Section));
+builder.Services.AddHttpClient<PortalAdminClient>(client => client.Timeout = TimeSpan.FromSeconds(45))
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false });
 builder.Services.AddHttpClient<IGoogleMapsService, GoogleMapsService>();
 
 // Limita intentos de validación de PIN por usuario, compartido entre API y web.
@@ -192,6 +196,7 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 // Rutas
+app.MapPortalCatalog();
 app.MapRazorPages();
 app.MapControllerRoute(
     name: "default",

@@ -13,6 +13,7 @@
     <a class="sa-nav-item @Active("Clientes", "DetalleCliente", "CrearCliente", "EditarCliente", "CrearGestor")" href="/SuperAdmin/Clientes"><span class="sa-ico" aria-hidden="true">▤</span><span>Empresas</span></a>
     <a class="sa-nav-item @Active("Planes", "CrearPlan", "EditarPlan")" href="/SuperAdmin/Planes"><span class="sa-ico" aria-hidden="true">◇</span><span>Planes y límites</span></a>
     <a class="sa-nav-item @Active("Facturacion", "Factura", "CrearFactura", "RegistrarPago")" href="/SuperAdmin/Facturacion"><span class="sa-ico" aria-hidden="true">▣</span><span>Facturación y pagos</span></a>
+    <a class="sa-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "PortalComercial" ? "active" : "")" href="/SuperAdmin/Portal"><span class="sa-ico" aria-hidden="true">▧</span><span>Portal comercial</span></a>
     <div class="sa-nav-section">CONTROL Y SEGURIDAD</div>
     <a class="sa-nav-item @Active("Accesos")" href="/SuperAdmin/Accesos"><span class="sa-ico" aria-hidden="true">♙</span><span>Accesos y sesiones</span></a>
     <a class="sa-nav-item @Active("Auditoria")" href="/SuperAdmin/Auditoria"><span class="sa-ico" aria-hidden="true">≡</span><span>Auditoría</span></a>
