@@ -175,6 +175,10 @@ var app = builder.Build();
 
 // Middleware
 app.UseForwardedHeaders();
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
+{
+    app.UseHttpsRedirection();
+}
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

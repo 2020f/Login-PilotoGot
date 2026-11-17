@@ -8,6 +8,10 @@ if ($BaseUrl.Scheme -ne 'https' -or $BaseUrl.UserInfo -or $BaseUrl.Query -or $Ba
     throw 'La comprobación requiere un origen HTTPS sin credenciales, consulta ni fragmento.'
 }
 $origin = $BaseUrl.GetLeftPart([UriPartial]::Authority)
+$httpOriginBuilder = [UriBuilder]::new($origin)
+$httpOriginBuilder.Scheme = 'http'
+$httpOriginBuilder.Port = 80
+$httpOrigin = $httpOriginBuilder.Uri.GetLeftPart([UriPartial]::Authority)
 $handler = [Net.Http.HttpClientHandler]::new()
 $handler.AllowAutoRedirect = $false
 $handler.UseCookies = $false
@@ -38,8 +42,42 @@ try {
         }
         $response.Dispose()
     }
+    # GET anonimos, sin seguir Location ni enviar cookies o credenciales.
+    # La consulta es fija y ficticia: permite comprobar su conservacion sin
+    # registrar valores de consultas, cookies o cabeceras de autenticacion.
+    $httpProbePaths = @('/', '/Identity/Account/Login?ReturnUrl=%2FOperaciones%3Ftab%3Dmonitoreo')
+    $httpRedirects = @($httpProbePaths | ForEach-Object {
+        $httpRequestUri = [uri]::new([uri]($httpOrigin + '/'), $_)
+        $httpResponse = $client.GetAsync($httpRequestUri).GetAwaiter().GetResult()
+        try {
+            $httpLocation = $httpResponse.Headers.Location
+            $httpDestination = if ($httpLocation) { [uri]::new($httpRequestUri, $httpLocation) } else { $null }
+            $acceptedStatus = @(301, 302, 307, 308) -contains [int]$httpResponse.StatusCode
+            $sameHost = $httpDestination -and $httpDestination.Host -ieq $BaseUrl.Host
+            $https443 = $httpDestination -and $httpDestination.Scheme -eq 'https' -and
+                $httpDestination.Port -eq 443 -and !$httpDestination.UserInfo -and !$httpDestination.Fragment
+            $preservesPathAndQuery = $httpDestination -and
+                $httpDestination.AbsolutePath -ceq $httpRequestUri.AbsolutePath -and
+                $httpDestination.Query -ceq $httpRequestUri.Query
+            [pscustomobject]@{
+                path = $httpRequestUri.AbsolutePath
+                hasProbeQuery = ![string]::IsNullOrEmpty($httpRequestUri.Query)
+                status = [int]$httpResponse.StatusCode
+                targetScheme = if ($httpDestination) { $httpDestination.Scheme } else { $null }
+                targetHost = if ($httpDestination) { $httpDestination.Host } else { $null }
+                targetPort = if ($httpDestination) { $httpDestination.Port } else { $null }
+                sameHost = [bool]$sameHost
+                https443 = [bool]$https443
+                preservesPathAndQuery = [bool]$preservesPathAndQuery
+                passed = [bool]($acceptedStatus -and $sameHost -and $https443 -and $preservesPathAndQuery)
+            }
+        }
+        finally { $httpResponse.Dispose() }
+    })
     $antiforgery = @($cookies | Where-Object name -like '*Antiforgery*')
     $checks = [ordered]@{
+        httpToHttpsSameHost443PreservesPathQuery = $httpRedirects.Count -eq $httpProbePaths.Count -and
+            @($httpRedirects | Where-Object { !$_.passed }).Count -eq 0
         rootRedirectRemainsHttps = [int]$root.StatusCode -eq 302 -and $resolved -and
             $resolved.Scheme -eq 'https' -and $resolved.Authority -eq $BaseUrl.Authority
         loginAvailable = [int]$login.StatusCode -eq 200
@@ -54,7 +92,7 @@ try {
         passed = @($checks.Values | Where-Object { !$_ }).Count -eq 0
         checks = $checks; rootStatus = [int]$root.StatusCode
         rootLocation = [string]$location; loginStatus = [int]$login.StatusCode
-        cookies = $cookies; anonymousApi = @($api)
+        cookies = $cookies; anonymousApi = @($api); httpRedirects = $httpRedirects
         scope = 'Anónimo: no acredita cookie autenticada, despliegue exacto, SQL ni flujo móvil.'
     }
     $json = $result | ConvertTo-Json -Depth 6

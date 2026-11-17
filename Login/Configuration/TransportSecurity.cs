@@ -12,6 +12,13 @@ public static class TransportSecurity
     public static IServiceCollection AddTransportSecurity(this IServiceCollection services,
         IConfiguration configuration, IHostEnvironment environment)
     {
+        // El proxy puede terminar TLS sin publicar un puerto HTTPS en Kestrel.
+        services.AddHttpsRedirection(options =>
+        {
+            options.HttpsPort = 443;
+            options.RedirectStatusCode = StatusCodes.Status307TemporaryRedirect;
+        });
+
         var proxies = new HashSet<IPAddress> { IPAddress.Loopback, IPAddress.IPv6Loopback };
         var section = configuration.GetSection("ReverseProxy:KnownProxies");
         if (section.Value is not null)

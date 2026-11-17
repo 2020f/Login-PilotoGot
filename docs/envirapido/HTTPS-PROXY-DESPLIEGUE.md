@@ -3,6 +3,11 @@
 Fecha: 12 de noviembre de 2026. Guía para el agente que despliega el backend.
 La publicación de este cambio en GitHub no acredita su instalación en el servidor.
 
+> Actualización del 17 de noviembre: para la redirección HTTP a HTTPS y su
+> comprobación, seguir [HTTPS-METRICAS-20261117.md](HTTPS-METRICAS-20261117.md).
+> Ese lote agrega `UseHttpsRedirection`; el resto de esta guía conserva el
+> contexto y las reglas de confianza del cambio del 12 de noviembre.
+
 ## Qué corrige
 
 La validación pública detectó una redirección de la raíz HTTPS hacia login HTTP y
