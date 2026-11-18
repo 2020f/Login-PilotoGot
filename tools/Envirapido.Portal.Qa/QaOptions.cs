@@ -9,13 +9,14 @@ internal sealed record QaOptions(int CrmPort, int PortalPort, Uri WebOrigin, str
     public string PortalOrigin => $"http://127.0.0.1:{PortalPort}";
     public static QaOptions Parse(string[] args)
     {
-        var allowed = new HashSet<string> { "--crm-port", "--portal-port", "--web-origin", "--receipt", "--sql-instance", "--android-tools", "--java", "--verify-seed" };
-        var values = new Dictionary<string, string>(); var verify = false;
+        var allowed = new HashSet<string> { "--crm-port", "--portal-port", "--web-origin", "--receipt", "--sql-instance", "--android-tools", "--java", "--verify-seed", "--email-verification" };
+        var values = new Dictionary<string, string>(); var verify = false; var emailVerification = false;
         for (var i = 0; i < args.Length; i++)
         {
             var key = args[i];
             if (!allowed.Contains(key) || values.ContainsKey(key)) throw new ArgumentException("Argumento QA desconocido o duplicado.");
             if (key == "--verify-seed") { if (verify) throw new ArgumentException("Argumento duplicado."); verify = true; continue; }
+            if (key == "--email-verification") { if (emailVerification) throw new ArgumentException("Argumento duplicado."); emailVerification = true; continue; }
             if (++i >= args.Length || args[i].StartsWith("--", StringComparison.Ordinal)) throw new ArgumentException($"{key} requiere un valor.");
             values.Add(key, args[i]);
         }

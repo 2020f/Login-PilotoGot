@@ -7,14 +7,14 @@ namespace Envirapido.Portal.Api.Services;
 
 public sealed partial class PortalDomainService
 {
-    private static PortalAdminUserDto AdminUser(PortalUser u, string business) => new(u.Id, u.Email, u.EmailConfirmed, u.Status, business, u.CreatedAt, u.Version);
+    private PortalAdminUserDto AdminUser(PortalUser u, string business) => new(u.Id, u.Email, u.EmailConfirmed, u.Status, business, u.CreatedAt, u.Version, options.RequireEmailConfirmation);
     public async Task<PortalAdminSummary> SummaryAsync(CancellationToken ct)
     {
         var grants = await db.AccessGrants.AsNoTracking().Include(g => g.User).Include(g => g.Request).ThenInclude(r => r.Payments).ToListAsync(ct);
         return new(await db.Users.CountAsync(ct), await db.Requests.CountAsync(ct),
             await db.Requests.CountAsync(r => r.Status == "Submitted" || r.Status == "InReview" || r.Status == "NeedsInformation", ct),
             await db.PaymentReports.CountAsync(r => r.Status == "Reported" || r.Status == "InReview", ct),
-            grants.Count(g => PortalAccessService.Evaluate(g.User, g, Now).Allowed),
+            grants.Count(g => PortalAccessService.Evaluate(g.User, g, Now, options.RequireEmailConfirmation).Allowed),
             grants.Count(g => g.StartsOn.Year is >= 2000 and <= 2100 && g.EndsOn.Year is >= 2000 and <= 2100 && g.EndsOn >= g.StartsOn && PortalAccessService.Start(g.EndsOn.AddDays(1)) <= Now), await db.CatalogEntries.CountAsync(p => p.IsPublished, ct));
     }
     public async Task<PortalPage<PortalAdminUserDto>> AdminUsersAsync(string? q, string? status, int page, CancellationToken ct)

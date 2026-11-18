@@ -4,6 +4,9 @@ Implementación local y publicación GitHub autorizadas el 17/11/2026. El agente
 servidor recibe las instrucciones de entrega en [DESPLEGAR-PORTAL.md](../../DESPLEGAR-PORTAL.md).
 El push no acredita despliegue ni autoriza reemplazar datos o claves operativas.
 El resultado de QA y sus límites se documentan en `QA-20261117.md`.
+La política vigente de registro y su QA adicional están en
+[REGISTRO-MANUAL-20261117.md](REGISTRO-MANUAL-20261117.md): correo de contacto,
+sin confirmación SMTP, con activación manual por SuperAdmin.
 
 ## Servicios y separación
 
@@ -42,9 +45,13 @@ con precios inventados o vencidos.
    webroot y del repositorio. Permisos sólo para el usuario del servicio. Respaldar
    base, claves y objetos APK coherentemente. Mantener las claves entre reinicios:
    protegen también la cola de correo, no sólo las sesiones.
-5. Configurar SMTP real con TLS y remitente autorizado. La confirmación/recuperación
-   del portal es independiente del correo CRM. Si SMTP no está habilitado en producción,
-   el alta y la recuperación fallan de forma segura; no se crean accesos sin validar.
+5. Configurar `Portal__RequireEmailConfirmation=false` y, si no hay servicio de
+   correo, `Portal__Mail__Enabled=false`. El registro no necesita SMTP. La
+   activación exige revisión de SuperAdmin, pago aplicable y vigencia habilitada.
+   La recuperación sin SMTP muestra los contactos de administración. SMTP es
+   opcional para recuperación automática; sólo si se decide exigir confirmación
+   por email en otra instalación, usar `RequireEmailConfirmation=true` y correo
+   real con TLS y remitente autorizado. No sustituir el correo CRM.
 6. Instalar Java, `apksigner.jar` y `aapt2` oficiales con rutas absolutas. La API ejecuta
    únicamente estos validadores mediante argumentos, nunca el APK ni un shell. El
    servicio necesita espacio para el archivo en cuarentena y para su inspección.
@@ -109,8 +116,9 @@ Para el dominio anterior usar el modo predeterminado `CrmRedirect`.
 
 1. Verificar acceso SuperAdmin, abrir **Portal comercial → Catálogo web** y publicar
    sólo los planes comerciales deseados. Los planes QA activos no se publican solos.
-2. Registrar un comprador ficticio por el sitio, confirmar correo por SMTP real y
-   comprobar que esté pendiente y sin descarga. Revisar datos desde SuperAdmin.
+2. Registrar un comprador ficticio autorizado por el sitio sin SMTP y comprobar
+   que esté pendiente, sin descargas ni enlace CRM habilitados. Revisar datos en
+   SuperAdmin. No se marca su dirección como verificada ni se crea usuario CRM.
 3. El reporte del comprador nunca confirma dinero. Registrar únicamente pagos externos
    comprobados; no existe pasarela ni transferencia bancaria automática. Un pago
    anulado debe cerrar el permiso si deja importe pendiente.
@@ -130,3 +138,13 @@ Para el dominio anterior usar el modo predeterminado `CrmRedirect`.
 Rollback de enrutamiento: restaurar el proxy anterior y deshabilitar `PortalIntegration`
 sin revertir ni tocar la base operativa. Conservar base/archivos comerciales para
 investigar o retomar; no eliminarlos como parte del rollback.
+
+## Actualizar un portal ya instalado al registro manual
+
+Publicar API portal, Contracts y CRM para la vista SuperAdmin; reconstruir Next
+con sus variables públicas actuales. Este ajuste no añade migraciones ni columnas:
+conservar ambas conexiones SQL, datos, claves Data Protection y secretos. No
+aplicar migraciones de otros cambios pendientes por este ajuste. Fijar el mismo
+`PORTAL_API_ORIGIN` privado al compilar y ejecutar Next. Verificar desde el
+subdominio del portal `GET /portal-api/v1/auth/options`: en la configuración sin
+SMTP devuelve ambos flags false. La entrega local no acredita despliegue público.

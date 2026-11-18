@@ -15,6 +15,10 @@ export interface Catalog {
   updatedAt: string;
   policyVersions: { terms: string; privacy: string };
 }
+export interface PortalAuthOptions {
+  emailConfirmationRequired: boolean;
+  passwordRecoveryAvailable: boolean;
+}
 export interface Profile {
   responsibleName: string;
   businessName: string;
@@ -49,7 +53,7 @@ export interface PlanRequest {
   version: string;
 }
 export interface Account {
-  user: { id: string; email: string; emailConfirmed: boolean; status: string };
+  user: { id: string; email: string; emailConfirmed: boolean; status: string; emailConfirmationRequired?: boolean };
   profile: Profile;
   access: Access;
   requests: PlanRequest[];

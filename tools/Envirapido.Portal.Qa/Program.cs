@@ -29,7 +29,7 @@ Environment.SetEnvironmentVariable("PILOTGO_TEST_SQLSERVER_INSTANCE", options.Sq
 // Ambas factories crean bases con GUID y eliminan solo esas bases al cerrar.
 // No hay parámetro de conexión, base existente, DefaultConnection ni modo de producción.
 using var crmFactory = new PilotGoFactory();
-using var portalFactory = new PortalFactory();
+using var portalFactory = new PortalFactory(args.Contains("--email-verification"));
 await crmFactory.SeedAsync();
 await portalFactory.InitializeAsync(false);
 portalFactory.Clock.Set(DateTimeOffset.UtcNow);
@@ -175,7 +175,7 @@ try
             manager = options.CrmOrigin + "/qa/login/manager-a", shop = options.CrmOrigin + "/qa/login/shop-a", pilot = options.CrmOrigin + "/qa/login/pilot-a" },
         portal = new { api = options.PortalOrigin, web = options.WebOrigin, database = portalFactory.DatabaseName,
             privateStorage = portalFactory.StorageRoot, catalogSource = options.CrmOrigin + "/api/internal/portal/catalog",
-            smtp = "Deshabilitado; mensajes retenidos en outbox QA propio.", mailReader = options.PortalOrigin + "/qa/mail?email=portal-qa%40example.test",
+            emailConfirmationRequired = args.Contains("--email-verification"), smtp = args.Contains("--email-verification") ? "Deshabilitado; mensajes retenidos en outbox QA propio." : "No requerido para el registro manual; sin mensajes de confirmación.", mailReader = args.Contains("--email-verification") ? options.PortalOrigin + "/qa/mail?email=portal-qa%40example.test" : null,
             registrationExample = new { email = "portal-qa@example.test", password = PortalFactory.Password, accountAlreadyCreated = false },
             crmHref = PortalOptions.CrmLoginUrl, followCrmHref = false, apkValidationTools = options.AndroidTools is not null, minimumApkVersion = 8 },
         publishedPlans = publicCatalog.Plans,

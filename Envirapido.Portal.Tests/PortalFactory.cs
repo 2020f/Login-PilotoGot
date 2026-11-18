@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Envirapido.Portal.Tests;
 
-public sealed class PortalFactory : WebApplicationFactory<PortalProgram>
+public sealed class PortalFactory(bool requireEmailConfirmation = true) : WebApplicationFactory<PortalProgram>
 {
     public const string AdminKey = "Testing-Only-Portal-Admin-Key-Not-For-Production-2026";
     public const string Password = "Portal-Test-Only-Password42!";
@@ -40,6 +40,9 @@ public sealed class PortalFactory : WebApplicationFactory<PortalProgram>
         builder.UseSetting("Portal:AdminKey", AdminKey);
         builder.UseSetting("Portal:CatalogKey", "Testing-Only-Portal-Catalog-Key-Not-For-Production-2026");
         builder.UseSetting("Portal:PublicBaseUrl", "https://portal.example.test");
+        // Legacy confirmation/recovery tests explicitly exercise the optional
+        // verification policy; the product default is manual approval.
+        builder.UseSetting("Portal:RequireEmailConfirmation", requireEmailConfirmation ? "true" : "false");
         builder.UseSetting("Portal:DataProtectionDirectory", Path.Combine(privateRoot,"keys"));
         builder.UseSetting("PortalArtifacts:StoragePath", Path.Combine(privateRoot,"artifacts"));
         builder.UseSetting("PortalArtifacts:MinimumVersionCode", "8");

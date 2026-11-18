@@ -7,6 +7,7 @@ Base `/portal-api/v1`. Cookie host-only HttpOnly; fetch con `credentials: includ
 | Ruta | Entrada / salida |
 | --- | --- |
 | GET `/catalog` | `PortalCatalogDto`: plans, updatedAt, policyVersions. Usar policies recibidas (por defecto terms/privacy `2026-11-17`). |
+| GET `/auth/options` | `{emailConfirmationRequired,passwordRecoveryAvailable}` booleanos; configuración pública sin secretos. Sin SMTP ambos son false en el modo manual. |
 | POST `/auth/register` | `PortalRegisterInput` + Idempotency-Key => 201 `PortalAccountDto`; inicia sesión de portal, no activa recursos. |
 | POST `/auth/login` | email,password,rememberMe => `PortalAccountDto`. |
 | POST `/auth/logout` | `{}` =>204. |
@@ -24,6 +25,18 @@ Base `/portal-api/v1`. Cookie host-only HttpOnly; fetch con `credentials: includ
 Perfil: responsibleName,businessName,phone,province,city,operationType obligatorios; operationType texto (sin catálogo cerrado). estimatedStores,estimatedPilots,estimatedOrdersPerMonth enteros opcionales; rnc,billingAddress,notes opcionales. No credenciales ni identificadores CRM.
 
 Estados: cuenta Active/Suspended y emailConfirmed independiente. Solicitud Submitted/InReview/NeedsInformation/Approved/Rejected/Cancelled. Pago NotReported/Reported/InReview/Rejected/Confirmed/Voided/NotRequired. Aprobar una solicitud no confirma pago ni define fechas. access.allowed requiere TODOS los controles. Reasons: ACTIVE,ACCOUNT_SUSPENDED,EMAIL_UNCONFIRMED,REQUEST_PENDING,PAYMENT_PENDING,NOT_CONFIGURED,NOT_STARTED,EXPIRED,SUSPENDED,REVOKED. El único CRM URL permitido es `https://envirapido.com/Identity/Account/Login`, y solo se devuelve cuando allowed=true. Vigencia startsOn/endsOn RD inclusivos, almacenada con extremo UTC final exclusivo; no modifica CRM.
+
+Política vigente: `Portal:RequireEmailConfirmation=false` por defecto. El correo es
+un dato de contacto; registro y reenvío no generan tokens ni mensajes SMTP y no
+ponen `emailConfirmed=true`. `user.emailConfirmationRequired` y el mismo campo en
+`PortalAdminUserDto` comunican la política real. Un cliente que no reciba el campo
+no debe asumir que el correo está verificado ni conceder permisos. El acceso
+continúa exigiendo aprobación propia, pago aplicable, permiso y vigencia. Sin
+permiso y con solicitud abierta, el modo manual devuelve `REQUEST_PENDING`.
+`EMAIL_UNCONFIRMED` sólo bloquea cuando se habilita explícitamente la política de
+confirmación. SMTP es opcional para recuperación automática; sin él la interfaz
+ofrece contacto con administración. El endpoint de recuperación no habilita
+acceso ni restablece contraseñas sin un token válido.
 
 Administración `/portal-api/internal/admin`: exclusivamente secreto de servidor `X-Envirapido-Portal-Key` y operador `X-Envirapido-Operator`. No se acepta cookie comprador ni CRM como autorización; el bridge CRM verifica SuperAdmin y CSRF. Todos los POST requieren Idempotency-Key.
 
@@ -46,6 +59,11 @@ Administración `/portal-api/internal/admin`: exclusivamente secreto de servidor
 HTTP400 validación;401 sesión/clave;403 recursos;409 concurrencia, condiciones o idempotencia;429 límite;503 catálogo/correo/almacenamiento no disponibles. Cero significa sin límite en el catálogo. Precios siempre del servidor, snapshots inmutables.
 
 Configuración propia: `ConnectionStrings:PortalConnection`; `Portal:AdminKey`, `Portal:CatalogUrl`, `Portal:CatalogKey`, `Portal:PublicBaseUrl`, `Portal:DataProtectionDirectory`, `Portal:TermsVersion`, `Portal:PrivacyVersion`, `Portal:Mail:*`. No `DefaultConnection`. Catálogo CRM: GET configurado a `/api/internal/portal/catalog`, header X-Envirapido-Catalog-Key => CrmPortalCatalog. Autorización y claves fuertes independientes; sin auto EnsureCreated/seeds ni credenciales comerciales demo en producción.
+
+La configuración añade `Portal:RequireEmailConfirmation`; no añade tablas ni
+columnas. Para el modo anterior se exige `true` y SMTP disponible: un fallo tipado
+`EMAIL_UNAVAILABLE` revierte el registro completo. La idempotencia y la separación
+de bases y credenciales no cambian entre modos.
 
 Compatibilidad de revisión: ReportDto incorpora status/resolution/version; confirmación admite reportId opcional para enlazar y resolver el reporte. Anular ese pago marca el reporte Voided. Detail.profile son los datos recibidos inmutables; currentProfile es el perfil actual opcional. AdminCatalogEntry.sourceActive indica si sigue en el catálogo de origen; se conservan publicaciones inactivas con snapshot histórico para retirarlas, sin habilitar compras. Summary.publishedPlans cuenta publicaciones configuradas, no visibilidad activa actual; pendingPayments cuenta reportes sin resolver.
 

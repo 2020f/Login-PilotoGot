@@ -5,8 +5,16 @@
 > esa entrega actualiza sólo el bundle Next, sin repetir los pasos de instalación
 > inicial de CRM, API, SQL o SMTP de este documento.
 
+> **Registro manual aprobado posteriormente:** ver
+> [REGISTRO-MANUAL-20261117.md](docs/portal/REGISTRO-MANUAL-20261117.md).
+> Si el portal ya existe, esta corrección actualiza API/Contracts, CRM para la
+> vista SuperAdmin y Next; no crea bases ni añade migraciones. Conservar datos,
+> conexiones, claves y secretos. Seguir la actualización puntual de
+> [DESPLEGAR-REGISTRO-MANUAL.md](DESPLEGAR-REGISTRO-MANUAL.md) desde el SHA entregado;
+> su publicación en GitHub no acredita que ya esté desplegada.
+
 Entrega autorizada por el propietario para que el agente del servidor publique el
-portal en **envirapido.com**, configure **SQL separado y SMTP**, y conserve la
+portal en **envirapido.com**, configure **SQL separado y activación manual**, y conserve la
 operación del CRM y las aplicaciones instaladas. La publicación en GitHub no
 acredita que el servidor ya haya sido actualizado.
 
@@ -92,6 +100,8 @@ Para la API comercial:
 - `Portal__AdminKey` y `Portal__CatalogKey`: **dos secretos aleatorios distintos**
   de al menos 32 caracteres. Compartir cada uno sólo con su integración de servidor.
 - `Portal__PublicBaseUrl=https://portal.envirapido.com`.
+- `Portal__RequireEmailConfirmation=false` y `Portal__Mail__Enabled=false` para
+  registrar sin SMTP. SuperAdmin controla aprobación, pago aplicable y vigencia.
 - `Portal__CatalogUrl`: URL privada **real** del CRM y ruta
   `/api/internal/portal/catalog`, no asumir que el CRM usa el puerto 5000.
 - `Portal__DataProtectionDirectory` y `PortalArtifacts__StoragePath`: directorios
@@ -112,7 +122,22 @@ receptor sólo confía en su peer exacto. Entre máquinas distintas usar HTTPS r
 con certificado validado. No seguir redirecciones, desactivar validación TLS ni
 abrir los endpoints internos en Internet para solucionar una configuración errónea.
 
-## 5. SMTP del portal
+## 5. Registro manual y correo opcional
+
+La política vigente del propietario permite registrar correo y contraseña sin
+validar un enlace. Configurar `Portal__RequireEmailConfirmation=false`; SMTP no es
+requisito para abrir registros. Con `Portal__Mail__Enabled=false` no se generan
+tokens de confirmación ni mensajes de registro. `EmailConfirmed` sigue false:
+el panel muestra correo de contacto y no afirma verificación. La cuenta recién
+creada sólo consulta su solicitud; no obtiene tenant, credenciales CRM ni recursos.
+
+SuperAdmin revisa los datos, aprueba la solicitud, confirma pagos externos cuando
+corresponda y fija la vigencia independiente del portal. Sin SMTP, la recuperación
+automática no se ofrece: se muestran los contactos de administración.
+
+El resto de esta sección sólo aplica si se habilita correo para recuperación
+automática o si se elige en otra instalación el modo opcional
+`Portal__RequireEmailConfirmation=true`.
 
 Configurar **`Portal__Mail__*`** en el servicio nuevo, no sustituir el correo del CRM:
 Enabled, Host, Port, UseSsl, UserName, Password, FromAddress y FromName. Utilizar
@@ -123,13 +148,13 @@ para enviar desde un dominio.
 El transporte implementado usa **STARTTLS**, normalmente puerto 587, con
 `UseSsl=true`. No funciona con TLS implícito de puerto 465. Comprobar salida de
 red, autenticación, remitente y configuración DNS que requiera el proveedor antes
-de abrir registros al público. [Referencia oficial de SmtpClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.mail.smtpclient.enablessl?view=net-10.0).
+de ofrecer recuperación o confirmación automática. [Referencia oficial de SmtpClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.mail.smtpclient.enablessl?view=net-10.0).
 
 La entrega usa un outbox cifrado con reintentos; una respuesta de registro exitosa
 no demuestra que el correo llegó. Verificar recepción real, confirmación de enlace
 de un uso y recuperación de acceso. Si faltan credenciales válidas, informar el
-pendiente y no afirmar que el registro comercial está listo. No desactivar la
-confirmación ni usar el lector de correo de QA en producción.
+pendiente de ese servicio opcional. Si se eligió exigir confirmación, no afirmar
+que ese modo está listo sin validarlo. Nunca usar el lector de correo QA en producción.
 
 ## 6. Compilar desde el SHA correcto
 
@@ -181,7 +206,7 @@ absolutas si se habilitará la carga de APK. No subir un keystore al servidor we
 ## 7. Orden de arranque y rutas públicas
 
 1. Preparar copia de seguridad y release limpio; crear/migrar sólo el SQL comercial.
-2. Preparar entorno privado, SMTP y directorios; publicar CRM actualizado con su
+2. Preparar entorno privado, política manual y directorios; publicar CRM actualizado con su
    mismo SQL, Identity y JWT. Añadir la configuración de integración.
 3. Arrancar API comercial y verificar salud interna, catálogo privado y sección
    SuperAdmin sin cambiar todavía la raíz pública. Arrancar Next y comprobar HTML.
@@ -218,8 +243,10 @@ por la aplicación; no desactivar autenticación ni CSRF para conseguir una carg
 - SuperAdmin del CRM conserva empresas, planes, facturación y permisos. En
   **Portal comercial → Catálogo web**, publicar sólo los planes comerciales
   deseados; un plan QA no se publica automáticamente por estar activo.
-- Alta ficticia autorizada y recepción real por SMTP; solicitud pendiente visible
-  en SuperAdmin, sin tenant/usuario CRM automático y sin recursos desbloqueados.
+- Alta ficticia autorizada sin SMTP; solicitud pendiente visible en SuperAdmin,
+  sin tenant/usuario CRM automático y sin recursos desbloqueados. Consultar
+  `/portal-api/v1/auth/options` en `portal.envirapido.com`: ambos flags false
+  cuando confirmación y correo automático están deshabilitados.
 - Reportar pago no equivale a confirmarlo. Aprobar, confirmar un pago externo real
   cuando corresponda y fijar fechas independientes. En QA usar sólo pagos ficticios.
 - Acceso activo habilita descarga y botón de login CRM, con credenciales operativas
@@ -244,8 +271,10 @@ outbox, claves y APK privados para retomar o investigar; no ejecutar Down ni bor
 datos como parte del rollback. No desinstalar apps ni restablecer contraseñas reales.
 
 Al terminar, comunicar: SHA completo desplegado y árbol limpio; versiones/runtime;
-servicios y hosts atendidos; base comercial y migración aplicada; resultados SMTP,
+servicios y hosts atendidos; base comercial y migración aplicada; política de registro,
 HTTPS, cuentas, pagos, APK, multitenant y pedidos; rollback disponible y cualquier
 pendiente. No incluir secretos, tokens, conexiones completas ni datos personales.
 Las pruebas locales de [QA-20261117](docs/portal/QA-20261117.md) son evidencia
 previa; no sustituir con ellas la verificación del servidor.
+El resultado nuevo del modo sin SMTP está en
+[REGISTRO-MANUAL-20261117.md](docs/portal/REGISTRO-MANUAL-20261117.md).

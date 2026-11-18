@@ -13,6 +13,9 @@ public sealed class PortalOptions
     public string DataProtectionDirectory { get; set; } = "";
     public string TermsVersion { get; set; } = "2026-11-17";
     public string PrivacyVersion { get; set; } = "2026-11-17";
+    // La cuenta web se registra sin correo transaccional; SuperAdmin activa
+    // sus recursos mediante aprobación, pago aplicable y vigencia explícita.
+    public bool RequireEmailConfirmation { get; set; }
     public PortalMailOptions Mail { get; set; } = new();
 
     public static bool Local(IHostEnvironment env) => env.IsDevelopment() || env.IsEnvironment("Testing");

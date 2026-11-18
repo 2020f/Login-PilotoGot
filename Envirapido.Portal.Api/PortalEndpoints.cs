@@ -13,6 +13,7 @@ public static class PortalEndpoints
         v1.MapGet("/csrf", (HttpContext c, IAntiforgery anti) => Results.Ok(new PortalCsrf(anti.GetAndStoreTokens(c).RequestToken!)));
         v1.MapGet("/catalog", async (PortalCatalogService catalog, CancellationToken ct) => Results.Ok(await catalog.PublicAsync(ct)));
         var auth = v1.MapGroup("/auth").RequireRateLimiting("PortalAuth");
+        auth.MapGet("/options", (PortalOptions options) => Results.Ok(new PortalAuthOptions(options.RequireEmailConfirmation, options.Mail.Enabled)));
         auth.MapPost("/register", async (HttpContext c, PortalRegisterInput input, PortalDomainService svc, CancellationToken ct) =>
         { await PortalSecurity.ValidateCsrfAsync(c); var id = await svc.RegisterAsync(input, PortalSecurity.OperationKey(c), ct); await svc.SignInAsync(c, id, false, ct); return Results.Json(await svc.AccountAsync(id, ct), statusCode: 201); });
         auth.MapPost("/login", async (HttpContext c, PortalLoginInput input, PortalDomainService svc, CancellationToken ct) =>
@@ -22,8 +23,10 @@ public static class PortalEndpoints
         auth.MapGet("/me", async (HttpContext c, PortalDomainService svc, CancellationToken ct) => Results.Ok(await svc.AccountAsync(PortalSecurity.UserId(c), ct))).RequireAuthorization("PortalBuyer");
         auth.MapPost("/confirm-email", async (HttpContext c, PortalTokenInput input, PortalDomainService svc, CancellationToken ct) =>
         { await PortalSecurity.ValidateCsrfAsync(c); await svc.ConfirmEmailAsync(input, ct); return Results.Ok(new PortalMessage("Correo del portal confirmado.")); });
-        auth.MapPost("/resend-confirmation", async (HttpContext c, PortalDomainService svc, CancellationToken ct) =>
-        { await PortalSecurity.ValidateCsrfAsync(c); await svc.ResendConfirmationAsync(PortalSecurity.UserId(c), ct); return Results.Ok(new PortalMessage("Si corresponde, recibirás un correo de confirmación.")); }).RequireAuthorization("PortalBuyer");
+        auth.MapPost("/resend-confirmation", async (HttpContext c, PortalDomainService svc, PortalOptions options, CancellationToken ct) =>
+        { await PortalSecurity.ValidateCsrfAsync(c); await svc.ResendConfirmationAsync(PortalSecurity.UserId(c), ct); return Results.Ok(new PortalMessage(options.RequireEmailConfirmation
+            ? "Si corresponde, recibirás un correo de confirmación."
+            : "No se requiere confirmar el correo. Administración revisará y activará tu plan.")); }).RequireAuthorization("PortalBuyer");
         auth.MapPost("/forgot-password", async (HttpContext c, PortalEmailInput input, PortalDomainService svc, CancellationToken ct) =>
         { await PortalSecurity.ValidateCsrfAsync(c); await svc.ForgotPasswordAsync(input, ct); return Results.Ok(new PortalMessage("Si existe una cuenta, recibirás instrucciones para recuperar tu acceso.")); });
         auth.MapPost("/reset-password", async (HttpContext c, PortalResetInput input, PortalDomainService svc, CancellationToken ct) =>

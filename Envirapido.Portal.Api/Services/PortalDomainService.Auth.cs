@@ -28,7 +28,8 @@ public sealed partial class PortalDomainService
             db.Users.Add(user); db.Profiles.Add(p);
             var request = new PortalPurchaseRequest { UserId = user.Id, PlanSnapshotJson = JsonSerializer.Serialize(plan, Json), ProfileSnapshotJson = JsonSerializer.Serialize(profile, Json), Amount = plan.MonthlyPrice, Currency = plan.Currency, CreatedAt = Now };
             db.Requests.Add(request);
-            await QueueTokenAsync(user, "ConfirmEmail", ct);
+            if (options.RequireEmailConfirmation)
+                await QueueTokenAsync(user, "ConfirmEmail", ct);
             audit.Add(user.Id.ToString(), "AccountRegistered", "PortalUser", user.Id.ToString(), "Cuenta comercial y solicitud registradas; sin acceso ni usuario CRM.");
             audit.Add(user.Id.ToString(), "RequestSubmitted", "PortalRequest", request.Id.ToString(), $"Solicitud de {plan.Code}; {plan.Currency} {plan.MonthlyPrice:0.00}.");
             return user.Id;
@@ -87,6 +88,9 @@ public sealed partial class PortalDomainService
     }
     public async Task ResendConfirmationAsync(Guid id, CancellationToken ct)
     {
+        // Manual activation is performed by administration. Do not emit tokens,
+        // enqueue SMTP messages or misrepresent the address as verified.
+        if (!options.RequireEmailConfirmation) return;
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         var user = await db.Users.SingleAsync(u => u.Id == id, ct);
         if (!user.EmailConfirmed) await QueueTokenAsync(user, "ConfirmEmail", ct);

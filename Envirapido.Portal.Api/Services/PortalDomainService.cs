@@ -98,7 +98,7 @@ public sealed partial class PortalDomainService
     {
         var user = await db.Users.AsNoTracking().SingleOrDefaultAsync(u => u.Id == id, ct) ?? throw Error(401, "SESSION_REQUIRED", "Inicia sesión.");
         var profile = await db.Profiles.AsNoTracking().SingleAsync(p => p.UserId == id, ct);
-        return new(new(user.Id, user.Email, user.EmailConfirmed, user.Status), Profile(profile), await access.GetAccessAsync(id, ct), await RequestsAsync(id, ct));
+        return new(new(user.Id, user.Email, user.EmailConfirmed, user.Status, options.RequireEmailConfirmation), Profile(profile), await access.GetAccessAsync(id, ct), await RequestsAsync(id, ct));
     }
     public async Task<IReadOnlyList<PortalRequestDto>> RequestsAsync(Guid id, CancellationToken ct = default)
         => (await db.Requests.AsNoTracking().Include(r => r.Payments).Include(r => r.PaymentReports).Where(r => r.UserId == id).OrderByDescending(r => r.CreatedAt).Take(50).ToListAsync(ct)).Select(RequestDto).ToList();
