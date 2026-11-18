@@ -25,47 +25,65 @@ namespace Login.Controllers.Api
 
         public sealed record ConfirmarRecolectaRequest(string CodigoB, int? OrdenId = null, string? OperacionId = null);
         public sealed record ConfirmarEntregaRequest(string? CodigoB, string CodigoC, int? OrdenId = null);
-        public sealed record ConfirmarParadaRequest(string CodigoC, string OperacionId);
+        public sealed record ConfirmarParadaRequest(string CodigoC, string OperacionId, string? RevisionAsignacion = null);
+        public sealed record ConfirmarRecogidaParadasRequest(string CodigoB, string OperacionId,
+            IReadOnlyList<RevisionParadaRequest> Paradas);
         public sealed record UbicacionRequest(double Latitud, double Longitud);
         public sealed record EstadoRequest(bool EnLinea);
 
         private string GetUserId()
             => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
         private bool SoportaParadas => int.TryParse(Request.Headers["X-Contrato-Ordenes"].ToString(), out var v) && v >= 3;
+        private bool SoportaAsignaciones => int.TryParse(Request.Headers["X-Contrato-Ordenes"].ToString(), out var v) && v >= 4;
 
         [HttpGet("capacidades")]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Capacidades() => Ok(new { versionContrato = 3, multiparada = true,
-            cierreSoloC = true, confirmacionParadaIdempotente = true });
+        public IActionResult Capacidades() => Ok(new { versionContrato = 4, multiparada = true,
+            cierreSoloC = true, confirmacionParadaIdempotente = true, gestionPorParadas = true,
+            recogidaPorLoteIdempotente = true, revisionAsignacion = true });
 
         [HttpPost("ordenes/{ordenId:int}/paradas/{paradaId:int}/confirmar-entrega")]
         [EnableRateLimiting("CodigosEntrega")]
         public async Task<IActionResult> ConfirmarParada(int ordenId, int paradaId, [FromBody] ConfirmarParadaRequest request)
-            => await RunAsync(() => _svc.ConfirmarEntregaParadaAsync(GetUserId(), ordenId, paradaId,
-                request.CodigoC, request.OperacionId));
+            => !SoportaAsignaciones && request.RevisionAsignacion is not null
+                ? StatusCode(426, new { error = "Actualiza la app para confirmar una asignación por parada." })
+                : await RunAsync(() => _svc.ConfirmarEntregaParadaAsync(GetUserId(), ordenId, paradaId,
+                    request.CodigoC, request.OperacionId, request.RevisionAsignacion));
+
+        [HttpPost("ordenes/{ordenId:int}/recoger-paradas")]
+        [EnableRateLimiting("CodigosEntrega")]
+        public async Task<IActionResult> RecogerParadas(int ordenId, [FromBody] ConfirmarRecogidaParadasRequest request)
+            => !SoportaAsignaciones ? StatusCode(426, new { error = "Actualiza la app para gestionar recogidas por parada." })
+                : await RunAsync(() => _svc.ConfirmarRecogidaParadasAsync(GetUserId(), ordenId,
+                    request.CodigoB, request.Paradas, request.OperacionId));
 
         [HttpGet("mi-orden")]
         public async Task<IActionResult> MiOrden()
             => await RunAsync(async () => (await _svc.GetOrdenesAsync(GetUserId()))
-                .FirstOrDefault(o => SoportaParadas || o.Paradas.Count <= 1));
+                .FirstOrDefault(o => (!o.GestionPorParadas || SoportaAsignaciones) && (SoportaParadas || o.Paradas.Count <= 1)));
 
         [HttpGet("historial")]
         public async Task<IActionResult> Historial(int pagina = 1, int tamano = 30)
-            => await RunAsync(() => _svc.GetHistorialAsync(GetUserId(), pagina, tamano));
+            => await RunAsync(() => _svc.GetHistorialAsync(GetUserId(), pagina, tamano, SoportaAsignaciones));
 
         [HttpGet("historial/{ordenId:int}")]
         public async Task<IActionResult> Historica(int ordenId)
-            => await RunAsync(() => _svc.GetOrdenHistoricaAsync(GetUserId(), ordenId));
+            => await RunAsync(async () => {
+                var orden = await _svc.GetOrdenHistoricaAsync(GetUserId(), ordenId);
+                if (orden?.GestionPorParadas == true && !SoportaAsignaciones) throw new OperationsException(426, "Actualiza la app para consultar esta asignación por parada.");
+                return orden;
+            });
 
         [HttpGet("mis-ordenes")]
         public async Task<IActionResult> MisOrdenes()
             => await RunAsync(async () => (await _svc.GetOrdenesAsync(GetUserId()))
-                .Where(o => SoportaParadas || o.Paradas.Count <= 1).ToList());
+                .Where(o => (!o.GestionPorParadas || SoportaAsignaciones) && (SoportaParadas || o.Paradas.Count <= 1)).ToList());
 
         [HttpGet("ordenes/{ordenId:int}")]
         public async Task<IActionResult> OrdenDetalle(int ordenId)
             => await RunAsync(async () => {
                 var orden = await _svc.GetOrdenDetalleAsync(GetUserId(), ordenId);
+                if (orden?.GestionPorParadas == true && !SoportaAsignaciones) throw new OperationsException(426, "Actualiza la app para consultar esta asignación por parada.");
                 return orden is not null && (SoportaParadas || orden.Paradas.Count <= 1) ? orden : null;
             });
 
@@ -146,6 +164,10 @@ namespace Login.Controllers.Api
             {
                 var result = await action();
                 return Ok(result);
+            }
+            catch (RejectedOperationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.Message, solicitudRechazada = true });
             }
             catch (OperationsException ex)
             {

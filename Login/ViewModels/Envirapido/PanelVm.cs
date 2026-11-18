@@ -70,6 +70,7 @@ public sealed class PanelOrderVm
     public string? PilotoTelefono { get; set; }
     public string? Nota { get; set; }
     public bool Auto { get; set; }
+    public bool GestionPorParadas { get; set; }
     public DateTime CreadoUtc { get; set; }
     public DateTime? AsignadoUtc { get; set; }
     public DateTime? RecogidoUtc { get; set; }
@@ -81,8 +82,8 @@ public sealed class PanelOrderVm
     public bool EsTerminal => Estado is "Entregada" or "Devuelta" or "FinalizadaConDevoluciones" or "Cancelada";
     public bool PendienteProgramada => !EsTerminal&&Datos?.ProgramadaPara>DateTime.UtcNow;
     public bool Demorada => !EsTerminal&&Datos?.CompromisoEntrega is DateTime compromiso && compromiso < DateTime.UtcNow && Datos.CanceladaAt == null;
-    public bool PuedeAsignar => Estado=="Creada"&&(Datos?.ProgramadaPara==null||Datos.ProgramadaPara<=DateTime.UtcNow);
-    public bool PuedeCancelar => !RecogidoUtc.HasValue&&Estado is "Creada" or "Asignada";
+    public bool PuedeAsignar => !GestionPorParadas&&Estado=="Creada"&&(Datos?.ProgramadaPara==null||Datos.ProgramadaPara<=DateTime.UtcNow);
+    public bool PuedeCancelar => !GestionPorParadas&&!RecogidoUtc.HasValue&&Estado is "Creada" or "Asignada";
     public string EtiquetaEstado => PendienteProgramada?"Pendiente":Estado switch { "Creada" => "Por asignar", "Asignada" => "Recogiendo", "Recolectada" => "En ruta", "Entregada" => "Entregado", "Incidente" => "Con incidencia", "FinalizadaConDevoluciones"=>"Cerrada con devoluciones", "Devuelta"=>"Devuelta", _ => Estado };
     public string ClaseEstado => PendienteProgramada?"gray":Estado switch { "Creada" => "amber", "Asignada" => "blue", "Recolectada" => "teal", "Entregada" => "green", "Incidente" => "red", _ => "gray" };
 }

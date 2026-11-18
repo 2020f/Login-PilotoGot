@@ -18,6 +18,7 @@
     foreach(var stop in p.Paradas)pointMap["destino"+stop.Id]=new{lat=stop.Latitud,lng=stop.Longitud,nombre="Parada "+stop.Posicion+" · "+stop.Nombre};
     if(p.Paradas.Count==0)pointMap["destino"]=new{lat=p.DestinoLatitud,lng=p.DestinoLongitud,nombre=p.Destinatario};
 }
+<p><a class="ev-btn" href="/Operaciones/Reasignaciones?ordenId=@p.Id">Gestionar asignaciones, retiros y retornos por parada</a></p>
 <div class="ev-page-heading ev-detail-header">
     <div><h1><a href="/Operaciones/Pedidos" aria-label="Volver a pedidos">‹</a> Pedido EV-@p.Codigo <span class="ev-badge @p.ClaseEstado">@p.EtiquetaEstado</span>@if(p.Demorada){<span class="ev-badge red">Demorada</span>}</h1>
         <div class="ev-detail-sub"><span>@p.Comercio</span><span>@(zona?.Nombre??"Sin zona asignada")</span><span>Creado @p.CreadoUtc.AddHours(-4).ToString("dd MMM yyyy, HH:mm")</span>@if(dato!=null){<span>Prioridad @(dato.Prioridad==4?"crítica":dato.Prioridad==3?"alta":dato.Prioridad==2?"media":"baja")</span>}</div>

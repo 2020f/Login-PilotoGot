@@ -1,6 +1,6 @@
 namespace Login.Application.Operations;
 
-public sealed record OperationsActor(int TenantId, string UserId, int? PilotoId = null)
+public sealed record OperationsActor(int TenantId, string UserId, int? PilotoId = null, int? TiendaReceptoraId = null)
 {
     public bool EsPiloto => PilotoId.HasValue;
 }
@@ -9,7 +9,7 @@ public sealed record GuardarZonaRequest(string Nombre, string Region, string Col
     int Capacidad, string UnidadCapacidad, int AvisoPorcentaje, string HoraInicio, string HoraFin, bool Activa,
     string OperacionId, int? Id = null, string? Version = null);
 public sealed record CrearRutaRequest(string Nombre, DateOnly Fecha, List<int> OrdenIds, int? PilotoId,
-    int? ZonaId, bool PermitirReordenarPiloto, string OperacionId);
+    int? ZonaId, bool PermitirReordenarPiloto, string OperacionId, List<int>? ParadaIds = null);
 public sealed record ReordenarRutaRequest(List<int> PuntoIds, string Version, string OperacionId);
 public sealed record AsignarRutaRequest(int PilotoId, string Version, string OperacionId);
 public sealed record EstadoRutaRequest(string Accion, string Version, string OperacionId);
@@ -47,12 +47,13 @@ public sealed record ZonaOperativaDto(int Id, string Codigo, string Nombre, stri
 public sealed record PuntoRutaDto(int Id, int OrdenId, int? ParadaId, string Tipo, int Posicion,
     string Nombre, string? Direccion, double? Latitud, double? Longitud, bool Completado,
     bool PuedeVerDestino, DateTime? LlegadaAt, bool ExcluidoPorRetorno = false, string? EstadoEntrega = null,
-    bool ExcluidoPorCancelacion = false);
+    bool ExcluidoPorCancelacion = false, bool GestionPorParadas = false, string? RevisionAsignacion = null);
 public sealed record RutaOperativaDto(int Id, string Codigo, string Nombre, DateOnly Fecha, int? ZonaId,
     string? Zona, int? PilotoId, string? Piloto, string Estado, bool PermitirReordenarPiloto,
     int RecogidasCompletadas, int TotalRecogidas, int EntregasCompletadas, int TotalEntregas,
     double? DistanciaKm, double? MinutosRestantes, DateTime? LlegadaEstimadaAt, string? Geometria,
-    DateTime? EstimacionAt, List<int> OrdenIds, List<PuntoRutaDto> Puntos, string Version, int EntregasDevueltas = 0);
+    DateTime? EstimacionAt, List<int> OrdenIds, List<PuntoRutaDto> Puntos, string Version, int EntregasDevueltas = 0,
+    List<int>? ParadaIds = null);
 public sealed record ActividadIncidenciaDto(int Id, string Actor, string Accion, string Texto, DateTime CreatedAt);
 public sealed record IncidenciaOperativaDto(int Id, string Codigo, int? OrdenId, int? ParadaId, int? RutaId,
     string Categoria, string Descripcion, int Prioridad, string Estado, string Efecto, string? ResponsableId,

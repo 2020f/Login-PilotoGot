@@ -2,9 +2,9 @@
     var action = (ViewContext.RouteData.Values["action"]?.ToString() ?? "").ToLowerInvariant();
     string Active(params string[] actions) => actions.Any(a => a.Equals(action, StringComparison.OrdinalIgnoreCase)) ? "active" : "";
 }
-<a class="sa-brand" href="/SuperAdmin/Dashboard" aria-label="Envirapido, resumen de plataforma">
-    <span class="sa-brand-logo" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M23 4a5 5 0 0 1 5 5c0 4-5 9-5 9s-5-5-5-9a5 5 0 0 1 5-5Z" stroke="currentColor" stroke-width="2.5"/><circle cx="23" cy="9" r="1.7" fill="currentColor"/><path d="M22 20H10a4 4 0 1 0 0 8h12M9 17H6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span>
-    <span class="sa-brand-name"><span class="sa-brand-title">Envirapido</span><span class="sa-brand-caption">Administración de plataforma</span></span>
+<a class="sa-brand envi-brand" href="/SuperAdmin/Dashboard" aria-label="Envirapido, resumen de plataforma">
+    <img class="envi-brand-logo" src="~/branding/logo-original.png" asp-append-version="true" alt="Envirapido" width="214" height="74" />
+    <span class="sa-brand-caption">Administración de plataforma</span>
 </a>
 <div class="sa-scope"><span class="sa-live-dot" aria-hidden="true"></span> Plataforma global <span class="sa-badge">SAAS</span></div>
 <nav class="sa-nav" aria-label="Administración de plataforma">

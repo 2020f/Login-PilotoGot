@@ -33,13 +33,20 @@ public sealed partial class EnvirapidoOperationsService
             && (!desde.HasValue || r.Fecha >= desde.Value) && (!hasta.HasValue || r.Fecha <= hasta.Value));
         var routeCount = await routes.CountAsync(r => r.Estado == EstadoRutaOperativa.Activa);
         var pendingStops = await db.ParadasEntrega.AsNoTracking().CountAsync(p => p.ClienteAppId == tenant
-            && (!actor.EsPiloto || p.OrdenEntrega.PilotoId == actor.PilotoId)
+            && (!actor.EsPiloto || (p.OrdenEntrega.GestionPorParadas ? p.PilotoAsignadoId == actor.PilotoId && !p.EnReasignacion : p.OrdenEntrega.PilotoId == actor.PilotoId))
             && p.Estado == EstadoParadaEntrega.Pendiente && !EstadosEntrega.Terminales.Contains(p.OrdenEntrega.Estado)
             && db.RutaOrdenesOperativas.Any(m => m.ClienteAppId == tenant && m.OrdenEntregaId == p.OrdenEntregaId && m.Vigente
+                && (p.OrdenEntrega.GestionPorParadas ? m.ParadaEntregaId == p.Id : m.ParadaEntregaId == null)
+                && (!actor.EsPiloto || m.Ruta.PilotoId == actor.PilotoId)
                 && (m.Ruta.Estado == EstadoRutaOperativa.Planificada || m.Ruta.Estado == EstadoRutaOperativa.Activa)
                 && (!desde.HasValue || m.Ruta.Fecha >= desde.Value) && (!hasta.HasValue || m.Ruta.Fecha <= hasta.Value)));
         var allowedIncidents = db.IncidenciasOperativas.AsNoTracking().Where(i => i.ClienteAppId == tenant
-            && (!actor.EsPiloto || i.ReportadaPor == actor.UserId || i.OrdenEntrega!.PilotoId == actor.PilotoId || i.Ruta!.PilotoId == actor.PilotoId));
+            && (!actor.EsPiloto || i.ReportadaPor == actor.UserId
+                || i.OrdenEntrega != null && (i.OrdenEntrega.GestionPorParadas
+                    ? i.OrdenEntrega.Paradas.Any(p => (!i.ParadaEntregaId.HasValue || p.Id == i.ParadaEntregaId)
+                        && (p.PilotoAsignadoId == actor.PilotoId || p.PilotoCustodioId == actor.PilotoId || p.PilotoEntregaId == actor.PilotoId))
+                    : i.OrdenEntrega.PilotoId == actor.PilotoId)
+                || !i.ParadaEntregaId.HasValue && i.Ruta != null && i.Ruta.PilotoId == actor.PilotoId));
         var incidents = allowedIncidents.Where(i =>
             (!from.HasValue || i.CreatedAt >= from.Value) && (!until.HasValue || i.CreatedAt < until.Value));
         var states = await incidents.GroupBy(i => i.Estado).Select(g => new { Estado = g.Key, Cantidad = g.Count() }).ToListAsync();
@@ -98,18 +105,21 @@ public sealed partial class EnvirapidoOperationsService
             && (!actor.EsPiloto || db.RutasOperativas.Any(r => r.ClienteAppId == tenant && r.PilotoId == actor.PilotoId && r.ZonaId == z.Id))).ToListAsync();
         if (zones.Count == 0) return 0;
         var rows = await db.OrdenesEntrega.AsNoTracking().Where(o => o.ClienteAppId == tenant && !EstadosEntrega.Terminales.Contains(o.Estado))
-            .Where(o => !actor.EsPiloto || o.PilotoId == actor.PilotoId)
-            .Select(o => new { o.Id, o.Estado, o.PilotoId }).ToListAsync();
+            .Where(o => !actor.EsPiloto || (o.GestionPorParadas ? o.Paradas.Any(p => p.PilotoAsignadoId == actor.PilotoId || p.PilotoCustodioId == actor.PilotoId) : o.PilotoId == actor.PilotoId))
+            .Select(o => new { o.Id, o.Estado, o.PilotoId, o.GestionPorParadas }).ToListAsync();
         var points = await db.ParadasEntrega.AsNoTracking().Where(p => p.ClienteAppId == tenant && !EstadosEntrega.Terminales.Contains(p.OrdenEntrega.Estado))
-            .Where(p => !actor.EsPiloto || p.OrdenEntrega.PilotoId == actor.PilotoId)
-            .Select(p => new { p.Id, p.OrdenEntregaId, p.Estado, p.Latitud, p.Longitud }).ToListAsync();
+            .Where(p => !actor.EsPiloto || (p.OrdenEntrega.GestionPorParadas ? p.PilotoAsignadoId == actor.PilotoId || p.PilotoCustodioId == actor.PilotoId : p.OrdenEntrega.PilotoId == actor.PilotoId))
+            .Select(p => new { p.Id, p.OrdenEntregaId, p.Estado, p.Latitud, p.Longitud, p.PilotoAsignadoId, p.PilotoCustodioId }).ToListAsync();
         var data = await db.DatosEnviosOperativos.AsNoTracking().Where(d => d.ClienteAppId == tenant
             && !EstadosEntrega.Terminales.Contains(d.OrdenEntrega.Estado)
-            && (!actor.EsPiloto || d.OrdenEntrega.PilotoId == actor.PilotoId)).Select(d => new DatosEnvioOperativos {
+            && (!actor.EsPiloto || (d.OrdenEntrega.GestionPorParadas
+                ? d.OrdenEntrega.Paradas.Any(p => p.PilotoAsignadoId == actor.PilotoId || p.PilotoCustodioId == actor.PilotoId)
+                : d.OrdenEntrega.PilotoId == actor.PilotoId))).Select(d => new DatosEnvioOperativos {
                 OrdenEntregaId = d.OrdenEntregaId, ZonaId = d.ZonaId, ProgramadaPara = d.ProgramadaPara, CanceladaAt = d.CanceladaAt }).ToListAsync();
         var stops = points.ToLookup(p => p.OrdenEntregaId);
-        var orders = rows.Select(o => new OrdenEntrega { Id = o.Id, Estado = o.Estado, PilotoId = o.PilotoId,
-            Paradas = stops[o.Id].Select(p => new ParadaEntrega { Id = p.Id, Estado = p.Estado, Latitud = p.Latitud, Longitud = p.Longitud }).ToList() }).ToList();
+        var orders = rows.Select(o => new OrdenEntrega { Id = o.Id, Estado = o.Estado, PilotoId = o.PilotoId, GestionPorParadas = o.GestionPorParadas,
+            Paradas = stops[o.Id].Select(p => new ParadaEntrega { Id = p.Id, Estado = p.Estado, Latitud = p.Latitud, Longitud = p.Longitud,
+                PilotoAsignadoId = p.PilotoAsignadoId, PilotoCustodioId = p.PilotoCustodioId }).ToList() }).ToList();
         // Punto-en-polígono sigue exactamente la política actual de ZoneDto;
         // sólo coordenadas y estados, nunca una lista truncada ni direcciones.
         return zones.Count(z => ZoneDto(z, orders, [], data).AltaCarga);

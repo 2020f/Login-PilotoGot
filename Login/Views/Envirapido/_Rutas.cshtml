@@ -1,6 +1,7 @@
 @model Login.ViewModels.Envirapido.OperationsPageVm
 @using Login.Application.Interfaces
 @inject IGoogleMapsService GoogleMaps
+<p><a class="ev-btn" href="/Operaciones/Reasignaciones">Planificar rutas de paradas y revisar recepciones</a></p>
 @{
 var d=Model.Datos;var indicators=d.Indicadores;var ruta=d.Rutas.FirstOrDefault(r=>r.Id==Model.Id);var zona=d.Zonas.FirstOrDefault(z=>z.Id==ruta?.ZonaId)??d.Zonas.FirstOrDefault();
 var mutable=ruta!=null&&ruta.Estado is not ("Cancelada" or "Finalizada");

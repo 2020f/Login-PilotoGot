@@ -1,0 +1,28 @@
+@model Login.ViewModels.Envirapido.ReasignacionesPanelVm
+@using System.Text.Json
+@{ var abiertas = Model.Datos.Gestiones.Count(x => x.Abierta); }
+@functions {
+    string EstadoGestion(string estado) => estado switch { "PorReasignar" => "Por reasignar", "PendienteRecepcion" => "Pendiente de recepción", "Reasignada" => "Reasignada", "Solicitada" => "Por revisar", _ => estado };
+}
+<div data-reassignment-snapshot data-order-id="@Model.OrdenId" data-updated="@Model.ActualizadoAt.ToString("O")">
+<section class="ev-card"><div class="ev-card-head"><h2>Paradas de la operación</h2><button class="ev-btn primary" type="button" data-reassign-open="evReassignmentChange">Gestionar selección</button></div><div class="ev-table-scroll"><table class="ev-table"><thead><tr><th>Seleccionar</th><th>Pedido / parada</th><th>Destinatario</th><th>Piloto asignado</th><th>Custodio físico</th><th>Estado</th></tr></thead><tbody>
+@foreach (var p in Model.Datos.Paradas) {
+    var terminal = p.Estado is "Entregada" or "Devuelta" or "Cancelada";
+    <tr><td><input type="checkbox" data-reassign-stop="@p.ParadaId" data-order-id="@p.OrdenId" data-revision="@p.RevisionAsignacion" disabled="@terminal" aria-label="Seleccionar parada @p.Posicion del pedido @p.CodigoA"/></td><td><a href="/Operaciones/Pedido/@p.OrdenId?paradaId=@p.ParadaId">#@p.CodigoA · Parada @p.Posicion</a></td><td>@p.Destinatario</td><td>@Model.Piloto(p.PilotoAsignadoId)</td><td>@Model.Piloto(p.PilotoCustodioId)</td><td><span class="ev-badge @(terminal ? "gray" : p.EnReasignacion ? "amber" : "green")">@(p.EnReasignacion ? "Retirada / en gestión" : p.Estado)</span></td></tr>
+}
+@if (Model.Datos.Paradas.Count == 0) { <tr><td colspan="6" class="ev-empty">Sin paradas pendientes de reasignación. Consulta un código de pedido para revisar sus paradas y distribuirlas.</td></tr> }
+</tbody></table></div></section>
+<section class="ev-card" style="margin-top:18px"><div class="ev-card-head"><h2>Bandeja de atención <span class="ev-badge amber">@abiertas abiertas</span></h2></div><div class="ev-table-scroll"><table class="ev-table"><thead><tr><th>Gestión</th><th>Pedido / parada</th><th>Motivo y decisión</th><th>Custodia / destino</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
+@foreach (var x in Model.Datos.Gestiones) {
+    <tr><td>RT-@x.Id.ToString("D4")<span class="ev-secondary">@x.CreatedAt.AddHours(-4).ToString("dd/MM HH:mm")</span></td><td><a href="/Operaciones/Reasignaciones?ordenId=@x.OrdenId">#@x.CodigoA · Parada ID @x.ParadaId</a></td><td>@x.Motivo<span class="ev-secondary">@(x.NotaDecision ?? "Pendiente de revisión")</span></td><td>@Model.Piloto(x.PilotoCustodioId)<span class="ev-secondary">@(x.DestinoNombre ?? "Destino pendiente") · @x.DestinoDireccion</span></td><td><span class="ev-badge @(x.Abierta ? "amber" : "gray")">@EstadoGestion(x.Estado)</span>@if(x.RecibidaAt.HasValue){<span class="ev-secondary">Recepción @x.RecibidaAt.Value.AddHours(-4).ToString("dd/MM HH:mm")</span>}</td><td><div class="ev-actions">
+    @if(x.Estado == "Solicitada") { <button type="button" class="ev-btn small primary" data-reassign-decision="Aprobar" data-case-id="@x.Id">Aprobar retiro</button><button type="button" class="ev-btn small danger" data-reassign-decision="Rechazar" data-case-id="@x.Id">Rechazar</button> }
+    @if(x.Estado == "PorReasignar" && x.Abierta) { <button type="button" class="ev-btn small" data-reassign-return="@x.Id">Elegir retorno</button><a href="/Operaciones/Reasignaciones?ordenId=@x.OrdenId">Asignar paradas</a> }
+    @if(x.PuedeConfirmarRecepcion) { <button type="button" class="ev-btn small primary" data-reassign-receive="@x.Id">Registrar recepción física</button> }
+    @if(x.PilotoOrigenId.HasValue && x.Estado is not ("Solicitada" or "Rechazada")) { <button type="button" class="ev-btn small" data-reassign-adjust="@x.Id">Ajustar trabajo previo</button> }
+    </div></td></tr>
+}
+@if(Model.Datos.Gestiones.Count == 0) { <tr><td colspan="6" class="ev-empty">Sin gestiones registradas en esta consulta.</td></tr> }
+</tbody></table></div><div class="ev-updated">Se conservan las gestiones cerradas y sus motivos. Actualiza antes de confirmar una nueva decisión.</div></section>
+
+<script type="application/json" id="evReassignmentData">@Html.Raw(JsonSerializer.Serialize(Model.Datos, new JsonSerializerOptions(JsonSerializerDefaults.Web)))</script>
+</div>

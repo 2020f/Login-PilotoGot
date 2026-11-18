@@ -1,5 +1,10 @@
 # Handoff de despliegue · Portal comercial Envirapido
 
+> **La entrega actual del 18/11/2026 se describe en
+> [DESPLEGAR-ENVIRAPIDO-2.1.md](DESPLEGAR-ENVIRAPIDO-2.1.md).** Incluye una migración
+> operativa del SQL CRM y el APK nuevo. Las indicaciones «sin migración CRM» de
+> esta guía sólo corresponden a la instalación del portal, no al lote actual.
+
 > **Actualización posterior de Inicio:** consultar
 > [DESPLEGAR-PORTADA.md](DESPLEGAR-PORTADA.md). Si el portal base ya está operativo,
 > esa entrega actualiza sólo el bundle Next, sin repetir los pasos de instalación
@@ -222,7 +227,7 @@ absolutas si se habilitará la carga de APK. No subir un keystore al servidor we
 | `envirapido.com/api/*` | CRM existente, sin redirección a otro host |
 | `envirapido.com/Identity/*` | Identity CRM existente |
 | `/Operaciones`, `/SuperAdmin`, `/Supervisor`, `/Suscripcion`, `/Tienda`, `/Piloto`, `/Qr`, `/Bloqueo`, `/Gestor`, `/Home`, `/Envirapido` y sus subrutas | CRM |
-| `/css`, `/js`, `/lib` y assets operativos | CRM |
+| `/css`, `/js`, `/lib`, `/branding` y assets operativos | CRM |
 | `portal.envirapido.com/portal-api/v1/*` | API comercial, antes del fallback Next |
 | Resto de páginas de `portal.envirapido.com` | Next |
 | `/portal-api/internal/*` y `/api/internal/portal/*` | Rechazados en el ingreso público; sólo comunicación privada |

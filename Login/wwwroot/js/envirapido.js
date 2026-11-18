@@ -36,6 +36,12 @@
       let box = $('[data-ev-error]',root); if (!box) { box = document.createElement('div'); box.className = 'ev-alert red'; box.dataset.evError = ''; box.setAttribute('role','alert'); root.prepend(box); } box.textContent = message; box.scrollIntoView({block:'nearest'});
     }
   };
+  document.addEventListener('envirapido:scoped-snapshot-applied', event => {
+    if (!(event instanceof CustomEvent) || !(event.target instanceof HTMLElement)
+      || event.target.dataset.evScopedSync !== 'reasignaciones' || event.detail?.scope !== 'reasignaciones'
+      || !Number.isFinite(Date.parse(event.detail.updatedAt || ''))) return;
+    window.Envirapido.synced();
+  });
   function toggleMenu(open) { document.body.classList.toggle('menu-open',open); $('[data-ev-menu]')?.setAttribute('aria-expanded',String(open)); const overlay=$('[data-ev-close-menu]'); if(overlay) overlay.hidden=!open; }
   $('[data-ev-menu]')?.addEventListener('click',()=>toggleMenu(!document.body.classList.contains('menu-open')));
   $('[data-ev-close-menu]')?.addEventListener('click',()=>toggleMenu(false));

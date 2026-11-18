@@ -2,24 +2,33 @@
 
 ## Agente de despliegue: empezar aquí
 
-**Actualización más reciente: [portada interactiva](DESPLEGAR-PORTADA.md).**
-Sobre el portal base ya instalado, publicar **sólo el bundle React/Next**.
-Esta actualización no cambia las demás vistas, CRM, API, SQL, app ni multitenant.
-La guía distingue este paso de la instalación inicial descrita a continuación.
+**Entrega actual: [Envirapido 2.1, reasignación y logos](DESPLEGAR-ENVIRAPIDO-2.1.md).**
+Esta entrega actualiza el CRM, sus vistas y el cliente móvil de su repositorio
+separado. **Requiere la migración operativa del SQL CRM**, conservando pedidos,
+rutas, códigos y tenants. No aplicar esa migración al SQL del portal.
+
+El APK firmado 2.1.0 (10) se entrega al propietario para subirlo al portal con
+descargas protegidas. Las fuentes en GitHub no equivalen a un despliegue ni a
+la publicación del APK. La guía identifica el archivo, su hash y el orden de QA.
+
+La [portada interactiva](DESPLEGAR-PORTADA.md) y el
+[registro manual sin SMTP](DESPLEGAR-REGISTRO-MANUAL.md) son entregas anteriores.
+Sus instrucciones de actualizar sólo Next o no migrar se limitan a esos cambios;
+no sustituyen el handoff de la entrega actual.
 
 El portal comercial se entrega en la rama **`codex/confiabilidad-panel-app`**.
 Desplegar el **SHA completo comunicado por el propietario**, desde un checkout
 limpio. No sustituirlo por `master`, ni actualizar a ciegas el directorio en servicio.
 
-**Instrucciones del cambio: [DESPLEGAR-PORTAL.md](DESPLEGAR-PORTAL.md).**
-Incluyen qué actualizar, base SQL separada, SMTP, servicios, HTTPS, pruebas y rollback.
+La [instalación inicial del portal](DESPLEGAR-PORTAL.md) queda como referencia.
+El registro vigente usa aprobación manual, sin exigir SMTP para registrar.
 
 | Componente | Destino |
 | --- | --- |
-| `Login/` | Actualizar el CRM existente y su nueva sección SuperAdmin; conservar su base y autenticación |
-| `Envirapido.Portal.Api/` | Servicio comercial nuevo, con base `EnvirapidoPortal`, identidad y claves propias |
-| `portal-web/` | React/Next.js: portada en `envirapido.com` y cuenta en `portal.envirapido.com` |
-| App Flutter / APK | Sin cambios en esta entrega; su API sigue en `envirapido.com/api/*` |
+| `Login/` | Publicar backend y vistas del CRM con la migración operativa revisada, conservando autenticación y datos |
+| `Envirapido.Portal.Api/` | Conservar el servicio y SQL independiente ya instalados; no hay migración comercial nueva en este lote |
+| `portal-web/` | Conservar React/Next ya desplegado; este lote no cambia sus fuentes |
+| App Flutter / APK | Cliente 2.1.0 (10), firma definitiva y API `https://envirapido.com`; usar el SHA móvil indicado en el handoff |
 
 No aplicar las migraciones del portal sobre la base CRM. No crear otro CRM ni
 reemplazar sus claves JWT, sesiones, Data Protection, configuración SQL o datos.

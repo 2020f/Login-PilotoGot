@@ -1,5 +1,10 @@
 # Portal comercial de Envirapido
 
+> Entrega vigente 2.1 del 18/11/2026:
+> [DESPLEGAR-ENVIRAPIDO-2.1.md](../../DESPLEGAR-ENVIRAPIDO-2.1.md).
+> Este lote sí requiere migración exclusiva del CRM; el portal conserva su base
+> separada y el registro manual. Las instrucciones siguientes son del portal.
+
 Implementación local y publicación GitHub autorizadas el 17/11/2026. El agente del
 servidor recibe las instrucciones de entrega en [DESPLEGAR-PORTAL.md](../../DESPLEGAR-PORTAL.md).
 El push no acredita despliegue ni autoriza reemplazar datos o claves operativas.
@@ -88,7 +93,9 @@ documenta las reglas que deben adaptarse a su topología real:
   `__Host-` host-only, Secure, HttpOnly; sin Domain compartido con el CRM.
 - Apex: `/api/*`, `/Identity/*` y controladores operativos/administrativos existentes
   siguen en el **CRM original**. Nunca redirigir POST API al portal ni devolver HTML
-  de Next para una ruta API inexistente. Mantener `/css`, `/js`, `/lib` y assets CRM.
+  de Next para una ruta API inexistente. Mantener `/css`, `/js`, `/lib`, `/branding`
+  y assets CRM. En el dominio raíz, `/branding/*` debe servir los archivos públicos
+  del CRM; el subdominio del portal conserva sus propios assets Next.
 - `pilotogoapp.zapflow77.dpdns.org`: continuar atendiendo el mismo CRM/API, con sus
   reglas y HTTPS actuales. No introducir un segundo CRM ni duplicar su base.
 - `/portal-api/internal/*` y `/api/internal/portal/*` no se publican en Internet:

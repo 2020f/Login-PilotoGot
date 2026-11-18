@@ -2,61 +2,41 @@
 @model LoginModel
 @{
     ViewData["Title"] = "Iniciar sesión";
-    Layout = "_LayoutAuth"; // ✅ usa el layout bonito (abajo te lo dejo). Si no quieres, pon Layout = null;
+    Layout = "_LayoutAuth";
+    ViewData["AuthBrandHeader"] = false;
 }
 
-<link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/auth-login.css" asp-append-version="true" />
 
+<div class="crm-login">
+    <header class="crm-login-header">
+        <a href="~/" class="crm-login-brand" aria-label="Envirapido, inicio"><img src="~/branding/logo-original.png" asp-append-version="true" alt="Envirapido" width="222" height="76" /></a>
+        <a href="~/" class="crm-login-home">Volver al inicio <i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
+    </header>
 <div class="auth-shell">
-    <!-- LADO IZQUIERDO (Brand / Mensaje) -->
-    <aside class="auth-side">
-        <div class="auth-brand">
-            <div class="auth-logo">
-                <i class="bi bi-lightning-charge-fill"></i>
-            </div>
-            <div>
-                <div class="auth-brand-name">Envirapido</div>
-                <div class="auth-brand-sub">GESTIÓN DE ENTREGAS</div>
-            </div>
-        </div>
-
+    <aside class="auth-side" aria-labelledby="crm-login-heading">
         <div class="auth-hero">
-            <h1 class="auth-hero-title">Operación de entregas, sin caos.</h1>
-            <p class="auth-hero-text">
-                Envirapido es la tecnología diseñada para hacer tu operación de entregas más eficiente, segura y profesional.
-            </p>
-
-            <div class="auth-bullets">
-                <div class="auth-bullet">
-                    <span class="auth-dot"></span>
-                    <span>Asignación y seguimiento en tiempo real</span>
-                </div>
-                <div class="auth-bullet">
-                    <span class="auth-dot"></span>
-                    <span>Control por roles: Gestor, Tienda y Piloto</span>
-                </div>
-                <div class="auth-bullet">
-                    <span class="auth-dot"></span>
-                    <span>Validaciones con códigos y QR por orden</span>
-                </div>
+            <span class="crm-login-eyebrow">CONECTA TU OPERACIÓN</span>
+            <h1 id="crm-login-heading" class="auth-hero-title">Cada entrega,<br />más simple.</h1>
+            <p class="auth-hero-text">Organiza tus rutas y acompaña cada pedido hasta su destino.</p>
+            <div class="crm-login-features">
+                <span><i class="bi bi-signpost-split" aria-hidden="true"></i> Rutas conectadas</span>
+                <span><i class="bi bi-geo-alt" aria-hidden="true"></i> Seguimiento en vivo</span>
             </div>
         </div>
-
-        <div class="auth-side-footer">
-            <div class="auth-mini">
-                <i class="bi bi-shield-check"></i>
-                <span>Acceso seguro • Auditoría • Control</span>
-            </div>
+        <div class="crm-login-scene">
+            <img src="~/branding/ultima-milla-ciudad.png" asp-append-version="true" alt="Comercio, piloto y destinos conectados por una ruta de entrega" width="1536" height="1024" fetchpriority="high" />
         </div>
+        <div class="crm-login-operation"><i class="bi bi-box-seam" aria-hidden="true"></i><span>Comercios, operación y pilotos. Un mismo camino.</span></div>
     </aside>
 
-    <!-- LADO DERECHO (Formulario) -->
     <main class="auth-main">
-        <div class="auth-card">
+        <section class="auth-card" aria-labelledby="crm-login-title">
             <div class="auth-card-head">
+                <img class="crm-login-symbol" src="~/branding/simbolo-caja.png" asp-append-version="true" alt="" width="68" height="68" />
                 <div class="auth-kicker">Bienvenido</div>
-                <div class="auth-title">Inicia sesión</div>
-                <div class="auth-sub">Ingresa tus credenciales para continuar.</div>
+                <h2 id="crm-login-title" class="auth-title">Inicia sesión</h2>
+                <p class="auth-sub">Accede a tu centro de operaciones.</p>
             </div>
 
             <form id="account" method="post" class="auth-form">
@@ -64,14 +44,14 @@
                 <div asp-validation-summary="ModelOnly" class="auth-alert" role="alert"></div>
 
                 <div class="auth-field">
-                    <label asp-for="Input.Email" class="auth-label">Email</label>
+                    <label asp-for="Input.Email" class="auth-label">Correo electrónico</label>
                     <div class="auth-input-wrap">
                         <i class="bi bi-envelope"></i>
                         <input asp-for="Input.Email"
                                class="auth-input"
                                autocomplete="username"
                                aria-required="true"
-                               placeholder="correo@empresa.com" />
+                               placeholder="tu@empresa.com" />
                     </div>
                     <span asp-validation-for="Input.Email" class="auth-val"></span>
                 </div>
@@ -85,8 +65,8 @@
                                autocomplete="current-password"
                                aria-required="true"
                                placeholder="••••••••" />
-                        <button type="button" class="auth-eye" data-auth-toggle>
-                            <i class="bi bi-eye"></i>
+                        <button type="button" class="auth-eye" data-auth-toggle aria-label="Mostrar contraseña" aria-pressed="false">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
                         </button>
                     </div>
                     <span asp-validation-for="Input.Password" class="auth-val"></span>
@@ -108,13 +88,10 @@
                     <i class="bi bi-arrow-right"></i>
                 </button>
 
-                <div class="auth-divider">
-                    <span>o</span>
-                </div>
-
-                @* External logins (si no usas, queda limpio) *@
+            </form>
                 @if ((Model.ExternalLogins?.Count ?? 0) > 0)
                 {
+                    <div class="auth-divider"><span>o continúa con</span></div>
                     <form id="external-account"
                           asp-page="./ExternalLogin"
                           asp-route-returnUrl="@Model.ReturnUrl"
@@ -139,21 +116,17 @@
                 }
 
                 <div class="auth-foot">
+                    <span>¿Aún no tienes una cuenta?</span>
                     <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="auth-link">
                         Crear cuenta
                     </a>
-                    <span class="auth-foot-dot">•</span>
-                    <a id="resend-confirmation" asp-page="./ResendEmailConfirmation" class="auth-link">
-                        Reenviar confirmación
-                    </a>
                 </div>
-            </form>
-        </div>
-
-        <div class="auth-copy">
-            © @DateTime.Now.Year Envirapido • Todos los derechos reservados
-        </div>
+                <a id="resend-confirmation" asp-page="./ResendEmailConfirmation" class="auth-link crm-login-resend">Reenviar confirmación</a>
+        </section>
+        <div class="crm-login-secure"><i class="bi bi-shield-check" aria-hidden="true"></i> Acceso seguro a tu operación</div>
     </main>
+</div>
+    <footer class="crm-login-footer"><span>© @DateTime.Now.Year Envirapido</span><span>Tu operación, siempre conectada.</span></footer>
 </div>
 
 @section Scripts {
@@ -173,6 +146,8 @@
                 const isPass = input.type === "password";
                 input.type = isPass ? "text" : "password";
                 icon.className = isPass ? "bi bi-eye-slash" : "bi bi-eye";
+                btn.setAttribute("aria-label", isPass ? "Ocultar contraseña" : "Mostrar contraseña");
+                btn.setAttribute("aria-pressed", String(isPass));
             });
         })();
     </script>

@@ -456,7 +456,7 @@ namespace Login.Controllers
                 }
                 if (!input.Activo) await _quotas.EnsureNoOpenPilotOrdersAsync(tenantId, piloto.Id);
                 else if (!piloto.Activo) await _quotas.EnsurePilotReactivationAsync(tenantId, piloto.Id, piloto.IdentityUserId);
-                var ocupadas = await _db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && o.PilotoId == piloto.Id && !EstadosEntrega.Terminales.Contains(o.Estado));
+                var ocupadas = await _quotas.HasOpenPilotWorkAsync(tenantId, piloto.Id);
 
                 if (cambiaCorreo)
                 {

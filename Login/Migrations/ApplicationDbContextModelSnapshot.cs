@@ -17,7 +17,7 @@ namespace Login.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.23")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -363,6 +363,9 @@ namespace Login.Migrations
                     b.Property<DateTime?>("FinalizadaAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("GestionPorParadas")
+                        .HasColumnType("bit");
+
                     b.Property<string>("NotaPedido")
                         .HasMaxLength(400)
                         .HasColumnType("nvarchar(400)");
@@ -447,6 +450,9 @@ namespace Login.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
+                    b.Property<bool>("EnReasignacion")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("EntregadaAt")
                         .HasColumnType("datetime2");
 
@@ -475,8 +481,40 @@ namespace Login.Migrations
                     b.Property<int>("OrdenEntregaId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("PilotoAsignadoId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PilotoCustodioId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PilotoEntregaId")
+                        .HasColumnType("int");
+
                     b.Property<int>("Posicion")
                         .HasColumnType("int");
+
+                    b.Property<string>("RecogidaActualDireccion")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<double?>("RecogidaActualLatitud")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("RecogidaActualLongitud")
+                        .HasColumnType("float");
+
+                    b.Property<string>("RecogidaActualNombre")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTime?>("RecogidaParadaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RevisionAsignacion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
 
                     b.Property<string>("Telefono")
                         .IsRequired()
@@ -490,6 +528,12 @@ namespace Login.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ClienteAppId", "PilotoAsignadoId");
+
+                    b.HasIndex("ClienteAppId", "PilotoCustodioId");
+
+                    b.HasIndex("ClienteAppId", "PilotoEntregaId");
 
                     b.HasIndex("OrdenEntregaId", "Posicion")
                         .IsUnique();
@@ -1524,6 +1568,9 @@ namespace Login.Migrations
                     b.Property<int>("Posicion")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("RecogidaConfirmadaAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("RutaId")
                         .HasColumnType("int");
 
@@ -1540,11 +1587,11 @@ namespace Login.Migrations
 
                     b.HasIndex("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId");
 
-                    b.HasIndex("ClienteAppId", "RutaId", "OrdenEntregaId");
+                    b.HasIndex("ClienteAppId", "RutaId", "OrdenEntregaId", "RutaOrdenId");
 
                     b.ToTable("PuntosRutaOperativos", t =>
                         {
-                            t.HasCheckConstraint("CK_PuntoRuta_Tipo", "([Tipo] = 1 AND [ParadaEntregaId] IS NULL) OR ([Tipo] IN (2, 3) AND [ParadaEntregaId] IS NOT NULL)");
+                            t.HasCheckConstraint("CK_PuntoRuta_Tipo", "[Tipo] = 1 OR ([Tipo] IN (2, 3) AND [ParadaEntregaId] IS NOT NULL)");
                         });
                 });
 
@@ -1656,6 +1703,122 @@ namespace Login.Migrations
                     b.ToTable("ReglasRemuneracion");
                 });
 
+            modelBuilder.Entity("Login.Domain.Operations.RetiroParadaOperativa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Abierta")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ClienteAppId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DecididaPor")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("DestinoDireccion")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<double?>("DestinoLatitud")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("DestinoLongitud")
+                        .HasColumnType("float");
+
+                    b.Property<string>("DestinoNombre")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int?>("IncidenciaId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("NotaDecision")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("OrdenEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ParadaEntregaId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PilotoDestinoId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PilotoOrigenId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RecibidaAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RecibidaPor")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("SolicitadaPor")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("TiendaDestinoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TipoDestino")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("ClienteAppId", "Id");
+
+                    b.HasIndex("ClienteAppId", "IncidenciaId");
+
+                    b.HasIndex("ClienteAppId", "ParadaEntregaId")
+                        .IsUnique()
+                        .HasFilter("[Abierta] = 1");
+
+                    b.HasIndex("ClienteAppId", "PilotoDestinoId");
+
+                    b.HasIndex("ClienteAppId", "PilotoOrigenId");
+
+                    b.HasIndex("ClienteAppId", "TiendaDestinoId");
+
+                    b.HasIndex("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId");
+
+                    b.ToTable("RetirosParadas", t =>
+                        {
+                            t.HasCheckConstraint("CK_Retiro_Estado", "[Estado] IN ('Solicitada','Rechazada','PorReasignar','PendienteRecepcion','Recibida','Reasignada','Cancelada')");
+                        });
+                });
+
             modelBuilder.Entity("Login.Domain.Operations.RutaOperativa", b =>
                 {
                     b.Property<int>("Id")
@@ -1728,6 +1891,9 @@ namespace Login.Migrations
                     b.Property<int>("OrdenEntregaId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("ParadaEntregaId")
+                        .HasColumnType("int");
+
                     b.Property<int>("RutaId")
                         .HasColumnType("int");
 
@@ -1738,7 +1904,13 @@ namespace Login.Migrations
 
                     b.HasIndex("ClienteAppId", "OrdenEntregaId")
                         .IsUnique()
-                        .HasFilter("[Vigente] = 1");
+                        .HasFilter("[Vigente] = 1 AND [ParadaEntregaId] IS NULL");
+
+                    b.HasIndex("ClienteAppId", "ParadaEntregaId")
+                        .IsUnique()
+                        .HasFilter("[Vigente] = 1 AND [ParadaEntregaId] IS NOT NULL");
+
+                    b.HasIndex("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId");
 
                     b.ToTable("RutaOrdenesOperativas");
                 });
@@ -2439,6 +2611,24 @@ namespace Login.Migrations
 
             modelBuilder.Entity("Login.Domain.Entities.ParadaEntrega", b =>
                 {
+                    b.HasOne("Login.Domain.Entities.Piloto", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "PilotoAsignadoId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Entities.Piloto", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "PilotoCustodioId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Entities.Piloto", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "PilotoEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Login.Domain.Entities.UsuarioFinal", "UsuarioFinal")
                         .WithMany()
                         .HasForeignKey("TiendaId", "UsuarioFinalId")
@@ -2792,8 +2982,8 @@ namespace Login.Migrations
 
                     b.HasOne("Login.Domain.Operations.RutaOrdenOperativa", "RutaOrden")
                         .WithMany()
-                        .HasForeignKey("ClienteAppId", "RutaId", "OrdenEntregaId")
-                        .HasPrincipalKey("ClienteAppId", "RutaId", "OrdenEntregaId")
+                        .HasForeignKey("ClienteAppId", "RutaId", "OrdenEntregaId", "RutaOrdenId")
+                        .HasPrincipalKey("ClienteAppId", "RutaId", "OrdenEntregaId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -2824,6 +3014,59 @@ namespace Login.Migrations
                         .IsRequired();
 
                     b.Navigation("ClienteApp");
+                });
+
+            modelBuilder.Entity("Login.Domain.Operations.RetiroParadaOperativa", b =>
+                {
+                    b.HasOne("Login.Domain.Entities.ClienteApp", "ClienteApp")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Operations.IncidenciaOperativa", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "IncidenciaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Entities.OrdenEntrega", "OrdenEntrega")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Login.Domain.Entities.Piloto", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "PilotoDestinoId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Entities.Piloto", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "PilotoOrigenId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Entities.Tienda", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "TiendaDestinoId")
+                        .HasPrincipalKey("ClienteAppId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Login.Domain.Entities.ParadaEntrega", "ParadaEntrega")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "OrdenEntregaId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ClienteApp");
+
+                    b.Navigation("OrdenEntrega");
+
+                    b.Navigation("ParadaEntrega");
                 });
 
             modelBuilder.Entity("Login.Domain.Operations.RutaOperativa", b =>
@@ -2869,7 +3112,15 @@ namespace Login.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Login.Domain.Entities.ParadaEntrega", "ParadaEntrega")
+                        .WithMany()
+                        .HasForeignKey("ClienteAppId", "OrdenEntregaId", "ParadaEntregaId")
+                        .HasPrincipalKey("ClienteAppId", "OrdenEntregaId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("OrdenEntrega");
+
+                    b.Navigation("ParadaEntrega");
 
                     b.Navigation("Ruta");
                 });

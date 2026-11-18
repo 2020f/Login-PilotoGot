@@ -10,8 +10,13 @@
 
     <!-- CSS Auth -->
     <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+    <partial name="_BrandHead" />
 </head>
 <body>
+    @if (ViewData["AuthBrandHeader"] is not false)
+    {
+        <header class="envi-page-brand"><a href="~/Identity/Account/Login" aria-label="Envirapido, iniciar sesión"><img class="envi-brand-logo" src="~/branding/logo-original.png" asp-append-version="true" alt="Envirapido" width="190" height="65" /></a></header>
+    }
     @RenderBody()
     @RenderSection("Scripts", required: false)
 </body>

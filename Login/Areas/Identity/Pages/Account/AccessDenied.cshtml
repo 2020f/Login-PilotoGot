@@ -2,5 +2,6 @@
 @model AccessDeniedModel
 @{
     ViewData["Title"] = "No tienes autorización";
+    ViewData["AuthBrandHeader"] = false;
 }
 <partial name="/Areas/Identity/Pages/Account/_AccessDeniedContent.cshtml" model="Model" />

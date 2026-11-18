@@ -250,7 +250,7 @@ public sealed class ParadaMigrationTests
     public async Task Downgrade_refuses_to_discard_return_cases_and_preserves_data_and_migration_history()
     {
         using var app = new PilotGoFactory();
-        const string latest = "20261112201846_EnvirapidoSaasBilling";
+        const string latest = "20261117230916_EnvirapidoReasignacionPorParadas";
         const string protectedMigration = "20261112025055_EnvirapidoRetornosYCajaEmpresa";
         await app.SeedAsync(latest);
         await app.InScopeAsync(async sp => {
@@ -270,7 +270,7 @@ public sealed class ParadaMigrationTests
             // be removed first; the protected returns migration must remain.
             Assert.Contains(protectedMigration, await db.Database.GetAppliedMigrationsAsync());
             Assert.Equal(1, await db.DevolucionesOperativas.CountAsync());
-            Assert.Equal(EstadoOrden.Recolectada, (await db.OrdenesEntrega.AsNoTracking().SingleAsync()).Estado);
+            Assert.Equal(EstadoOrden.Recolectada, await db.OrdenesEntrega.AsNoTracking().Select(o => o.Estado).SingleAsync());
             Assert.False((await db.CodigosEntrega.SingleAsync(c => c.Tipo == TipoCodigo.C_Finalizacion)).Usado);
         });
     }

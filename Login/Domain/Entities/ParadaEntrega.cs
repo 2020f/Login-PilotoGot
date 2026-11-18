@@ -24,6 +24,16 @@ public class ParadaEntrega
     public EstadoParadaEntrega Estado { get; set; } = EstadoParadaEntrega.Pendiente;
     public DateTime? EntregadaAt { get; set; }
     public DateTime? DevueltaAt { get; set; }
+    public int? PilotoAsignadoId { get; set; }
+    public int? PilotoCustodioId { get; set; }
+    public int? PilotoEntregaId { get; set; }
+    public DateTime? RecogidaParadaAt { get; set; }
+    [MaxLength(32)] public string RevisionAsignacion { get; set; } = "";
+    public bool EnReasignacion { get; set; }
+    [MaxLength(120)] public string? RecogidaActualNombre { get; set; }
+    [MaxLength(250)] public string? RecogidaActualDireccion { get; set; }
+    public double? RecogidaActualLatitud { get; set; }
+    public double? RecogidaActualLongitud { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public ICollection<CodigoEntrega> Codigos { get; set; } = new List<CodigoEntrega>();
 }

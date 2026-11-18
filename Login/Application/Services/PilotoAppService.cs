@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Login.Application.Services
 {
-    public class PilotoAppService : IPilotoAppService
+    public partial class PilotoAppService : IPilotoAppService
     {
         private readonly ApplicationDbContext _db;
         private readonly IOrdenService _ordenService;
@@ -60,8 +60,12 @@ namespace Login.Application.Services
             => _ordenService.ConfirmarRecolectaAsync(codigoB, identityUserId, "Piloto", ordenId, operacionId);
 
         public Task<EntregaParadaResult> ConfirmarEntregaParadaAsync(string identityUserId, int ordenId, int paradaId,
-            string codigoC, string? operacionId = null)
-            => _ordenService.ConfirmarEntregaParadaAsync(ordenId, paradaId, codigoC, identityUserId, operacionId);
+            string codigoC, string? operacionId = null, string? revisionAsignacion = null)
+            => _ordenService.ConfirmarEntregaParadaAsync(ordenId, paradaId, codigoC, identityUserId, operacionId, revisionAsignacion);
+
+        public Task<RecogidaParadasResult> ConfirmarRecogidaParadasAsync(string identityUserId, int ordenId,
+            string codigoB, IReadOnlyList<RevisionParadaRequest> paradas, string operacionId)
+            => _ordenService.ConfirmarRecogidaParadasAsync(ordenId, codigoB, paradas, identityUserId, operacionId);
 
         public async Task ConfirmarEntregaAsync(string identityUserId, string codigoB, string codigoC, int? ordenId = null)
         {
@@ -71,6 +75,9 @@ namespace Login.Application.Services
             var piloto = await GetPilotoLogueadoAsync(identityUserId);
             if (piloto is null)
                 throw new InvalidOperationException("Piloto no encontrado o inactivo.");
+            if (ordenId.HasValue && await _db.OrdenesEntrega.AnyAsync(o => o.Id == ordenId
+                && o.ClienteAppId == piloto.ClienteAppId && o.GestionPorParadas))
+                throw new OperationsException(426, "Confirma la parada con su revisión de asignación vigente.");
 
             // Validación dura: debe ser su orden y estar RECOLECTADA
             var ordenValida = await _db.OrdenesEntrega
@@ -91,16 +98,16 @@ namespace Login.Application.Services
         }
 
         // ---------- Auto-asignación ----------
-        public async Task<PaginaOrdenesPilotoDto> GetHistorialAsync(string identityUserId, int pagina = 1, int tamano = 30)
+        public async Task<PaginaOrdenesPilotoDto> GetHistorialAsync(string identityUserId, int pagina = 1, int tamano = 30, bool incluirGestionadas = true)
         {
             var piloto = await GetPilotoLogueadoAsync(identityUserId);
             if (piloto is null) throw new InvalidOperationException("Piloto no disponible.");
             pagina = Math.Clamp(pagina, 1, 1000000); tamano = Math.Clamp(tamano, 1, 100);
-            var query = HistoricasQuery(piloto.Id, piloto.ClienteAppId);
+            var query = HistoricasQuery(piloto.Id, piloto.ClienteAppId, incluirGestionadas);
             var total = await query.CountAsync();
             var ordenes = await query.OrderByDescending(o => o.FinalizadaAt ?? o.EntregadaAt).ThenByDescending(o => o.Id)
                 .Skip((pagina - 1) * tamano).Take(tamano).ToListAsync();
-            return new PaginaOrdenesPilotoDto(ordenes.Select(o => ToDto(o)).ToList(), pagina, total, (int)Math.Ceiling(total / (double)tamano));
+            return new PaginaOrdenesPilotoDto(ordenes.Select(o => o.GestionPorParadas ? ToDtoGestionada(o, piloto.Id) : ToDto(o)).ToList(), pagina, total, (int)Math.Ceiling(total / (double)tamano));
         }
 
         public async Task<OrdenPilotoDto?> GetOrdenHistoricaAsync(string identityUserId, int ordenId)
@@ -108,12 +115,17 @@ namespace Login.Application.Services
             var piloto = await GetPilotoLogueadoAsync(identityUserId);
             if (piloto is null) return null;
             var orden = await HistoricasQuery(piloto.Id, piloto.ClienteAppId).FirstOrDefaultAsync(o => o.Id == ordenId);
-            return orden is null ? null : ToDto(orden);
+            return orden is null ? null : orden.GestionPorParadas ? ToDtoGestionada(orden, piloto.Id) : ToDto(orden);
         }
 
-        private IQueryable<OrdenEntrega> HistoricasQuery(int pilotoId, int tenant) => _db.OrdenesEntrega.AsNoTracking()
+        private IQueryable<OrdenEntrega> HistoricasQuery(int pilotoId, int tenant, bool incluirGestionadas = true) => _db.OrdenesEntrega.AsNoTracking()
             .Include(o => o.Tienda).Include(o => o.UsuarioFinal).Include(o => o.Paradas).AsSplitQuery()
-            .Where(o => o.PilotoId == pilotoId && o.ClienteAppId == tenant && EstadosEntrega.Terminales.Contains(o.Estado));
+            .Where(o => o.ClienteAppId == tenant && (!o.GestionPorParadas
+                ? o.PilotoId == pilotoId && EstadosEntrega.Terminales.Contains(o.Estado)
+                : incluirGestionadas && o.Paradas.Any(p => p.PilotoEntregaId == pilotoId
+                    || p.PilotoAsignadoId == pilotoId && EstadosEntrega.ParadasTerminales.Contains(p.Estado))
+                    && !o.Paradas.Any(p => p.PilotoAsignadoId == pilotoId && !p.EnReasignacion
+                        && !EstadosEntrega.ParadasTerminales.Contains(p.Estado))));
 
 
         public async Task<List<OrdenAutoDisponibleDto>> GetOrdenesAutoAsync(string identityUserId)
@@ -194,8 +206,10 @@ namespace Login.Application.Services
         }
 
         private Task<bool> TieneOrdenesAbiertasAsync(int pilotoId, int tenantId)
-            => _db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && o.PilotoId == pilotoId
-                && !EstadosEntrega.Terminales.Contains(o.Estado));
+            => _db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && !EstadosEntrega.Terminales.Contains(o.Estado)
+                && (!o.GestionPorParadas ? o.PilotoId == pilotoId : o.Paradas.Any(p =>
+                    !EstadosEntrega.ParadasTerminales.Contains(p.Estado) && (p.PilotoCustodioId == pilotoId
+                        || p.PilotoAsignadoId == pilotoId && !p.EnReasignacion))));
 
         // ---------- Helpers ----------
 
@@ -206,15 +220,17 @@ namespace Login.Application.Services
                 .Include(o => o.Tienda)
                 .Include(o => o.UsuarioFinal)
                 .Include(o => o.Paradas).AsSplitQuery()
-                .Where(o => o.PilotoId == pilotoId && o.ClienteAppId == clienteAppId &&
-                            (o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada));
+                .Where(o => o.ClienteAppId == clienteAppId && (!o.GestionPorParadas
+                    ? o.PilotoId == pilotoId && (o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada)
+                    : !EstadosEntrega.Terminales.Contains(o.Estado) && o.Paradas.Any(p => p.PilotoAsignadoId == pilotoId
+                        && !p.EnReasignacion && !EstadosEntrega.ParadasTerminales.Contains(p.Estado))));
         }
 
         private async Task<List<OrdenPilotoDto>> MapActivasAsync(Piloto piloto, List<OrdenEntrega> orders)
         {
             var policy = await new OperationsWorkGuard(_db, _clock).LoadReadPolicyAsync(piloto.ClienteAppId,
                 orders.Select(o => o.Id).ToArray());
-            return orders.Select(o => ToDto(o, policy)).ToList();
+            return orders.Select(o => o.GestionPorParadas ? ToDtoGestionada(o, piloto.Id, policy) : ToDto(o, policy)).ToList();
         }
 
         private static OrdenPilotoDto ToDto(OrdenEntrega o, OperationsWorkGuard.ReadPolicy? policy = null)
@@ -252,6 +268,7 @@ namespace Login.Application.Services
                     (o.RecolectadaAt.HasValue || o.Estado == EstadoOrden.Entregada || o.Estado == EstadoOrden.Devuelta || o.Estado == EstadoOrden.FinalizadaConDevoluciones) ? p.Longitud : null,
                     (o.RecolectadaAt.HasValue || o.Estado == EstadoOrden.Entregada || o.Estado == EstadoOrden.Devuelta || o.Estado == EstadoOrden.FinalizadaConDevoluciones) ? p.Instrucciones : null) {
                         DevueltaAt = p.DevueltaAt,
+                        PuedeVerDestino = puedeVerDestino, RecogidaAt = o.RecolectadaAt,
                         PuedeConfirmarEntrega = policy is not null && o.Estado == EstadoOrden.Recolectada
                             && o.RecolectadaAt.HasValue && p.Estado == EstadoParadaEntrega.Pendiente
                             && policy.MotivoBloqueo(o.Id, p.Id, false) is null,

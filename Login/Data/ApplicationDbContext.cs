@@ -31,6 +31,7 @@ namespace Login.Data
         partial void ConfigureOperativos(ModelBuilder b);
         partial void ConfigureDevoluciones(ModelBuilder b);
         partial void ConfigureSaas(ModelBuilder b);
+        partial void ConfigureReasignaciones(ModelBuilder b);
 
 
 
@@ -184,6 +185,7 @@ namespace Login.Data
             ConfigureOperativos(builder);
             ConfigureDevoluciones(builder);
             ConfigureSaas(builder);
+            ConfigureReasignaciones(builder);
         }
     }
 }

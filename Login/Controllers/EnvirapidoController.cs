@@ -19,7 +19,7 @@ namespace Login.Controllers;
 [Authorize(Roles = "Gestor")]
 [Route("Operaciones")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class EnvirapidoController(ApplicationDbContext db, IOrdenService ordenes, EnvirapidoOperationsService operations,IConfiguration configuration,ILogger<EnvirapidoController> logger) : Controller
+public sealed partial class EnvirapidoController(ApplicationDbContext db, IOrdenService ordenes, EnvirapidoOperationsService operations,IConfiguration configuration,ILogger<EnvirapidoController> logger) : Controller
 {
     private string Actor => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
     private int GpsFrescuraSegundos=>OperationsGpsPolicy.FreshnessSeconds(configuration);
@@ -61,7 +61,7 @@ public sealed class EnvirapidoController(ApplicationDbContext db, IOrdenService 
         var rows=await Project(Filter(CandidateOrders(tenant.Id,pilotoId),buscar,null,null,null,null).OrderByDescending(o=>o.Id).Take(100)).ToListAsync();await AttachOrderDataAsync(rows,tenant.Id);return Json(rows);
     }
 
-    private IQueryable<OrdenEntrega> CandidateOrders(int tenantId,int? pilotId)=>db.OrdenesEntrega.AsNoTracking().Where(o=>o.ClienteAppId==tenantId&&(o.Estado==EstadoOrden.Creada||o.Estado==EstadoOrden.Asignada)&&(!o.PilotoId.HasValue||o.PilotoId==pilotId)
+    private IQueryable<OrdenEntrega> CandidateOrders(int tenantId,int? pilotId)=>db.OrdenesEntrega.AsNoTracking().Where(o=>o.ClienteAppId==tenantId&&!o.GestionPorParadas&&(o.Estado==EstadoOrden.Creada||o.Estado==EstadoOrden.Asignada)&&(!o.PilotoId.HasValue||o.PilotoId==pilotId)
         &&!db.Set<RutaOrdenOperativa>().Any(r=>r.ClienteAppId==tenantId&&r.OrdenEntregaId==o.Id&&r.Vigente));
 
     [HttpGet("Fragmento")]
@@ -362,8 +362,14 @@ public sealed class EnvirapidoController(ApplicationDbContext db, IOrdenService 
     private Task<List<PanelPilotVm>> FlotaAsync(int tenantId) => db.Pilotos.AsNoTracking().Where(p => p.ClienteAppId == tenantId).OrderBy(p => p.Nombre)
         .Select(p => new PanelPilotVm { Id = p.Id, Nombre = p.Nombre, Telefono = p.Telefono, Activo = p.Activo, EnLinea = p.EnLinea, Latitud = p.Latitud, Longitud = p.Longitud, GpsUtc = p.UltimaUbicacionAt,
             GpsFrescuraSegundos=GpsFrescuraSegundos,
-            ConIncidencia=db.Set<IncidenciaOperativa>().Any(i=>i.ClienteAppId==tenantId&&i.Estado!=EstadoIncidencia.Resuelta&&((i.OrdenEntrega!=null&&i.OrdenEntrega.PilotoId==p.Id)||(i.Ruta!=null&&i.Ruta.PilotoId==p.Id))),
-            Carga = p.Ordenes.Count(o => o.Estado != EstadoOrden.Entregada&&o.Estado!=EstadoOrden.Devuelta&&o.Estado!=EstadoOrden.FinalizadaConDevoluciones&&o.Estado!=EstadoOrden.Cancelada) }).ToListAsync();
+            ConIncidencia=db.Set<IncidenciaOperativa>().Any(i=>i.ClienteAppId==tenantId&&i.Estado!=EstadoIncidencia.Resuelta
+                &&((i.OrdenEntrega!=null&&(i.OrdenEntrega.GestionPorParadas
+                    ? i.OrdenEntrega.Paradas.Any(s=>(!i.ParadaEntregaId.HasValue||s.Id==i.ParadaEntregaId)&&(s.PilotoAsignadoId==p.Id||s.PilotoCustodioId==p.Id))
+                    : i.OrdenEntrega.PilotoId==p.Id))||(i.Ruta!=null&&i.Ruta.PilotoId==p.Id))),
+            Carga = db.OrdenesEntrega.Count(o => o.ClienteAppId==tenantId && (o.GestionPorParadas
+                ? o.Paradas.Any(s => (s.Estado!=EstadoParadaEntrega.Entregada&&s.Estado!=EstadoParadaEntrega.Devuelta&&s.Estado!=EstadoParadaEntrega.Cancelada&&s.PilotoAsignadoId==p.Id)
+                    ||(s.PilotoCustodioId==p.Id&&s.Estado!=EstadoParadaEntrega.Entregada&&s.Estado!=EstadoParadaEntrega.Devuelta))
+                : o.PilotoId==p.Id&&o.Estado!=EstadoOrden.Entregada&&o.Estado!=EstadoOrden.Devuelta&&o.Estado!=EstadoOrden.FinalizadaConDevoluciones&&o.Estado!=EstadoOrden.Cancelada)) }).ToListAsync();
 
     private IQueryable<OrdenEntrega> Filter(IQueryable<OrdenEntrega> query, string? buscar, string? estado, DateTime? fecha, int? comercioId, int? repartidorId)
     {
@@ -375,7 +381,7 @@ public sealed class EnvirapidoController(ApplicationDbContext db, IOrdenService 
         if(int.TryParse(Request.Query["zonaId"],out var zoneId)&&zoneId>0)query=query.Where(o=>db.Set<DatosEnvioOperativos>().Any(d=>d.OrdenEntregaId==o.Id&&d.ZonaId==zoneId));
         if(Request.Query["demorados"]=="true")query=query.Where(o=>o.Estado!=EstadoOrden.Entregada&&o.Estado!=EstadoOrden.Devuelta&&o.Estado!=EstadoOrden.FinalizadaConDevoluciones&&o.Estado!=EstadoOrden.Cancelada&&db.Set<DatosEnvioOperativos>().Any(d=>d.OrdenEntregaId==o.Id&&d.CompromisoEntrega<now&&!d.CanceladaAt.HasValue));
         if (comercioId.HasValue) query = query.Where(o => o.TiendaId == comercioId.Value);
-        if (repartidorId.HasValue) query = query.Where(o => o.PilotoId == repartidorId.Value);
+        if (repartidorId.HasValue) query = query.Where(o => o.GestionPorParadas ? o.Paradas.Any(p=>p.PilotoAsignadoId==repartidorId.Value||p.PilotoCustodioId==repartidorId.Value||p.PilotoEntregaId==repartidorId.Value) : o.PilotoId == repartidorId.Value);
         if(!string.IsNullOrWhiteSpace(estado)&&estado!="Pendientes"&&estado!="Incidente") {if(Enum.TryParse<EstadoOrden>(estado,out var parsed)&&Enum.IsDefined(parsed))query=query.Where(o=>o.Estado==parsed);else query=query.Where(o=>false);}
         if (!string.IsNullOrWhiteSpace(buscar)) { buscar = buscar.Trim(); query = query.Where(o => (o.CodigoA != null && o.CodigoA.Contains(buscar)) || db.Set<DatosEnvioOperativos>().Any(d=>d.ClienteAppId==o.ClienteAppId&&d.OrdenEntregaId==o.Id&&d.Referencia!=null&&d.Referencia.Contains(buscar)) || o.RecogidaNombre.Contains(buscar) || o.DestinoNombre.Contains(buscar) || o.DestinoDireccion.Contains(buscar) || o.Paradas.Any(p=>p.Nombre.Contains(buscar)||p.Direccion.Contains(buscar)) || (o.Piloto!=null&&o.Piloto.Nombre.Contains(buscar)) || (!o.DatosEntregaCongelados && (o.Tienda.Nombre.Contains(buscar) || (o.UsuarioFinal!=null&&o.UsuarioFinal.Nombre.Contains(buscar))))); }
         if (fecha.HasValue && fecha.Value.Year is >= 2000 and <= 9998) { var from = DateTime.SpecifyKind(fecha.Value.Date.AddHours(4), DateTimeKind.Utc); var to = from.AddDays(1); query = query.Where(o => o.CreatedAt >= from && o.CreatedAt < to); }
@@ -411,7 +417,7 @@ public sealed class EnvirapidoController(ApplicationDbContext db, IOrdenService 
         Destinatario = o.Paradas.Count>1?o.Paradas.Count+" destinatarios":o.DatosEntregaCongelados ? o.DestinoNombre : o.UsuarioFinal!=null?o.UsuarioFinal.Nombre:"", Direccion = o.Paradas.Count>1?"Varias paradas de entrega":o.DatosEntregaCongelados ? o.DestinoDireccion : o.UsuarioFinal!=null?o.UsuarioFinal.DireccionUbicacion:"",
         Telefono = o.DatosEntregaCongelados ? o.DestinoTelefono : o.UsuarioFinal!=null?o.UsuarioFinal.Telefono:"", DestinoLatitud = o.DatosEntregaCongelados ? o.DestinoLatitud : o.UsuarioFinal!=null?o.UsuarioFinal.Latitud:null, DestinoLongitud = o.DatosEntregaCongelados ? o.DestinoLongitud : o.UsuarioFinal!=null?o.UsuarioFinal.Longitud:null,
         Estado = o.Estado.ToString(), PilotoId = o.PilotoId, Piloto = o.Piloto == null ? null : o.Piloto.Nombre, PilotoTelefono = o.Piloto == null ? null : o.Piloto.Telefono,
-        Nota = o.NotaPedido, Auto = o.EsAuto, CreadoUtc = o.CreatedAt, AsignadoUtc = o.AssignedAt, RecogidoUtc = o.RecolectadaAt, EntregadoUtc = o.EntregadaAt, Precio = o.Precio, DistanciaKm = o.DistanciaKm,
+        Nota = o.NotaPedido, Auto = o.EsAuto, GestionPorParadas = o.GestionPorParadas, CreadoUtc = o.CreatedAt, AsignadoUtc = o.AssignedAt, RecogidoUtc = o.RecolectadaAt, EntregadoUtc = o.EntregadaAt, Precio = o.Precio, DistanciaKm = o.DistanciaKm,
         Paradas=o.Paradas.OrderBy(p=>p.Posicion).Select(p=>new PanelStopVm{Id=p.Id,Posicion=p.Posicion,Nombre=p.Nombre,Direccion=p.Direccion,Telefono=p.Telefono,Instrucciones=p.Instrucciones,Latitud=p.Latitud,Longitud=p.Longitud,Estado=p.Estado.ToString(),EntregadaUtc=p.EntregadaAt}).ToList()
     });
 }

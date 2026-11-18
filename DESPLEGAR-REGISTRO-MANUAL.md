@@ -1,5 +1,10 @@
 # Actualización puntual: registro sin SMTP
 
+> Este documento describe la corrección de registro entregada en `0f7cd32`.
+> Para el lote posterior con reasignaciones, logos y APK 2.1.0, seguir
+> [DESPLEGAR-ENVIRAPIDO-2.1.md](DESPLEGAR-ENVIRAPIDO-2.1.md). Ese lote sí requiere
+> migración del SQL CRM; la configuración manual sin SMTP se conserva.
+
 Entrega para el agente que opera `envirapido.com` y `portal.envirapido.com`.
 Utilizar el **SHA completo comunicado al propietario**, rama
 `codex/confiabilidad-panel-app`, repositorio `2020f/Login-PilotoGot`.

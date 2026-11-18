@@ -34,8 +34,12 @@ public partial class ApplicationDbContext
             .HasForeignKey(x => new { x.ClienteAppId, x.ZonaId }).HasPrincipalKey(x => new { x.ClienteAppId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         b.Entity<RutaOperativa>().HasOne(x => x.Piloto).WithMany()
             .HasForeignKey(x => new { x.ClienteAppId, x.PilotoId }).HasPrincipalKey(x => new { x.ClienteAppId, x.Id }).OnDelete(DeleteBehavior.Restrict);
-        b.Entity<RutaOrdenOperativa>().HasAlternateKey(x => new { x.ClienteAppId, x.RutaId, x.OrdenEntregaId });
-        b.Entity<RutaOrdenOperativa>().HasIndex(x => new { x.ClienteAppId, x.OrdenEntregaId }).IsUnique().HasFilter("[Vigente] = 1");
+        b.Entity<RutaOrdenOperativa>().HasAlternateKey(x => new { x.ClienteAppId, x.RutaId, x.OrdenEntregaId, x.Id });
+        b.Entity<RutaOrdenOperativa>().HasIndex(x => new { x.ClienteAppId, x.OrdenEntregaId }).IsUnique().HasFilter("[Vigente] = 1 AND [ParadaEntregaId] IS NULL");
+        b.Entity<RutaOrdenOperativa>().HasIndex(x => new { x.ClienteAppId, x.ParadaEntregaId }).IsUnique().HasFilter("[Vigente] = 1 AND [ParadaEntregaId] IS NOT NULL");
+        b.Entity<RutaOrdenOperativa>().HasOne(x => x.ParadaEntrega).WithMany()
+            .HasForeignKey(x => new { x.ClienteAppId, x.OrdenEntregaId, x.ParadaEntregaId })
+            .HasPrincipalKey(x => new { x.ClienteAppId, x.OrdenEntregaId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         b.Entity<RutaOrdenOperativa>().HasOne(x => x.Ruta).WithMany(x => x.Ordenes)
             .HasForeignKey(x => new { x.ClienteAppId, x.RutaId }).HasPrincipalKey(x => new { x.ClienteAppId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         b.Entity<RutaOrdenOperativa>().HasOne(x => x.OrdenEntrega).WithMany()
@@ -43,11 +47,11 @@ public partial class ApplicationDbContext
         b.Entity<PuntoRutaOperativa>().HasOne(x => x.Ruta).WithMany(x => x.Puntos)
             .HasForeignKey(x => new { x.ClienteAppId, x.RutaId }).HasPrincipalKey(x => new { x.ClienteAppId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         b.Entity<PuntoRutaOperativa>().HasOne(x => x.RutaOrden).WithMany()
-            .HasForeignKey(x => new { x.ClienteAppId, x.RutaId, x.OrdenEntregaId }).HasPrincipalKey(x => new { x.ClienteAppId, x.RutaId, x.OrdenEntregaId }).OnDelete(DeleteBehavior.Restrict);
+            .HasForeignKey(x => new { x.ClienteAppId, x.RutaId, x.OrdenEntregaId, x.RutaOrdenId }).HasPrincipalKey(x => new { x.ClienteAppId, x.RutaId, x.OrdenEntregaId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         b.Entity<PuntoRutaOperativa>().HasOne(x => x.ParadaEntrega).WithMany()
             .HasForeignKey(x => new { x.ClienteAppId, x.OrdenEntregaId, x.ParadaEntregaId }).HasPrincipalKey(x => new { x.ClienteAppId, x.OrdenEntregaId, x.Id }).OnDelete(DeleteBehavior.Restrict);
         b.Entity<PuntoRutaOperativa>().HasIndex(x => new { x.RutaId, x.Posicion }).IsUnique();
-        b.Entity<PuntoRutaOperativa>().ToTable(t => t.HasCheckConstraint("CK_PuntoRuta_Tipo", "([Tipo] = 1 AND [ParadaEntregaId] IS NULL) OR ([Tipo] IN (2, 3) AND [ParadaEntregaId] IS NOT NULL)"));
+        b.Entity<PuntoRutaOperativa>().ToTable(t => t.HasCheckConstraint("CK_PuntoRuta_Tipo", "[Tipo] = 1 OR ([Tipo] IN (2, 3) AND [ParadaEntregaId] IS NOT NULL)"));
 
         b.Entity<IncidenciaOperativa>().HasOne(x => x.OrdenEntrega).WithMany()
             .HasForeignKey(x => new { x.ClienteAppId, x.OrdenEntregaId }).HasPrincipalKey(x => new { x.ClienteAppId, x.Id }).OnDelete(DeleteBehavior.Restrict);

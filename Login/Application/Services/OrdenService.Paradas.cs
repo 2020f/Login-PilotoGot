@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Login.Application.Exceptions;
 using Login.Application.Interfaces;
+using Login.Application.Operations;
 using Login.Domain.Entities;
 using Login.Domain.Enums;
 using Login.Domain.Operations;
@@ -50,6 +51,7 @@ public partial class OrdenService
             && o.Piloto != null && o.Piloto.IdentityUserId == actor && o.Piloto.Activo
             && o.Piloto.ClienteAppId == o.ClienteAppId && o.ClienteApp.Estado == EstadoClienteApp.Activo);
         if (orden is null) throw new InvalidOperationException("La orden no pertenece a este piloto activo.");
+        if (orden.GestionPorParadas) throw new OperationsException(426, "Esta orden requiere acciones con la revisión de cada parada.");
         return orden;
     }
 
@@ -73,9 +75,14 @@ public partial class OrdenService
     }
 
     public async Task<EntregaParadaResult> ConfirmarEntregaParadaAsync(int ordenId, int paradaId,
-        string codigoC, string actorIdentityUserId, string? operacionId = null)
+        string codigoC, string actorIdentityUserId, string? operacionId = null, string? revisionAsignacion = null)
     {
         if (operacionId is null) throw new ArgumentException("OperacionId es obligatorio para confirmar una parada.");
+        if (await _db.OrdenesEntrega.AsNoTracking().AnyAsync(o => o.Id == ordenId && o.GestionPorParadas
+            && _db.Pilotos.Any(p => p.IdentityUserId == actorIdentityUserId && p.ClienteAppId == o.ClienteAppId
+                && p.Activo && p.ClienteApp.Estado == EstadoClienteApp.Activo)))
+            return await ConfirmarParadaGestionadaAsync(ordenId, paradaId, codigoC, actorIdentityUserId,
+                operacionId, revisionAsignacion);
         return await ConfirmarParadaCoreAsync(ordenId, paradaId, codigoC, actorIdentityUserId, operacionId);
     }
 
@@ -84,8 +91,10 @@ public partial class OrdenService
     {
         var clave = NormalizarOperacionId(operacionId);
         var orden = await CargarOrdenAutorizadaAsync(ordenId, actor);
+        if (orden.GestionPorParadas) throw new OperationsException(426, "Actualiza la app para gestionar esta asignación por parada.");
         using var tx = await _quotas.BeginTenantMutationAsync(orden.ClienteAppId);
         orden = await CargarOrdenAutorizadaAsync(ordenId, actor);
+        if (orden.GestionPorParadas) throw new OperationsException(426, "Actualiza la app para gestionar esta asignación por parada.");
         var hash = Hash(JsonSerializer.Serialize(new { ordenId, paradaId, codigoC }));
         var op = await OperacionConfirmacionAsync(orden.ClienteAppId, actor, "ConfirmarParada", clave, hash);
         if (op is not null)

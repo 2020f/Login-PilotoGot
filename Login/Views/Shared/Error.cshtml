@@ -1,6 +1,7 @@
 @model ErrorViewModel
 @{
     Layout = "_LayoutAuth";
+    ViewData["AuthBrandHeader"] = false;
     ViewData["Title"] = "No se pudo completar la solicitud";
     var home = User.IsInRole("SuperAdmin") ? "/SuperAdmin/Dashboard"
         : User.IsInRole("Gestor") ? "/Operaciones"
@@ -9,7 +10,7 @@
 }
 <main style="min-height:100dvh;display:grid;place-items:center;padding:24px">
     <section style="width:100%;max-width:560px;padding:36px;border-radius:22px;background:#fff;color:#14252b;box-shadow:0 18px 55px #0002" aria-labelledby="errorTitle">
-        <p style="color:#007e80;font-weight:800">Envirapido</p>
+        <img class="envi-brand-logo envi-card-brand" src="~/branding/logo-original.png" asp-append-version="true" alt="Envirapido" width="190" height="65" />
         <h1 id="errorTitle" style="font-size:28px">No se pudo completar la solicitud</h1>
         <p style="line-height:1.6;color:#526874">Vuelve a tu panel e inténtalo de nuevo. Si el problema continúa, comparte esta referencia con el administrador.</p>
         @if (Model.ShowRequestId)

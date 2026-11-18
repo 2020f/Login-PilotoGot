@@ -52,11 +52,14 @@ public class RutaOrdenOperativa
     public int RutaId { get; set; }
     public RutaOperativa Ruta { get; set; } = null!;
     public int OrdenEntregaId { get; set; }
+    public int? ParadaEntregaId { get; set; }
+    public ParadaEntrega? ParadaEntrega { get; set; }
     public OrdenEntrega OrdenEntrega { get; set; } = null!;
     public bool Vigente { get; set; } = true;
 }
 public class PuntoRutaOperativa
 {
+    public DateTime? RecogidaConfirmadaAt { get; set; }
     public int Id { get; set; }
     public int ClienteAppId { get; set; }
     public int RutaId { get; set; }

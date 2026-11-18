@@ -1,6 +1,7 @@
 @page "/Identity/Account/Manage/{*path}"
 @model Login.Areas.Identity.Pages.Account.Manage.IndexModel
 @{
+    ViewData["AuthBrandHeader"] = false;
     ViewData["Title"] = "No tienes autorización";
 }
 <partial name="/Areas/Identity/Pages/Account/_AccessDeniedContent.cshtml" model="Model" />

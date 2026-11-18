@@ -1,5 +1,10 @@
 # Envirapido: análisis consolidado y plan de integración
 
+> **Entrega actual del 18/11/2026:** seguir
+> [DESPLEGAR-ENVIRAPIDO-2.1.md](../../DESPLEGAR-ENVIRAPIDO-2.1.md), con la migración
+> del CRM y el APK 2.1.0 (10). El resto de este documento conserva el análisis y
+> los recibos históricos; no identifica por sí solo el estado de producción.
+
 Fecha: 11 de noviembre de 2026, America/Santo_Domingo.
 
 La [corrección de HTTPS y cookies](HTTPS-PROXY-DESPLIEGUE.md) incorpora proxy

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Login.Application.Operations;
 
 namespace Login.Application.Interfaces
 {
@@ -36,7 +37,9 @@ namespace Login.Application.Interfaces
             string? operacionId = null);
 
         Task<EntregaParadaResult> ConfirmarEntregaParadaAsync(int ordenId, int paradaId, string codigoC,
-            string actorIdentityUserId, string? operacionId = null);
+            string actorIdentityUserId, string? operacionId = null, string? revisionAsignacion = null);
+        Task<RecogidaParadasResult> ConfirmarRecogidaParadasAsync(int ordenId, string codigoB,
+            IReadOnlyList<RevisionParadaRequest> paradas, string actorIdentityUserId, string operacionId);
 
         /// <summary>Confirma entrega usando B + C (marca C como usado y cambia estado).</summary>
         Task ConfirmarEntregaAsync(
@@ -82,7 +85,10 @@ namespace Login.Application.Interfaces
     public sealed record OrdenDestinatarioRequest(int UsuarioFinalId, string? Instrucciones = null);
     public sealed record ParadaCreadaDto(int ParadaId, int UsuarioFinalId, string Nombre, string CodigoC, string? Direccion = null);
     public sealed record EntregaParadaResult(int OrdenId, int ParadaId, string EstadoParada,
-        string EstadoOrden, DateTime EntregadaAt, int Entregadas, int TotalParadas);
+        string EstadoOrden, DateTime EntregadaAt, int Entregadas, int TotalParadas)
+    {
+        public bool TrabajoPilotoFinalizado { get; init; }
+    }
 
     public sealed record OrdenAutoDisponibleDto(
         int OrdenId,

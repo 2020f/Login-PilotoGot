@@ -38,6 +38,8 @@ namespace Login.Domain.Entities
         public int? PilotoId { get; set; }
         public Piloto? Piloto { get; set; }
 
+        public bool GestionPorParadas { get; set; }
+
         // ✅ A secuencial por ClienteApp (UNIQUE por tenant)
         public int NumeroOrdenA { get; set; }
 

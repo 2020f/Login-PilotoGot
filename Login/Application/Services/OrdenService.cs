@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Login.Application.Exceptions;
 using Login.Application.Interfaces;
+using Login.Application.Operations;
 using Login.Data;
 using Login.Domain.Entities;
 using Login.Domain.Enums;
@@ -255,6 +256,7 @@ namespace Login.Application.Services
 
             using var tx = await _quotas.BeginTenantMutationAsync(orden.ClienteAppId);
             await _db.Entry(orden).ReloadAsync();
+            if (orden.GestionPorParadas) throw new OperationsException(426, "La asignación de esta orden se administra por parada.");
 
             // Validar piloto pertenece al mismo ClienteApp
             if (!await _db.ClientesApp.AnyAsync(c => c.Id == orden.ClienteAppId
@@ -305,9 +307,18 @@ namespace Login.Application.Services
                 && c.Tipo == TipoCodigo.B_Recoleccion && c.OrdenEntrega.Piloto != null
                 && c.OrdenEntrega.Piloto.IdentityUserId == actorIdentityUserId)
                 .Select(c => c.OrdenEntregaId).SingleOrDefaultAsync();
+            if (await _db.OrdenesEntrega.AsNoTracking().AnyAsync(o => o.Id == id && o.GestionPorParadas
+                && _db.Pilotos.Any(p => p.IdentityUserId == actorIdentityUserId && p.ClienteAppId == o.ClienteAppId
+                    && p.Activo && p.ClienteApp.Estado == EstadoClienteApp.Activo)))
+            {
+                await ReproducirRecogidaLegadaGestionadaAsync(id, codigoB, actorIdentityUserId, clave);
+                return;
+            }
             var orden = await CargarOrdenAutorizadaAsync(id, actorIdentityUserId);
+            if (orden.GestionPorParadas) throw new OperationsException(426, "Utiliza la recogida por lote con la revisión de cada parada.");
             using var tx = await _quotas.BeginTenantMutationAsync(orden.ClienteAppId);
             orden = await CargarOrdenAutorizadaAsync(id, actorIdentityUserId);
+            if (orden.GestionPorParadas) throw new OperationsException(426, "Utiliza la recogida por lote con la revisión de cada parada.");
             var hash = Hash(JsonSerializer.Serialize(new { ordenId = id, codigoB }));
             var repetida = await OperacionConfirmacionAsync(orden.ClienteAppId, actorIdentityUserId, "ConfirmarRecogida", clave, hash);
             if (repetida is not null) { await tx.CommitAsync(); return; }
@@ -349,6 +360,7 @@ namespace Login.Application.Services
             using (var tx = await _quotas.BeginTenantMutationAsync(orden.ClienteAppId))
             {
                 orden = await CargarOrdenAutorizadaAsync(orden.Id, actorIdentityUserId);
+                if (orden.GestionPorParadas) throw new OperationsException(426, "Confirma cada parada con su asignación vigente.");
                 paradaId = (await AsegurarParadaLegadaAsync(orden)).Id;
                 await tx.CommitAsync();
             }
@@ -357,6 +369,7 @@ namespace Login.Application.Services
 
         private async Task ValidarPilotoAsignadoAsync(OrdenEntrega orden, string identityUserId)
         {
+            if (orden.GestionPorParadas) throw new OperationsException(426, "Esta orden se administra por parada.");
             var autorizado = await _db.Pilotos.AnyAsync(p => p.Id == orden.PilotoId
                 && p.IdentityUserId == identityUserId && p.ClienteAppId == orden.ClienteAppId
                 && p.Activo && p.ClienteApp.Estado == EstadoClienteApp.Activo);
@@ -419,6 +432,7 @@ namespace Login.Application.Services
 
             if (orden.PilotoId != pilotoId)
                 throw new InvalidOperationException("Esta orden no está asignada a ese piloto.");
+            if (orden.GestionPorParadas) throw new OperationsException(426, "Consulta sólo las paradas de tu asignación vigente.");
 
             // 🔒 Regla: no ve destino hasta recolectar
             var puedeVer = orden.Estado == EstadoOrden.Recolectada || orden.Estado == EstadoOrden.Entregada;
@@ -457,6 +471,7 @@ namespace Login.Application.Services
                 .Include(o => o.Tienda)
                 .Include(o => o.UsuarioFinal)
                 .Where(o => o.ClienteAppId == piloto.ClienteAppId
+                         && !o.GestionPorParadas
                          && o.EsAuto
                          && o.Estado == EstadoOrden.Creada
                          && o.PilotoId == null
@@ -509,6 +524,7 @@ namespace Login.Application.Services
             var now = DateTime.UtcNow;
             var rows = await _db.OrdenesEntrega
                 .Where(o => o.Id == ordenId && o.ClienteAppId == piloto.ClienteAppId && o.EsAuto
+                    && !o.GestionPorParadas
                     && o.Estado == EstadoOrden.Creada && o.PilotoId == null
                     && !_db.OrdenesAutoRechazo.Any(r => r.OrdenEntregaId == o.Id && r.PilotoId == pilotoId))
                 .ExecuteUpdateAsync(s => s.SetProperty(o => o.PilotoId, pilotoId)
@@ -545,7 +561,7 @@ namespace Login.Application.Services
             var tenant = await _db.Pilotos.Where(p => p.Id == pilotoId).Select(p => p.ClienteAppId).SingleAsync();
             var ordenDisponible = await _db.OrdenesEntrega.AsNoTracking()
                 .AnyAsync(o => o.Id == ordenId && o.ClienteAppId == tenant && o.EsAuto &&
-                               o.Estado == EstadoOrden.Creada && o.PilotoId == null);
+                               !o.GestionPorParadas && o.Estado == EstadoOrden.Creada && o.PilotoId == null);
 
             if (!ordenDisponible) throw new InvalidOperationException("Orden no disponible para este piloto.");
 

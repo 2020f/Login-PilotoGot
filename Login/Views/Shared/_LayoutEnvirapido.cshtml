@@ -20,6 +20,7 @@
     @if(ViewData["EnvirapidoLegacy"] is true){<link rel="stylesheet" href="~/css/gestor.css" asp-append-version="true"/>}
     <link rel="stylesheet" href="~/css/envirapido.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/envirapido-modulos.css" asp-append-version="true" />
+    <partial name="_BrandHead" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="ev-body" data-ev-section="@seccion" data-ev-user="@nombre">
@@ -44,7 +45,7 @@
 </defs></svg>
 <button class="ev-overlay" aria-label="Cerrar menú" data-ev-close-menu hidden></button>
 <aside class="ev-sidebar" id="evSidebar" aria-label="Navegación principal">
-    <a class="ev-brand" href="/Operaciones"><svg class="ev-brand-route" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M25 3a5 5 0 0 1 5 5c0 3.5-5 8-5 8s-5-4.5-5-8a5 5 0 0 1 5-5Z"/><circle cx="25" cy="8" r="1.4"/><path d="M24 17H12a4 4 0 0 0 0 8h8l-4 5H6a3 3 0 0 1 0-6h4"/></svg><span>Envirapido</span></a>
+    <a class="ev-brand envi-brand" href="/Operaciones" aria-label="Envirapido, centro de operaciones"><img class="envi-brand-logo" src="~/branding/logo-original.png" asp-append-version="true" alt="Envirapido" width="214" height="74" /></a>
     <div class="ev-company" title="@empresa"><span>@empresa</span><span aria-hidden="true">⌄</span></div>
     <nav class="ev-nav">
         @foreach (var item in menu)

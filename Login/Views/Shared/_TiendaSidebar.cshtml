@@ -4,15 +4,10 @@
     bool Is(string a) => ctrl == "tienda" && action == a.ToLower();
 }
 
-<div class="tp-brand">
-    <div class="tp-brand-ico">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 8v4l3 3"/>
-        </svg>
-    </div>
+<div class="tp-brand envi-brand">
+    <img class="envi-brand-symbol envi-tienda-symbol" src="~/branding/simbolo-caja.png" asp-append-version="true" alt="Envirapido" width="30" height="30" />
     <div class="tp-brand-txt">
-        <div class="tp-brand-name">Envirapido</div>
+        <img class="envi-brand-logo" src="~/branding/logo-original.png" asp-append-version="true" alt="Envirapido" width="154" height="53" />
         <div class="tp-brand-sub">Tienda</div>
     </div>
     <button class="tp-toggle" id="tpToggle" type="button" title="Colapsar menú">

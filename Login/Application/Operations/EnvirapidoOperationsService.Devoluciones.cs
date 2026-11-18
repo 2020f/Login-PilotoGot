@@ -23,6 +23,7 @@ public sealed partial class EnvirapidoOperationsService
         if (!a.EsPiloto) throw new OperationsException(403, "La solicitud corresponde al piloto custodio.");
         return await MutateAsync(a, "SolicitarDevolucion", r.OperacionId, r, async () => {
             var order = await OrderAsync(a, r.OrdenId);
+            if (order.GestionPorParadas) throw new OperationsException(409, "Gestiona el retiro y la recepción por parada desde Traspasos y recepciones.");
             var stop = order.Paradas.SingleOrDefault(p => p.Id == r.ParadaId);
             if (order.Estado != EstadoOrden.Recolectada || stop?.Estado != EstadoParadaEntrega.Pendiente)
                 throw new OperationsException(400, "Solo puede gestionar una entrega pendiente después de recoger.");
@@ -152,6 +153,7 @@ public sealed partial class EnvirapidoOperationsService
         await EnsureActorAsync(a, true);
         return await MutateAsync(a, "CancelarOrden", r.OperacionId, new { id, r }, async () => {
             var order = await OrderAsync(a, id);
+            if (order.GestionPorParadas) throw new OperationsException(409, "Cancela las paradas desde Reasignación o cancelación para conservar su custodia.");
             if (order.RecolectadaAt.HasValue || order.Estado is not (EstadoOrden.Creada or EstadoOrden.Asignada))
                 throw new OperationsException(400, "Solo puede cancelarse antes de recoger; después se requiere gestión de devolución.");
             var motivo = Required(r.Motivo, 500, "Motivo de cancelación");

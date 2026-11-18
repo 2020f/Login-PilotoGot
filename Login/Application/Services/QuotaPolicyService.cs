@@ -116,11 +116,23 @@ public sealed class QuotaPolicyService(ApplicationDbContext db, TimeProvider? cl
     {
         if (await db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && o.TiendaId == storeId && !EstadosEntrega.Terminales.Contains(o.Estado)))
             throw new InvalidOperationException("El comercio tiene órdenes abiertas. Finalízalas antes de desactivarlo.");
+        if (await db.RetirosParadas.AnyAsync(r => r.ClienteAppId == tenantId && r.Abierta
+            && r.TipoDestino == "Comercio" && r.TiendaDestinoId == storeId))
+            throw new InvalidOperationException("El comercio tiene recepciones de paquetes pendientes. Confírmalas antes de desactivarlo.");
     }
 
     public async Task EnsureNoOpenPilotOrdersAsync(int tenantId, int pilotId)
     {
-        if (await db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && o.PilotoId == pilotId && !EstadosEntrega.Terminales.Contains(o.Estado)))
-            throw new InvalidOperationException("El piloto tiene órdenes abiertas. Finalízalas antes de desactivarlo.");
+        if (await HasOpenPilotWorkAsync(tenantId, pilotId))
+            throw new InvalidOperationException("El piloto tiene asignaciones o paquetes en custodia. Finaliza o transfiere el trabajo y confirma su recepción antes de desactivarlo.");
     }
+
+    // Caller must hold the tenant lock before using this check for a mutation.
+    // A cancelled delivery can still carry a physical return obligation; a
+    // pending incoming handoff is also an assignment, even before reception.
+    public Task<bool> HasOpenPilotWorkAsync(int tenantId, int pilotId)
+        => db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == tenantId && (!o.GestionPorParadas
+            ? o.PilotoId == pilotId && !EstadosEntrega.Terminales.Contains(o.Estado)
+            : o.Paradas.Any(p => p.PilotoCustodioId == pilotId
+                || p.PilotoAsignadoId == pilotId && !EstadosEntrega.ParadasTerminales.Contains(p.Estado))));
 }

@@ -14,17 +14,26 @@ public sealed class OperationsWorkGuard(ApplicationDbContext db, TimeProvider? c
     {
         await CheckScheduleAsync(tenant, orden);
         var membership = await db.RutaOrdenesOperativas.AsNoTracking().Include(x => x.Ruta)
-            .SingleOrDefaultAsync(x => x.ClienteAppId == tenant && x.OrdenEntregaId == orden && x.Vigente);
+            .SingleOrDefaultAsync(x => x.ClienteAppId == tenant && x.OrdenEntregaId == orden && x.ParadaEntregaId == null && x.Vigente);
         await CheckPauseAsync(tenant, orden, null, membership?.RutaId);
         if (membership is not null && !(membership.Ruta.Estado == EstadoRutaOperativa.Activa && membership.Ruta.PilotoId == piloto))
             throw new OperationsException(409, "La orden está reservada por una ruta; utiliza su asignación autorizada.");
+    }
+
+    public async Task ValidateParadaAssignmentAsync(int tenant, int orden, int parada, int piloto)
+    {
+        await CheckScheduleAsync(tenant, orden);
+        var route = await RouteAsync(tenant, orden, parada);
+        await CheckPauseAsync(tenant, orden, parada, route?.Id);
+        if (route is not null && !(route.Estado == EstadoRutaOperativa.Activa && route.PilotoId == piloto))
+            throw new OperationsException(409, "La parada está reservada por otra ruta; retírala de ese recorrido antes de asignar.");
     }
 
     public async Task ValidateAsync(int tenant, int orden, int? parada, bool esRecogida)
     {
         var schedule = await db.DatosEnviosOperativos.AsNoTracking()
             .SingleOrDefaultAsync(d => d.ClienteAppId == tenant && d.OrdenEntregaId == orden);
-        var route = await RouteAsync(tenant, orden);
+        var route = await RouteAsync(tenant, orden, parada);
         var incidents = await OpenPauses(tenant).ToListAsync();
         ValidateLoaded(schedule, route, incidents, orden, parada, esRecogida, Now);
     }
@@ -46,11 +55,12 @@ public sealed class OperationsWorkGuard(ApplicationDbContext db, TimeProvider? c
         IReadOnlyList<RutaOperativa> routes, IReadOnlyList<IncidenciaOperativa> incidents)
     {
         private readonly Dictionary<int, DatosEnvioOperativos> _schedules = schedules.ToDictionary(x => x.OrdenEntregaId);
-        private readonly Dictionary<int, RutaOperativa> _routes = routes.SelectMany(r => r.Ordenes.Where(x => x.Vigente)
-            .Select(x => new { x.OrdenEntregaId, Route = r })).ToDictionary(x => x.OrdenEntregaId, x => x.Route);
+        private readonly Dictionary<(int OrderId, int? StopId), RutaOperativa> _routes = routes.SelectMany(r => r.Ordenes.Where(x => x.Vigente)
+            .Select(x => new { Key = (x.OrdenEntregaId, x.ParadaEntregaId), Route = r })).ToDictionary(x => x.Key, x => x.Route);
         public string? MotivoBloqueo(int orderId, int? stopId, bool pickup)
         {
-            try { ValidateLoaded(_schedules.GetValueOrDefault(orderId), _routes.GetValueOrDefault(orderId),
+            try { ValidateLoaded(_schedules.GetValueOrDefault(orderId), _routes.GetValueOrDefault((orderId, stopId))
+                    ?? _routes.GetValueOrDefault((orderId, null)),
                 incidents, orderId, stopId, pickup, now); return null; }
             catch (OperationsException ex) { return ex.Message; }
         }
@@ -62,26 +72,28 @@ public sealed class OperationsWorkGuard(ApplicationDbContext db, TimeProvider? c
         if (schedule is not null && (schedule.CanceladaAt.HasValue || schedule.ProgramadaPara > now))
             throw new OperationsException(409, "La orden está cancelada o aún no está habilitada por su programación.");
         EnsureNotPaused(incidents, orden, parada, route?.Id,
-            route?.Ordenes.Where(x => x.Vigente).Select(x => x.OrdenEntregaId).ToHashSet() ?? []);
+            route?.Ordenes.Where(x => x.Vigente).Select(x => x.OrdenEntregaId).ToHashSet() ?? [],
+            route?.Puntos.Where(p => p.RutaOrden.Vigente && p.ParadaEntregaId.HasValue)
+                .Select(p => p.ParadaEntregaId!.Value).ToHashSet() ?? []);
         if (route is null) return;
         if (route.Estado != EstadoRutaOperativa.Activa)
             throw new OperationsException(409, "La ruta todavía no está activa.");
-        var next = route.Puntos.OrderBy(p => p.Posicion).FirstOrDefault(p => !Completed(p));
+        var next = route.Puntos.OrderBy(p => p.Posicion).FirstOrDefault(p => !Completed(p, route.PilotoId));
         if (next is null || next.OrdenEntregaId != orden || (esRecogida
-                ? next.Tipo != TipoPuntoRuta.Recogida
+                ? next.Tipo != TipoPuntoRuta.Recogida || parada.HasValue && next.ParadaEntregaId != parada
                 : next.Tipo != TipoPuntoRuta.Entrega || next.ParadaEntregaId != parada))
             throw new OperationsException(409, "La próxima visita cambió; actualiza la secuencia autorizada.");
     }
 
     public async Task ValidateRetornoAsync(int tenant, int orden, int parada)
     {
-        var route = await RouteAsync(tenant, orden);
+        var route = await RouteAsync(tenant, orden, parada);
         await CheckPauseAsync(tenant, orden, parada, route?.Id);
         if (route is not null && route.Estado != EstadoRutaOperativa.Activa)
             throw new OperationsException(409, "La ruta no está activa para retornar.");
         if (route is not null)
         {
-            var next = route.Puntos.OrderBy(p => p.Posicion).FirstOrDefault(p => !Completed(p));
+            var next = route.Puntos.OrderBy(p => p.Posicion).FirstOrDefault(p => !Completed(p, route.PilotoId));
             if (next is null || next.Tipo != TipoPuntoRuta.Devolucion || next.OrdenEntregaId != orden || next.ParadaEntregaId != parada)
                 throw new OperationsException(409, "El retorno debe respetar la próxima visita autorizada de la ruta.");
         }
@@ -100,8 +112,11 @@ public sealed class OperationsWorkGuard(ApplicationDbContext db, TimeProvider? c
         .Include(r => r.Puntos).ThenInclude(p => p.RutaOrden).ThenInclude(x => x.OrdenEntrega)
         .Where(r => r.ClienteAppId == tenant);
 
-    private Task<RutaOperativa?> RouteAsync(int tenant, int orden) => RoutesQuery(tenant)
-        .SingleOrDefaultAsync(r => r.Ordenes.Any(x => x.OrdenEntregaId == orden && x.Vigente));
+    private Task<RutaOperativa?> RouteAsync(int tenant, int orden, int? parada = null) => RoutesQuery(tenant)
+        .Where(r => r.Ordenes.Any(x => x.OrdenEntregaId == orden && x.Vigente
+            && (x.ParadaEntregaId == null || parada.HasValue && x.ParadaEntregaId == parada)))
+        .OrderByDescending(r => parada.HasValue && r.Ordenes.Any(x => x.OrdenEntregaId == orden && x.Vigente && x.ParadaEntregaId == parada))
+        .FirstOrDefaultAsync();
 
     private IQueryable<IncidenciaOperativa> OpenPauses(int tenant) => db.IncidenciasOperativas.AsNoTracking()
         .Where(i => i.ClienteAppId == tenant && i.Estado != EstadoIncidencia.Resuelta && i.Efecto != EfectoIncidencia.Continuar);
@@ -111,18 +126,24 @@ public sealed class OperationsWorkGuard(ApplicationDbContext db, TimeProvider? c
         var incidents = await OpenPauses(tenant).ToListAsync();
         var routeOrders = ruta.HasValue ? (await db.RutaOrdenesOperativas.AsNoTracking()
             .Where(x => x.ClienteAppId == tenant && x.RutaId == ruta && x.Vigente).Select(x => x.OrdenEntregaId).ToListAsync()).ToHashSet() : [];
-        EnsureNotPaused(incidents, orden, parada, ruta, routeOrders);
+        var routeStops = ruta.HasValue ? (await db.PuntosRutaOperativos.AsNoTracking()
+            .Where(x => x.ClienteAppId == tenant && x.RutaId == ruta && x.RutaOrden.Vigente && x.ParadaEntregaId.HasValue)
+            .Select(x => x.ParadaEntregaId!.Value).ToListAsync()).ToHashSet() : [];
+        EnsureNotPaused(incidents, orden, parada, ruta, routeOrders, routeStops);
     }
 
     private static void EnsureNotPaused(IReadOnlyList<IncidenciaOperativa> incidents, int orden, int? parada,
-        int? ruta, HashSet<int> routeOrders)
+        int? ruta, HashSet<int> routeOrders, HashSet<int> routeStops)
     {
         foreach (var i in incidents)
         {
-            var sameRoute = ruta.HasValue && (i.RutaId == ruta || (i.OrdenEntregaId.HasValue
-                && routeOrders.Contains(i.OrdenEntregaId.Value)));
-            var sameOrder = i.OrdenEntregaId == orden;
-            if (i.Efecto == EfectoIncidencia.PausarRuta && (sameRoute || sameOrder)
+            var sameRoute = ruta.HasValue && (i.RutaId.HasValue ? i.RutaId == ruta
+                : i.OrdenEntregaId.HasValue && routeOrders.Contains(i.OrdenEntregaId.Value)
+                    && (!i.ParadaEntregaId.HasValue || routeStops.Contains(i.ParadaEntregaId.Value)));
+            var sameOrder = i.OrdenEntregaId == orden
+                && (!i.ParadaEntregaId.HasValue || !parada.HasValue || i.ParadaEntregaId == parada);
+            var sameRouteOrder = sameOrder && (!i.RutaId.HasValue || i.RutaId == ruta);
+            if (i.Efecto == EfectoIncidencia.PausarRuta && (sameRoute || sameRouteOrder)
                 || i.Efecto == EfectoIncidencia.PausarParada && (i.ParadaEntregaId.HasValue
                     ? i.ParadaEntregaId == parada && sameOrder
                     : sameOrder || sameRoute))
@@ -133,11 +154,16 @@ public sealed class OperationsWorkGuard(ApplicationDbContext db, TimeProvider? c
     public async Task ReconcileCompletedRoutesAsync(int tenant, int orden)
     {
         var routes = await db.RutasOperativas.Include(r => r.Ordenes).ThenInclude(x => x.OrdenEntrega)
+            .Include(r => r.Ordenes).ThenInclude(x => x.ParadaEntrega)
             .Where(r => r.ClienteAppId == tenant && (r.Estado == EstadoRutaOperativa.Activa || r.Estado == EstadoRutaOperativa.Planificada)
                 && r.Ordenes.Any(x => x.OrdenEntregaId == orden && x.Vigente)).AsSplitQuery().ToListAsync();
-        foreach (var route in routes.Where(r => r.Ordenes.All(x => EstadosEntrega.EsTerminal(x.OrdenEntrega.Estado))))
+        foreach (var route in routes.Where(r => r.Ordenes.All(x => !x.Vigente || (x.ParadaEntregaId.HasValue
+            ? x.ParadaEntrega is not null && (EstadosEntrega.EsTerminal(x.ParadaEntrega.Estado) || x.ParadaEntrega.EnReasignacion)
+            : EstadosEntrega.EsTerminal(x.OrdenEntrega.Estado)))))
         {
-            route.Estado = route.Ordenes.All(x => x.OrdenEntrega.Estado == Login.Domain.Enums.EstadoOrden.Cancelada)
+            route.Estado = route.Ordenes.All(x => x.ParadaEntregaId.HasValue
+                ? x.ParadaEntrega?.Estado == EstadoParadaEntrega.Cancelada
+                : x.OrdenEntrega.Estado == Login.Domain.Enums.EstadoOrden.Cancelada)
                 ? EstadoRutaOperativa.Cancelada : EstadoRutaOperativa.Finalizada;
             route.FinalizadaAt = Now;
             route.UpdatedAt = Now; route.Version = Guid.NewGuid().ToString("N");
@@ -148,9 +174,14 @@ public sealed class OperationsWorkGuard(ApplicationDbContext db, TimeProvider? c
         await db.SaveChangesAsync();
     }
 
-    private static bool Completed(PuntoRutaOperativa point) => point.RutaOrden.OrdenEntrega.Estado == Login.Domain.Enums.EstadoOrden.Cancelada
+    private static bool Completed(PuntoRutaOperativa point, int? routePilotId) => !point.RutaOrden.Vigente
+        || point.RutaOrden.OrdenEntrega.Estado == Login.Domain.Enums.EstadoOrden.Cancelada
+        || point.RutaOrden.OrdenEntrega.GestionPorParadas && point.ParadaEntrega is not null
+            && (point.ParadaEntrega.EnReasignacion || point.ParadaEntrega.Estado == EstadoParadaEntrega.Cancelada
+                || point.ParadaEntrega.PilotoAsignadoId != routePilotId)
         || (point.Tipo == TipoPuntoRuta.Recogida
-        ? point.RutaOrden.OrdenEntrega.RecolectadaAt.HasValue
+        ? point.RecogidaConfirmadaAt.HasValue || (point.RutaOrden.OrdenEntrega.GestionPorParadas
+            ? point.ParadaEntrega?.RecogidaParadaAt.HasValue == true : point.RutaOrden.OrdenEntrega.RecolectadaAt.HasValue)
         : point.Tipo == TipoPuntoRuta.Entrega
             ? point.ParadaEntrega is not null && point.ParadaEntrega.Estado is EstadoParadaEntrega.Entregada
                 or EstadoParadaEntrega.DevolucionAutorizada or EstadoParadaEntrega.EnRetorno or EstadoParadaEntrega.Devuelta

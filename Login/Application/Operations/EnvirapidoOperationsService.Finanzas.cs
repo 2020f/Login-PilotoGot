@@ -61,8 +61,12 @@ public sealed partial class EnvirapidoOperationsService
                 if (!await db.Pilotos.AnyAsync(p => p.Id == pilot && p.ClienteAppId == a.TenantId)) throw new OperationsException(404, "Piloto no disponible.");
                 var rule = await db.ReglasRemuneracion.AsNoTracking().SingleOrDefaultAsync(x => x.Id == r.ReglaId && x.ClienteAppId == a.TenantId && x.Activa)
                     ?? throw new OperationsException(400, "Selecciona una regla de remuneración activa.");
-                var doneOrders = await db.OrdenesEntrega.AsNoTracking().Where(o => o.ClienteAppId == a.TenantId && o.PilotoId == pilot && o.Estado == EstadoOrden.Entregada && o.EntregadaAt >= from && o.EntregadaAt < until).Include(o => o.Paradas).ToListAsync();
-                var doneStops = await db.ParadasEntrega.AsNoTracking().Where(p => p.ClienteAppId == a.TenantId && p.OrdenEntrega.PilotoId == pilot && p.Estado == EstadoParadaEntrega.Entregada && p.EntregadaAt >= from && p.EntregadaAt < until).Include(p => p.OrdenEntrega).ToListAsync();
+                var doneOrders = await db.OrdenesEntrega.AsNoTracking().Where(o => o.ClienteAppId == a.TenantId
+                    && (!o.GestionPorParadas ? o.PilotoId == pilot : o.Paradas.Any() && o.Paradas.All(p => p.PilotoEntregaId == pilot))
+                    && o.Estado == EstadoOrden.Entregada && o.EntregadaAt >= from && o.EntregadaAt < until).Include(o => o.Paradas).ToListAsync();
+                var doneStops = await db.ParadasEntrega.AsNoTracking().Where(p => p.ClienteAppId == a.TenantId
+                    && (!p.OrdenEntrega.GestionPorParadas ? p.OrdenEntrega.PilotoId == pilot : p.PilotoEntregaId == pilot)
+                    && p.Estado == EstadoParadaEntrega.Entregada && p.EntregadaAt >= from && p.EntregadaAt < until).Include(p => p.OrdenEntrega).ToListAsync();
                 var sources = new List<PaySource>();
                 if (rule.Unidad == UnidadRemuneracion.Servicio)
                     sources.AddRange(doneOrders.Select(o => new PaySource("Servicio", o.Id, o.Precio, o.Paradas.Select(p => p.Id).ToArray(), o.Id, null)));
@@ -71,10 +75,32 @@ public sealed partial class EnvirapidoOperationsService
                 else
                 {
                     var routes = await db.RutasOperativas.AsNoTracking().Where(x => x.ClienteAppId == a.TenantId && x.PilotoId == pilot && x.Estado == EstadoRutaOperativa.Finalizada && x.FinalizadaAt >= from && x.FinalizadaAt < until)
-                        .Include(x => x.Ordenes).ThenInclude(x => x.OrdenEntrega).ThenInclude(o => o.Paradas).AsSplitQuery().ToListAsync();
-                    sources.AddRange(routes.Where(x => x.Ordenes.All(o => o.OrdenEntrega.Estado == EstadoOrden.Entregada)).Select(x => new PaySource("Ruta", x.Id,
-                        x.Ordenes.All(o => o.OrdenEntrega.Precio.HasValue) ? x.Ordenes.Sum(o => o.OrdenEntrega.Precio!.Value) : null,
-                        x.Ordenes.SelectMany(o => o.OrdenEntrega.Paradas).Select(p => p.Id).ToArray(), null, x.Id)));
+                        .Include(x => x.Ordenes).ThenInclude(x => x.OrdenEntrega).ThenInclude(o => o.Paradas)
+                        .Include(x => x.Puntos).ThenInclude(p => p.ParadaEntrega).AsSplitQuery().ToListAsync();
+                    foreach (var route in routes)
+                    {
+                        var orders = route.Ordenes.Select(m => m.OrdenEntrega).DistinctBy(o => o.Id).ToArray();
+                        if (orders.All(o => !o.GestionPorParadas))
+                        {
+                            if (orders.All(o => o.Estado == EstadoOrden.Entregada))
+                                sources.Add(new("Ruta", route.Id, orders.All(o => o.Precio.HasValue) ? orders.Sum(o => o.Precio!.Value) : null,
+                                    orders.SelectMany(o => o.Paradas).Select(p => p.Id).ToArray(), null, route.Id));
+                            continue;
+                        }
+                        var byId = orders.ToDictionary(o => o.Id);
+                        var ownStops = route.Puntos.Where(p => p.Tipo == TipoPuntoRuta.Entrega && p.ParadaEntrega is not null
+                            && p.ParadaEntrega.Estado == EstadoParadaEntrega.Entregada
+                            && (byId[p.OrdenEntregaId].GestionPorParadas ? p.ParadaEntrega.PilotoEntregaId == pilot
+                                : byId[p.OrdenEntregaId].PilotoId == pilot)).Select(p => p.ParadaEntrega!).DistinctBy(p => p.Id).ToArray();
+                        if (ownStops.Length == 0) continue;
+                        var covered = ownStops.Select(p => p.Id).ToHashSet();
+                        var coveredOrders = orders.Where(o => ownStops.Any(p => p.OrdenEntregaId == o.Id)).ToArray();
+                        // A percentage needs complete commercial-price coverage.
+                        // A split order never invents a per-pilot allocation of its full price.
+                        decimal? tariff = coveredOrders.All(o => o.Precio.HasValue && o.Paradas.All(p => covered.Contains(p.Id)))
+                            ? coveredOrders.Sum(o => o.Precio!.Value) : null;
+                        sources.Add(new("Ruta", route.Id, tariff, covered.ToArray(), null, route.Id));
+                    }
                 }
                 var prefix = $"piloto:{pilot}:cobertura:";
                 var used = (await db.MovimientosOperativos.AsNoTracking().Where(m => m.ClienteAppId == a.TenantId && m.Concepto == "Cobertura" && m.ClaveOrigen.StartsWith(prefix)).Select(m => m.ParadaEntregaId).ToListAsync()).Where(x => x.HasValue).Select(x => x!.Value).ToHashSet();

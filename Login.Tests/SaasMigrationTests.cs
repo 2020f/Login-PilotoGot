@@ -20,7 +20,7 @@ public sealed class SaasMigrationTests
         await app.InScopeAsync(async sp =>
         {
             var db = sp.GetRequiredService<ApplicationDbContext>();
-            db.OrdenesEntrega.AddRange(
+            var legacyOrders = new[] {
                 new OrdenEntrega { ClienteAppId = app.TenantA, TiendaId = app.ShopA, UsuarioFinalId = app.CustomerA,
                     PilotoId = app.PilotA, NumeroOrdenA = 1, CodigoA = "0001", Estado = EstadoOrden.Recolectada, EsAuto = true,
                     AssignedAt = DateTime.UtcNow.AddMinutes(-10), RecolectadaAt = DateTime.UtcNow.AddMinutes(-5),
@@ -30,8 +30,23 @@ public sealed class SaasMigrationTests
                     PilotoId = app.PilotA, NumeroOrdenA = 2, CodigoA = "0002", Estado = EstadoOrden.Asignada, EsAuto = false,
                     AssignedAt = DateTime.UtcNow.AddMinutes(-1) },
                 new OrdenEntrega { ClienteAppId = app.TenantB, TiendaId = app.ShopB, UsuarioFinalId = app.CustomerB,
-                    NumeroOrdenA = 1, CodigoA = "0001", Estado = EstadoOrden.Creada, EsAuto = true });
-            await db.SaveChangesAsync();
+                    NumeroOrdenA = 1, CodigoA = "0001", Estado = EstadoOrden.Creada, EsAuto = true } };
+            // This fixture intentionally targets the pre-SaaS schema. Insert only
+            // columns that existed there, without mapping today's managed fields.
+            foreach (var order in legacyOrders)
+            {
+                await db.Database.ExecuteSqlInterpolatedAsync($@"INSERT INTO OrdenesEntrega
+                    (ClienteAppId,TiendaId,UsuarioFinalId,PilotoId,NumeroOrdenA,CodigoA,Estado,EsAuto,CreatedAt,AssignedAt,RecolectadaAt,
+                     DatosEntregaCongelados,RecogidaNombre,RecogidaDireccion,RecogidaTelefono,DestinoNombre,DestinoDireccion,DestinoTelefono)
+                    VALUES ({order.ClienteAppId},{order.TiendaId},{order.UsuarioFinalId},{order.PilotoId},{order.NumeroOrdenA},{order.CodigoA},{(int)order.Estado},
+                        {order.EsAuto},{order.CreatedAt},{order.AssignedAt},{order.RecolectadaAt},{order.DatosEntregaCongelados},
+                        {order.RecogidaNombre},{order.RecogidaDireccion},{order.RecogidaTelefono},{order.DestinoNombre},{order.DestinoDireccion},{order.DestinoTelefono});");
+                var orderId = await db.Database.SqlQuery<int>($"SELECT Id AS Value FROM OrdenesEntrega WHERE ClienteAppId={order.ClienteAppId} AND NumeroOrdenA={order.NumeroOrdenA}").SingleAsync();
+                foreach (var code in order.Codigos)
+                    await db.Database.ExecuteSqlInterpolatedAsync($@"INSERT INTO CodigosEntrega
+                        (ClienteAppId,OrdenEntregaId,Tipo,Codigo,Usado,Reservado,CreatedAt)
+                        VALUES ({code.ClienteAppId},{orderId},{(int)code.Tipo},{code.Codigo},{code.Usado},{code.Reservado},{code.CreatedAt});");
+            }
             var before = await db.ClientesApp.AsNoTracking().OrderBy(x => x.Id)
                 .Select(x => new { x.Id, x.PlanId, x.Estado, x.OrdenSeq, x.GestorIdentityUserId }).ToListAsync();
             var shops = await db.Tiendas.AsNoTracking().OrderBy(x => x.Id).Select(x => new { x.Id, x.ClienteAppId, x.Activo }).ToListAsync();
