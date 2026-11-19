@@ -2,9 +2,13 @@
 
 ## Agente de despliegue: empezar aquí
 
-**Entrega actual: [Envirapido 2.1, reasignación y logos](DESPLEGAR-ENVIRAPIDO-2.1.md).**
-Esta entrega actualiza el CRM, sus vistas y el cliente móvil de su repositorio
-separado. **Requiere la migración operativa del SQL CRM**, conservando pedidos,
+**Correccion posterior a la QA del APK 10: [GPS y HTTP/HTTPS](DESPLEGAR-GPS-HTTPS.md).**
+Aplicar sobre 2.1: corrige GPS por paradas y prepara la regla HTTPS de la portada;
+no requiere otra migracion ni recompilar el APK. El despliegue y la QA publica posterior estan pendientes.
+
+**Entrega base: [Envirapido 2.1, reasignación y logos](DESPLEGAR-ENVIRAPIDO-2.1.md).**
+La entrega base 2.1 actualizó el CRM, sus vistas y el cliente móvil de su repositorio
+separado. **Su instalación inicial requiere la migración operativa del SQL CRM**, conservando pedidos,
 rutas, códigos y tenants. No aplicar esa migración al SQL del portal.
 
 El APK firmado 2.1.0 (10) se entrega al propietario para subirlo al portal con

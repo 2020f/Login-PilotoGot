@@ -1,3 +1,4 @@
+using Login.Domain.Entities;
 using Login.Domain.Enums;
 using Login.Domain.Operations;
 using Microsoft.EntityFrameworkCore;
@@ -6,12 +7,25 @@ namespace Login.Application.Operations;
 
 public sealed partial class EnvirapidoOperationsService
 {
+    private Task<bool> TieneActividadGpsAsync(OperationsActor a)
+    {
+        if (!a.EsPiloto) return Task.FromResult(false);
+        // La cabecera puede quedar sin piloto al repartir. La custodia persiste
+        // incluso en una cancelacion hasta que el receptor recibe el paquete.
+        return db.OrdenesEntrega.AsNoTracking().AnyAsync(o => o.ClienteAppId == a.TenantId
+            && (o.GestionPorParadas
+                ? o.Paradas.Any(p => p.ClienteAppId == a.TenantId
+                    && ((!EstadosEntrega.ParadasTerminales.Contains(p.Estado) && p.PilotoAsignadoId == a.PilotoId)
+                        || (p.PilotoCustodioId == a.PilotoId && p.Estado != EstadoParadaEntrega.Entregada && p.Estado != EstadoParadaEntrega.Devuelta)))
+                : o.PilotoId == a.PilotoId && !EstadosEntrega.Terminales.Contains(o.Estado)
+                    && (o.Estado == EstadoOrden.Asignada || o.RecolectadaAt != null)));
+    }
+
     public async Task<OperationsActivity> ActividadAsync(OperationsActor a)
     {
         if (!a.EsPiloto) throw new OperationsException(403, "La actividad pertenece al piloto autenticado.");
         await EnsureActorAsync(a);
-        var active = await db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == a.TenantId && o.PilotoId == a.PilotoId
-            && !EstadosEntrega.Terminales.Contains(o.Estado) && (o.Estado == EstadoOrden.Asignada || o.RecolectadaAt != null));
+        var active = await TieneActividadGpsAsync(a);
         var lease = Math.Clamp(configuration.GetValue<int?>("Envirapido:GpsAutorizacionSegundos") ?? 120, 60, 900);
         return new(Now, active, active ? Now.AddSeconds(lease) : null, lease);
     }
@@ -102,8 +116,7 @@ public sealed partial class EnvirapidoOperationsService
         return await MutateAsync(a, "Gps", r.OperacionId, r, async () =>
         {
             if (!Guid.TryParse(r.DispositivoId, out var device) || r.Muestras is null || r.Muestras.Count is < 1 or > 100) throw new OperationsException(400, "El lote de ubicación no es válido.");
-            if (!await db.OrdenesEntrega.AnyAsync(o => o.ClienteAppId == a.TenantId && o.PilotoId == a.PilotoId && !EstadosEntrega.Terminales.Contains(o.Estado)
-                    && (o.Estado == EstadoOrden.Asignada || o.RecolectadaAt != null))) throw new OperationsException(403, "No hay una entrega activa que autorice el seguimiento.");
+            if (!await TieneActividadGpsAsync(a)) throw new OperationsException(403, "No hay una entrega activa que autorice el seguimiento.");
             var deviceId = device.ToString("N"); var accepted = 0;
             var pilot = await db.Pilotos.SingleAsync(p => p.Id == a.PilotoId && p.ClienteAppId == a.TenantId);
             if (r.Muestras.Select(m => m.Secuencia).Distinct().Count() != r.Muestras.Count) throw new OperationsException(400, "El lote contiene secuencias repetidas.");

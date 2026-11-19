@@ -1,0 +1,16 @@
+{
+  "ref": "envirapido_http_https_20261119",
+  "description": "Envirapido: HTTP a HTTPS en el borde publico",
+  "expression": "(http.host in {\"envirapido.com\" \"portal.envirapido.com\"} and not ssl)",
+  "action": "redirect",
+  "action_parameters": {
+    "from_value": {
+      "status_code": 308,
+      "target_url": {
+        "expression": "concat(\"https://\", http.host, raw.http.request.uri.path)"
+      },
+      "preserve_query_string": true
+    }
+  },
+  "enabled": true
+}

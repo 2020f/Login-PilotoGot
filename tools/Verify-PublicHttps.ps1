@@ -5,6 +5,7 @@ param(
     [ValidateSet('CrmRedirect','Marketing')][string]$RootMode = 'CrmRedirect'
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'PublicHttpsChecks.ps1')
 if ($BaseUrl.Scheme -ne 'https' -or $BaseUrl.UserInfo -or $BaseUrl.Query -or $BaseUrl.Fragment) {
     throw 'La comprobación requiere un origen HTTPS sin credenciales, consulta ni fragmento.'
 }
@@ -47,10 +48,21 @@ try {
     # GET anonimos, sin seguir Location ni enviar cookies o credenciales.
     # La consulta es fija y ficticia: permite comprobar su conservacion sin
     # registrar valores de consultas, cookies o cabeceras de autenticacion.
-    $httpProbePaths = @('/', '/Identity/Account/Login?ReturnUrl=%2FOperaciones%3Ftab%3Dmonitoreo')
-    $httpRedirects = @($httpProbePaths | ForEach-Object {
-        $httpRequestUri = [uri]::new([uri]($httpOrigin + '/'), $_)
-        $httpResponse = $client.GetAsync($httpRequestUri).GetAwaiter().GetResult()
+    $httpProbes = @(
+        @{ Path='/'; SpoofForwardedProto=$false },
+        @{ Path='/?qa_https_probe=env%2Frapido%20test'; SpoofForwardedProto=$false },
+        @{ Path='/planes?qa_https_probe=env%2Frapido'; SpoofForwardedProto=$false },
+        @{ Path='/funciones%2Fqa?qa_https_probe=1'; SpoofForwardedProto=$false },
+        @{ Path='/Identity/Account/Login?ReturnUrl=%2FOperaciones%3Ftab%3Dmonitoreo'; SpoofForwardedProto=$false },
+        @{ Path='/api/piloto/capacidades?qa_https_probe=1'; SpoofForwardedProto=$false },
+        @{ Path='/'; SpoofForwardedProto=$true }
+    )
+    $httpRedirects = @($httpProbes | ForEach-Object {
+        $httpProbe = $_
+        $httpRequestUri = [uri]::new([uri]($httpOrigin + '/'), $httpProbe.Path)
+        $httpRequest = [Net.Http.HttpRequestMessage]::new([Net.Http.HttpMethod]::Get, $httpRequestUri)
+        if ($httpProbe.SpoofForwardedProto) { $httpRequest.Headers.Add('X-Forwarded-Proto', 'https') }
+        $httpResponse = $client.SendAsync($httpRequest).GetAwaiter().GetResult()
         try {
             $httpLocation = $httpResponse.Headers.Location
             $httpDestination = if ($httpLocation) { [uri]::new($httpRequestUri, $httpLocation) } else { $null }
@@ -64,6 +76,8 @@ try {
             [pscustomobject]@{
                 path = $httpRequestUri.AbsolutePath
                 hasProbeQuery = ![string]::IsNullOrEmpty($httpRequestUri.Query)
+                spoofedForwardedProto = [bool]$httpProbe.SpoofForwardedProto
+                methodPreserving = [int]$httpResponse.StatusCode -in @(307, 308)
                 status = [int]$httpResponse.StatusCode
                 targetScheme = if ($httpDestination) { $httpDestination.Scheme } else { $null }
                 targetHost = if ($httpDestination) { $httpDestination.Host } else { $null }
@@ -74,12 +88,14 @@ try {
                 passed = [bool]($acceptedStatus -and $sameHost -and $https443 -and $preservesPathAndQuery)
             }
         }
-        finally { $httpResponse.Dispose() }
+        finally { $httpResponse.Dispose(); $httpRequest.Dispose() }
     })
+    $httpChecks = Get-EnvirapidoHttpRedirectChecks -Probes $httpProbes -Redirects $httpRedirects
     $antiforgery = @($cookies | Where-Object name -like '*Antiforgery*')
     $checks = [ordered]@{
-        httpToHttpsSameHost443PreservesPathQuery = $httpRedirects.Count -eq $httpProbePaths.Count -and
-            @($httpRedirects | Where-Object { !$_.passed }).Count -eq 0
+        httpToHttpsSameHost443PreservesPathQuery = $httpChecks.httpToHttpsSameHost443PreservesPathQuery
+        httpRedirectsPreserveMethod = $httpChecks.httpRedirectsPreserveMethod
+        spoofedForwardedProtoCannotBypassRedirect = $httpChecks.spoofedForwardedProtoCannotBypassRedirect
         rootMatchesExpectedMode = if ($RootMode -eq 'Marketing') {
             [int]$root.StatusCode -eq 200 -and !$location -and
                 $root.Content.Headers.ContentType.MediaType -eq 'text/html' -and $rootHtml -match 'Envirapido'

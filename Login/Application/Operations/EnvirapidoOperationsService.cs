@@ -169,10 +169,7 @@ public sealed partial class EnvirapidoOperationsService(ApplicationDbContext db,
         var configs = await db.ReglasIncidencia.AsNoTracking().Where(r => r.ClienteAppId == tenant).ToListAsync();
         var financeRules = a.EsPiloto ? [] : await db.ReglasRemuneracion.AsNoTracking().Where(r => r.ClienteAppId == tenant).ToListAsync();
         var data = await db.DatosEnviosOperativos.AsNoTracking().Where(d => d.ClienteAppId == tenant && (!a.EsPiloto || orderIds.Contains(d.OrdenEntregaId))).ToListAsync();
-        var active = a.EsPiloto && orders.Any(o => o.GestionPorParadas
-            ? o.Paradas.Any(p => (!EstadosEntrega.ParadasTerminales.Contains(p.Estado) && p.PilotoAsignadoId == a.PilotoId)
-                || (p.PilotoCustodioId == a.PilotoId && p.Estado is not (EstadoParadaEntrega.Entregada or EstadoParadaEntrega.Devuelta)))
-            : !EstadosEntrega.Terminales.Contains(o.Estado) && (o.RecolectadaAt.HasValue || o.Estado == EstadoOrden.Asignada));
+        var active = await TieneActividadGpsAsync(a);
         var lease = Math.Clamp(configuration.GetValue<int?>("Envirapido:GpsAutorizacionSegundos") ?? 120, 60, 900);
         var events = a.EsPiloto ? [] : await db.EventosOperativos.AsNoTracking().Where(e => e.ClienteAppId == tenant
                 && (!from.HasValue || e.CreatedAt >= from.Value) && (!until.HasValue || e.CreatedAt < until.Value))
