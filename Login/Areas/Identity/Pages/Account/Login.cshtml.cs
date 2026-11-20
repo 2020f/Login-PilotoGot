@@ -46,7 +46,7 @@ namespace Login.Areas.Identity.Pages.Account
             [DataType(DataType.Password)]
             public string Password { get; set; } = "";
 
-            [Display(Name = "Remember me?")]
+            [Display(Name = "Recordar sesión")]
             public bool RememberMe { get; set; }
         }
 
@@ -92,7 +92,7 @@ namespace Login.Areas.Identity.Pages.Account
                 user.UserName!,
                 Input.Password,
                 Input.RememberMe,
-                lockoutOnFailure: false);
+                lockoutOnFailure: true);
 
             if (result.Succeeded)
             {
@@ -104,7 +104,7 @@ namespace Login.Areas.Identity.Pages.Account
 
                 if (await _userManager.IsInRoleAsync(user, "Gestor"))
                     // ✅ Interfaz principal del gestor: ver órdenes y asignar pilotos
-                    return LocalRedirect("/Supervisor/Ordenes");
+                    return LocalRedirect("/Operaciones");
 
                 if (await _userManager.IsInRoleAsync(user, "Cliente"))
                     return LocalRedirect("/Tienda/Ordenes");

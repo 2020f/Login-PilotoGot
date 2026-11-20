@@ -31,7 +31,7 @@
                 </div>
                 <div class="qr-col-desc">El piloto escanea este QR para iniciar y confirmar la recolección.</div>
                 <div class="qr-img-box">
-                    <img src="/Qr/Generar?codigo=@Model.CodigoB" alt="QR Piloto" />
+                    <img src="@Url.Action("Orden", "Qr", new { ordenId = Model.OrdenId, tiendaId = Model.TiendaId })" alt="QR Piloto" />
                     <div class="qr-code-val">@Model.CodigoB</div>
                 </div>
             </div>
@@ -44,16 +44,28 @@
                     </svg>
                     C — Cliente
                 </div>
-                <div class="qr-col-desc">Entregar este código al destinatario para confirmar la entrega.</div>
+                <div class="qr-col-desc">@(Model.Paradas.Count > 1 ? "Entrega a cada destinatario únicamente el C de su parada." : "Entregar este código al destinatario para confirmar la entrega.")</div>
+                @if (Model.Paradas.Count > 1)
+                {
+                    <div style="display:grid;gap:10px;max-height:320px;overflow:auto">
+                    @foreach(var parada in Model.Paradas)
+                    {
+                        <div class="qr-code-box"><strong>Parada @parada.Posicion · @parada.Nombre</strong><div style="font-size:11px;margin:5px 0">@parada.Direccion</div><div class="qr-code-val">@parada.CodigoC</div><div class="qr-code-hint">C individual · @parada.Estado</div></div>
+                    }
+                    </div>
+                }
+                else
+                {
                 <div class="qr-code-box">
                     <div class="qr-code-val">@Model.CodigoC</div>
                     <div class="qr-code-hint">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                             <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                         </svg>
-                        Código de confirmación de esta orden
+                        Código de confirmación de esta entrega
                     </div>
                 </div>
+                }
             </div>
         </div>
 

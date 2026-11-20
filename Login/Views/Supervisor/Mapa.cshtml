@@ -60,16 +60,17 @@
                         <div class="pg-mapa-card-sub">Estado en vivo de la flota</div>
                     </div>
                 </div>
-                <div class="pg-pilotos-list">
+                <div class="pg-pilotos-list" id="pgPilotosList">
                     @foreach (var p in Model.Pilotos)
                     {
                         var estadoClase = p.EstadoNum == 1 ? "disponible" : p.EstadoNum == 2 ? "ocupado" : "inactivo";
-                        <div class="pg-piloto-row">
+                        <div class="pg-piloto-row" data-map-pilot="@p.Id">
                             <div class="pg-piloto-row-info">
                                 <span class="pg-dot-estado @estadoClase"></span>
                                 <div>
                                     <div class="pg-piloto-row-name">@p.Nombre</div>
-                                    <div class="pg-piloto-row-estado">@p.Estado</div>
+                                    <div class="pg-piloto-row-estado" data-map-status>@p.Estado · @p.OrdenesActivas entregas · @(p.EnLinea ? "Recibe ofertas" : "Recepción automática pausada")</div>
+                                    <div data-map-gps>@(p.GpsVigente ? "GPS actualizado" : "GPS sin actualizar")</div>
                                 </div>
                             </div>
                             @if (p.Latitud.HasValue && p.Longitud.HasValue)
@@ -103,6 +104,7 @@
                     Agrega tu API key en <code>appsettings.json</code> → <code>GoogleMaps:ApiKey</code>.
                 </div>
             }
+            <p id="pgMapSync" role="status" style="padding:8px;">Ubicaciones de más de un minuto se muestran como vencidas.</p>
             <div id="pgMap" style="width:100%;height:100%;min-height:420px;"></div>
         </div>
 
@@ -131,7 +133,7 @@
             var motoIcon = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(MOTO_SVG);
 
             function initMap() {
-                if (!window.google || !window.google.maps) return;
+                if (map || !window.google || !window.google.maps) return;
                 map = new google.maps.Map(document.getElementById("pgMap"), {
                     center: { lat: 18.4812, lng: -69.9000 },
                     zoom: 12,
@@ -140,21 +142,53 @@
                     fullscreenControl: true
                 });
                 cargarPilotos();
-                setInterval(cargarPilotos, 5000);
+                schedule();
             }
 
+            var inFlight = false, timer;
+            function schedule() { clearTimeout(timer); if (!document.hidden) timer = setTimeout(cargarPilotos, 5000); }
             function cargarPilotos() {
-                fetch("/Supervisor/MapaData")
-                    .then(function (r) { return r.json(); })
+                if (inFlight || document.hidden) return;
+                inFlight = true;
+                var request = new AbortController();
+                var timeout = setTimeout(function () { request.abort(); }, 20000);
+                fetch("/Supervisor/MapaData", { credentials: "same-origin", cache: "no-store", signal: request.signal })
+                    .then(function (r) { if (!r.ok || r.redirected) throw new Error("No se pudo actualizar el seguimiento."); return r.json(); })
                     .then(function (pilotos) {
                         if (!map) return;
+                        var list = document.getElementById("pgPilotosList");
+                        var fragment = document.createDocumentFragment();
+                        pilotos.forEach(function (p) {
+                            var row = document.createElement("div"); row.className = "pg-piloto-row"; row.dataset.mapPilot = p.id;
+                            var info = document.createElement("div"); info.className = "pg-piloto-row-info";
+                            var texts = document.createElement("div");
+                            var name = document.createElement("div"); name.className = "pg-piloto-row-name"; name.textContent = p.nombre;
+                            var state = document.createElement("div"); state.dataset.mapStatus = ""; state.textContent = p.estado;
+                            var gps = document.createElement("div"); gps.dataset.mapGps = "";
+                            texts.append(name, state, gps); info.append(texts); row.append(info);
+                            if (p.latitud != null && p.longitud != null) {
+                                var center = document.createElement("button"); center.type = "button"; center.className = "pg-btn pg-btn-ghost pg-btn-sm";
+                                center.textContent = "Centrar"; center.dataset.lat = p.latitud; center.dataset.lng = p.longitud;
+                                center.addEventListener("click", function () { window.centrarPiloto(center); }); row.append(center);
+                            }
+                            fragment.append(row);
+                        });
+                        list.replaceChildren(fragment);
                         var vistos = {};
                         pilotos.forEach(function (p) {
-                            if (p.latitud == null || p.longitud == null) return;
+                            var row = document.querySelector('[data-map-pilot="' + p.id + '"]');
+                            if (row) {
+                                row.querySelector("[data-map-status]").textContent = p.estado + " · " + p.ordenesActivas + " entregas · " + (p.enLinea ? "Recibe ofertas" : "Recepción automática pausada");
+                                row.querySelector("[data-map-gps]").textContent = p.edadGpsSegundos == null ? "Sin ubicación" : (p.gpsVigente ? "GPS hace " : "GPS vencido · hace ") + Math.round(p.edadGpsSegundos) + " s";
+                                var center = row.querySelector("[data-lat]");
+                                if (center) { center.dataset.lat = p.latitud; center.dataset.lng = p.longitud; center.disabled = !p.gpsVigente; }
+                            }
+                            if (p.latitud == null || p.longitud == null || !p.activo) return;
                             vistos[p.id] = true;
                             var pos = { lat: p.latitud, lng: p.longitud };
                             if (markers[p.id]) {
                                 markers[p.id].setPosition(pos);
+                                markers[p.id].setTitle(p.nombre + " (" + p.estado + ")");
                             } else {
                                 markers[p.id] = new google.maps.Marker({
                                     position: pos,
@@ -163,7 +197,9 @@
                                     title: p.nombre + " (" + p.estado + ")"
                                 });
                             }
+                            markers[p.id].setOpacity(p.gpsVigente ? 1 : 0.35);
                         });
+                        document.getElementById("pgMapSync").textContent = "Seguimiento actualizado. Las ubicaciones vencidas se atenúan.";
                         for (var id in markers) {
                             if (!vistos[id]) {
                                 markers[id].setMap(null);
@@ -171,9 +207,11 @@
                             }
                         }
                     })
-                    .catch(function () { /* silencioso */ });
+                    .catch(function () { Object.values(markers).forEach(function (m) { m.setOpacity(0.35); }); document.getElementById("pgMapSync").textContent = "Seguimiento sin conexión; las ubicaciones pueden estar vencidas. Se reintentará."; })
+                    .finally(function () { clearTimeout(timeout); inFlight = false; schedule(); });
             }
 
+            document.addEventListener("visibilitychange", function () { clearTimeout(timer); if (!document.hidden) cargarPilotos(); });
             window.centrarPiloto = function (btn) {
                 if (!map) return;
                 var lat = parseFloat(btn.getAttribute("data-lat"));

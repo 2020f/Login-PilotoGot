@@ -1,0 +1,22 @@
+[
+  {
+    "file": "public/branding/logo-original.png",
+    "sha256": "da5a8a891d3b5a4a49b78453eebb7d0bf666ac201ba545b7ba5a4cad96f66bb9",
+    "originalBytesPreserved": true
+  },
+  {
+    "file": "public/branding/simbolo-caja.png",
+    "sha256": "2c44c43a78cba4c654a7ca187c7bd9f92bbc7b869cca6d4c8e028d13dd714dd1",
+    "originalBytesPreserved": true
+  },
+  {
+    "file": "public/illustrations/ultima-milla-ciudad.png",
+    "sha256": "b88b5e48d9651be66e8f2227f7a765f0e93f50c41e4e1daf0d4cbe5f607deaff",
+    "originalBytesPreserved": true
+  },
+  {
+    "file": "public/illustrations/operacion-conectada.png",
+    "sha256": "d2260a6c52dcee942cc912644a2c9c78a56860b1e519f74d9fb4dd0bda7e7862",
+    "originalBytesPreserved": true
+  }
+]

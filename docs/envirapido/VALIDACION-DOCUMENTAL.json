@@ -1,0 +1,17 @@
+{
+  "fecha": "2026-11-11",
+  "tipo": "Validacion documental, no pruebas de software",
+  "markdownFiles": 5,
+  "localLinksChecked": 52,
+  "imagesHashVerified": 6,
+  "catalogViewGroups": 45,
+  "plannedFunctionalScenarios": 50,
+  "plannedPhysicalGPSScenarios": 8,
+  "crossReview": "Corregido T08: C intermedia no presupone devengo por parada si la regla remunera ruta o servicio",
+  "softwareTestsExecuted": false,
+  "databaseModified": false,
+  "sourceCodeModified": false,
+  "published": false,
+  "failures": [],
+  "passed": true
+}

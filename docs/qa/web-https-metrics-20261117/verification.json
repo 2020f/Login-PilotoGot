@@ -1,0 +1,129 @@
+{
+  "checkedUtc": "2026-11-17T01:06:26.2102838-04:00",
+  "scope": "LOCAL_QA_PASSED_AWAITING_DEPLOYMENT",
+  "baseCommit": "88bd6fac79c1cd35ea0a5ba26f468efa48622e08",
+  "branch": "codex/confiabilidad-panel-app",
+  "runtime": {
+    "dotnet": "10.0.15",
+    "aspnetCore": "10.0.15",
+    "privateQaRuntime": true
+  },
+  "database": {
+    "provider": "SQL Server LocalDB",
+    "instance": "PilotGoVisualQA_20261111",
+    "names": "PilotGoTest_<GUID>",
+    "productionDatabaseUsed": false
+  },
+  "fullSuite": {
+    "total": 302,
+    "executed": 302,
+    "passed": 302,
+    "failed": 0,
+    "skipped": 0,
+    "start": "2026-11-17T00:57:01.0801351-04:00",
+    "finish": "2026-11-17T01:04:47.1768514-04:00",
+    "trxSha256": "b0e272d8f960210f87f89cf08495d244937575d5478c8f3af1d45224dce8b6b0"
+  },
+  "releaseBuild": {
+    "configuration": "Release",
+    "solution": "Login.sln",
+    "exitCode": 0,
+    "errors": 0,
+    "warnings": 26,
+    "newSourceWarnings": 0,
+    "logSha256": "71859e537ed9bb89068f66ab0adc18ce81aa769d071fd3c55de4055bd071daad"
+  },
+  "sourceGitBlobs": {
+    "Login/Configuration/TransportSecurity.cs": "0b5bc88f3f118d11d2dded9b3c18d0a4012d0a6d",
+    "Login/Program.cs": "578c212561094e20dd58af97a0b9f02d94456a37",
+    "Login/Views/Envirapido/_Metricas.cshtml": "ccb7bc069a1c8f4769ac823de2a0a8350eee897f",
+    "Login.Tests/HttpsEnforcementTests.cs": "f47bb224dc7cdd7d3501ae2ffbbf3c38375383f8",
+    "Login.Tests/LiveOrderMetricsTests.cs": "49a2a363f09e35d3246da35aaa6273c3fa7eab80",
+    "tools/Verify-PublicHttps.ps1": "c412aeccfa2f8fc4859c6e5cb8465d5562c7ae6f"
+  },
+  "existingOrdersRoutesApiDomainAndMigrationsSourceUnchanged": true,
+  "mobileSourceCommitUnchanged": "cd96b205da886627452cf5dc2cbec4b940bf6b93",
+  "mobileRebuildRequired": false,
+  "sqlMigrationRequired": false,
+  "browserJavascriptExecuted": false,
+  "publicAnonymousBaseline": [
+    {
+      "checkedUtc": "2026-11-17T04:57:31.0940207+00:00",
+      "origin": "https://envirapido.com",
+      "checks": {
+        "httpToHttpsSameHost443PreservesPathQuery": false,
+        "rootRedirectRemainsHttps": true,
+        "loginAvailable": true,
+        "antiforgerySecureHttpOnly": true,
+        "allNewCookiesSecureHttpOnly": true,
+        "anonymousApi401Json": true
+      },
+      "httpRedirects": [
+        {
+          "path": "/",
+          "hasProbeQuery": false,
+          "status": 302,
+          "targetScheme": "http",
+          "targetHost": "envirapido.com",
+          "targetPort": 80,
+          "sameHost": true,
+          "https443": false,
+          "preservesPathAndQuery": false,
+          "passed": false
+        },
+        {
+          "path": "/Identity/Account/Login",
+          "hasProbeQuery": true,
+          "status": 500,
+          "targetScheme": null,
+          "targetHost": null,
+          "targetPort": null,
+          "sameHost": false,
+          "https443": false,
+          "preservesPathAndQuery": false,
+          "passed": false
+        }
+      ]
+    },
+    {
+      "checkedUtc": "2026-11-17T04:57:34.5162184+00:00",
+      "origin": "https://pilotogoapp.zapflow77.dpdns.org",
+      "checks": {
+        "httpToHttpsSameHost443PreservesPathQuery": false,
+        "rootRedirectRemainsHttps": true,
+        "loginAvailable": true,
+        "antiforgerySecureHttpOnly": true,
+        "allNewCookiesSecureHttpOnly": true,
+        "anonymousApi401Json": true
+      },
+      "httpRedirects": [
+        {
+          "path": "/",
+          "hasProbeQuery": false,
+          "status": 302,
+          "targetScheme": "http",
+          "targetHost": "pilotogoapp.zapflow77.dpdns.org",
+          "targetPort": 80,
+          "sameHost": true,
+          "https443": false,
+          "preservesPathAndQuery": false,
+          "passed": false
+        },
+        {
+          "path": "/Identity/Account/Login",
+          "hasProbeQuery": true,
+          "status": 500,
+          "targetScheme": null,
+          "targetHost": null,
+          "targetPort": null,
+          "sameHost": false,
+          "https443": false,
+          "preservesPathAndQuery": false,
+          "passed": false
+        }
+      ]
+    }
+  ],
+  "newCommitDeployedToProduction": false,
+  "postDeploymentValidationPending": true
+}

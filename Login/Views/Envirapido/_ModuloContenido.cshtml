@@ -1,0 +1,15 @@
+@model Login.ViewModels.Envirapido.OperationsPageVm
+@using System.Text.Json
+<div class="ev-updated" data-ev-freshness>Actualizado ahora</div>
+@await Html.PartialAsync("_CoberturaConsulta",Model)
+@if(Model.Tab=="Historial"){@await Html.PartialAsync("_AuditoriaEventos",Model)}
+@if(Model.Seccion=="Rutas y zonas"){@await Html.PartialAsync("_Rutas",Model)}
+else if(Model.Seccion=="Incidencias"){@await Html.PartialAsync("_Incidencias",Model)}
+else if(Model.Seccion=="Liquidaciones"){@await Html.PartialAsync("_Liquidaciones",Model)}
+else if(Model.Seccion=="Pedidos"&&Model.Tab=="Devoluciones"){@await Html.PartialAsync("_Devoluciones",Model)}
+else {@await Html.PartialAsync("_Genericas",Model)}
+@await Html.PartialAsync("_ModuleDialogs",Model)
+@await Html.PartialAsync("_RecibirEfectivo",Model)
+<script type="application/json" id="evOperationsSnapshot">@Html.Raw(JsonSerializer.Serialize(Model.Datos,EnvirapidoJsonOptions.Value.JsonSerializerOptions))</script>
+<script type="application/json" id="evModuleCore">@Html.Raw(JsonSerializer.Serialize(new{pedidos=Model.Operacion.Pedidos,flota=Model.Operacion.Flota,ordenId=Model.OrdenId,paradaId=Model.ParadaId,rutaId=Model.RutaId},EnvirapidoJsonOptions.Value.JsonSerializerOptions))</script>
+<script type="application/json" id="evReturns">@Html.Raw(JsonSerializer.Serialize(Model.Devoluciones,EnvirapidoJsonOptions.Value.JsonSerializerOptions))</script>

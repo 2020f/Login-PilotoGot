@@ -1,47 +1,33 @@
-﻿@model Login.ViewModels.Tienda.SeleccionarTiendaVm
+@model Login.ViewModels.Tienda.SeleccionarTiendaVm
 @{
-    ViewData["Title"] = "Seleccionar Tienda";
+    ViewData["Title"] = "Seleccionar tienda";
+    ViewData["PageTitle"] = "Seleccionar tienda";
     Layout = "_LayoutTienda";
-
-
 }
-
-<div class="container d-flex justify-content-center align-items-center" style="min-height:80vh;">
-    <div class="card shadow-sm border-0" style="max-width:520px; width:100%;">
-        <div class="card-body text-center p-4">
-
-            <div class="mb-3">
-                <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size:48px;"></i>
-            </div>
-
-            <h4 class="fw-bold mb-2">Acceso no disponible</h4>
-
-            <p class="text-muted mb-3">
-                Esta cuenta o tienda se encuentra <strong>inactiva</strong> en este momento.
-            </p>
-
-            <p class="text-muted mb-4" style="font-size:15px;">
-                Para continuar utilizando la plataforma, por favor comunícate con tu proveedor
-                de servicio o con el administrador responsable de tu cuenta.
-            </p>
-
-            <div class="d-grid gap-2">
-                <a href="mailto:soporte@tuprovedor.com" class="btn btn-primary">
-                    Contactar soporte
-                </a>
-
-                <a asp-area="Identity"
-                   asp-page="/Account/Login"
-                   class="btn btn-outline-secondary">
-                    Volver al inicio de sesión
-                </a>
-            </div>
-
-            <hr class="my-4">
-
-            <small class="text-muted">
-                Si crees que esto es un error, verifica tu estado con el proveedor del servicio.
-            </small>
-        </div>
-    </div>
+<div class="tp-page tp-form-page">
+    <section class="tp-card tp-card-pad tp-form-center">
+        @if (!string.IsNullOrWhiteSpace(Model.Ok)) { <div class="tp-alert tp-alert-ok" role="status">@Model.Ok</div> }
+        @if (!string.IsNullOrWhiteSpace(Model.Error)) { <div class="tp-alert tp-alert-bad" role="alert">@Model.Error</div> }
+        @if (Model.Tiendas.Count > 0)
+        {
+            <h1 class="tp-card-title">Seleccionar tienda</h1>
+            <p class="tp-card-sub">Elige el comercio con el que deseas trabajar.</p>
+            <form asp-action="SeleccionarTienda" method="post">
+                <div class="tp-field">
+                    <label for="tiendaId" class="tp-label">Tienda activa</label>
+                    <select id="tiendaId" name="tiendaId" class="tp-select" required>
+                        <option value="">Selecciona una tienda</option>
+                        @foreach (var tienda in Model.Tiendas) { <option value="@tienda.Value">@tienda.Text</option> }
+                    </select>
+                </div>
+                <div class="tp-form-foot"><button type="submit" class="tp-btn tp-btn-primary">Continuar</button></div>
+            </form>
+        }
+        else
+        {
+            <h1 class="tp-card-title">Acceso no disponible</h1>
+            <p class="tp-card-sub">No tienes tiendas activas disponibles. Comunícate con el administrador responsable de tu cuenta para revisar el acceso.</p>
+            <a asp-area="Identity" asp-page="/Account/Login" class="tp-btn tp-btn-outline">Volver al inicio de sesión</a>
+        }
+    </section>
 </div>

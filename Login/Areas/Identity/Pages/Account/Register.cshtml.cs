@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
+using Login.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -123,20 +124,26 @@ namespace Login.Areas.Identity.Pages.Account
                     _logger.LogInformation("User created a new account with password.");
 
                     var userId = await _userManager.GetUserIdAsync(user);
-                    var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                    code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-                    var callbackUrl = Url.Page(
-                        "/Account/ConfirmEmail",
-                        pageHandler: null,
-                        values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
-                        protocol: Request.Scheme);
-
-                    await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-                        $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                    var correoDisponible = _emailSender is not IAccountEmailSender configured || configured.IsConfigured;
+                    if (correoDisponible)
+                    {
+                        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+                        var path = Url.Page("/Account/ConfirmEmail", pageHandler: null,
+                            values: new { area = "Identity", userId, code });
+                        var callbackUrl = _emailSender is IAccountEmailSender { PublicBaseUri: not null } accountMail
+                            ? new Uri(accountMail.PublicBaseUri, path).AbsoluteUri : path;
+                        try
+                        {
+                            await _emailSender.SendEmailAsync(Input.Email, "Confirmar correo de Envirapido",
+                                $"<p>Confirma tu correo en <a href=\"{HtmlEncoder.Default.Encode(callbackUrl)}\">Envirapido</a>.</p>");
+                        }
+                        catch (AccountEmailDeliveryException) { correoDisponible = false; }
+                    }
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {
-                        return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
+                        return RedirectToPage("RegisterConfirmation");
                     }
                     else
                     {

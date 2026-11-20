@@ -1,46 +1,22 @@
-﻿@{
-    var controller = (ViewContext.RouteData.Values["controller"]?.ToString() ?? "").ToLower();
-    var action = (ViewContext.RouteData.Values["action"]?.ToString() ?? "").ToLower();
-
-    string Active(string c, string a = "")
-    {
-        var cc = c.ToLower();
-        var aa = a.ToLower();
-        if (controller == cc && (string.IsNullOrWhiteSpace(aa) || action == aa)) return "active";
-        return "";
-    }
+@{
+    var action = (ViewContext.RouteData.Values["action"]?.ToString() ?? "").ToLowerInvariant();
+    string Active(params string[] actions) => actions.Any(a => a.Equals(action, StringComparison.OrdinalIgnoreCase)) ? "active" : "";
 }
-
-<div class="sa-brand">
-    <div class="sa-brand-logo">✈️</div>
-    <div class="sa-brand-name">
-        <span class="sa-brand-title">PilotGo</span>
-        <span class="sa-badge">SUPER</span>
-    </div>
-</div>
-
-<nav class="sa-nav">
-    <a class="sa-nav-item @Active("SuperAdmin","Dashboard")" href="/SuperAdmin/Dashboard">
-        <span class="sa-ico">▦</span><span>Dashboard</span>
-    </a>
-
-    <div class="sa-nav-section">GESTIÓN SAAS</div>
-
-    <a class="sa-nav-item @Active("SuperAdmin","Clientes")" href="/SuperAdmin/Clientes">
-        <span class="sa-ico">🏢</span><span>Clientes (Empresas)</span>
-    </a>
-
-    <a class="sa-nav-item @Active("SuperAdmin","Planes")" href="/SuperAdmin/Planes">
-        <span class="sa-ico">🎫</span><span>Planes y Suscripciones</span>
-    </a>
-
-    <div class="sa-nav-section">SISTEMA</div>
-
-    <a class="sa-nav-item @Active("SuperAdmin","Finanzas")" href="/SuperAdmin/Finanzas">
-        <span class="sa-ico">💳</span><span>Finanzas</span>
-    </a>
-
-    <a class="sa-nav-item @Active("SuperAdmin","Auditoria")" href="/SuperAdmin/Auditoria">
-        <span class="sa-ico">🕒</span><span>Auditoría Global</span>
-    </a>
+<a class="sa-brand envi-brand" href="/SuperAdmin/Dashboard" aria-label="Envirapido, resumen de plataforma">
+    <img class="envi-brand-logo" src="~/branding/logo-original.png" asp-append-version="true" alt="Envirapido" width="214" height="74" />
+    <span class="sa-brand-caption">Administración de plataforma</span>
+</a>
+<div class="sa-scope"><span class="sa-live-dot" aria-hidden="true"></span> Plataforma global <span class="sa-badge">SAAS</span></div>
+<nav class="sa-nav" aria-label="Administración de plataforma">
+    <a class="sa-nav-item @Active("Dashboard")" href="/SuperAdmin/Dashboard"><span class="sa-ico" aria-hidden="true">▦</span><span>Resumen</span></a>
+    <div class="sa-nav-section">GESTIÓN DEL SAAS</div>
+    <a class="sa-nav-item @Active("Clientes", "DetalleCliente", "CrearCliente", "EditarCliente", "CrearGestor")" href="/SuperAdmin/Clientes"><span class="sa-ico" aria-hidden="true">▤</span><span>Empresas</span></a>
+    <a class="sa-nav-item @Active("Planes", "CrearPlan", "EditarPlan")" href="/SuperAdmin/Planes"><span class="sa-ico" aria-hidden="true">◇</span><span>Planes y límites</span></a>
+    <a class="sa-nav-item @Active("Facturacion", "Factura", "CrearFactura", "RegistrarPago")" href="/SuperAdmin/Facturacion"><span class="sa-ico" aria-hidden="true">▣</span><span>Facturación y pagos</span></a>
+    <a class="sa-nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "PortalComercial" ? "active" : "")" href="/SuperAdmin/Portal"><span class="sa-ico" aria-hidden="true">▧</span><span>Portal comercial</span></a>
+    <div class="sa-nav-section">CONTROL Y SEGURIDAD</div>
+    <a class="sa-nav-item @Active("Accesos")" href="/SuperAdmin/Accesos"><span class="sa-ico" aria-hidden="true">♙</span><span>Accesos y sesiones</span></a>
+    <a class="sa-nav-item @Active("Auditoria")" href="/SuperAdmin/Auditoria"><span class="sa-ico" aria-hidden="true">≡</span><span>Auditoría</span></a>
+    <a class="sa-nav-item @Active("Sistema")" href="/SuperAdmin/Sistema"><span class="sa-ico" aria-hidden="true">◎</span><span>Estado del sistema</span></a>
 </nav>
+<div class="sa-sidebar-note">La administración global gestiona empresas y suscripciones. Cada empresa conserva su operación y sus datos aislados.</div>

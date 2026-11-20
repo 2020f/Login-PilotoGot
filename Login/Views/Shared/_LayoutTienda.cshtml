@@ -1,15 +1,16 @@
 @{
-    var title = ViewData["Title"] as string ?? "PilotGo";
+    var title = ViewData["Title"] as string ?? "Envirapido";
 }
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@title — PilotGo</title>
+    <title>@title — Envirapido</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="~/css/tienda.css" asp-append-version="true" />
+    <partial name="_BrandHead" />
     @RenderSection("Styles", required: false)
 </head>
 <body class="tp-body">

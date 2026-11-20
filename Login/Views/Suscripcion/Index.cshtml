@@ -1,0 +1,94 @@
+@using Login.Application.Services
+@using System.Globalization
+@model Login.ViewModels.SuperAdmin.SuscripcionVm
+@{
+    Layout = "_LayoutEnvirapido";
+    ViewData["Title"] = "Mi suscripción";
+    ViewData["Seccion"] = "Suscripción";
+    var money = CultureInfo.GetCultureInfo("es-DO");
+    var alternatives = Model.Planes.Where(p => p.Id != Model.Empresa.PlanId).ToList();
+    var pending = Model.Solicitudes.Any(r => r.Status == "Pendiente");
+    var ends = Model.Empresa.FechaFinPlan;
+    var expired = Model.Vencida;
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/envirapido-suscripcion.css" asp-append-version="true" />
+}
+<div class="ev-subscription">
+    <div class="ev-page-heading">
+        <div><h1>Mi suscripción</h1><p>@Model.Empresa.NombreComercial · Plan @Model.Empresa.Plan.Nombre</p></div>
+        <span class="ev-badge teal">Cuenta de empresa</span>
+    </div>
+    @if(Model.Ok != null) { <div class="ev-alert green" role="status">@Model.Ok</div> }
+    @if(Model.Error != null) { <div class="ev-alert red" role="alert">@Model.Error</div> }
+    <div class="ev-subscription-metrics">
+        <article class="ev-subscription-card ev-subscription-metric">
+            <span class="ev-subscription-metric-icon" aria-hidden="true"><svg class="ev-icon"><use href="#ev-card"></use></svg></span>
+            <div><span class="ev-subscription-label">Plan actual</span><strong>@Model.Empresa.Plan.Nombre</strong><small>Suscripción de tu empresa</small></div>
+        </article>
+        <article class="ev-subscription-card ev-subscription-metric">
+            <span class="ev-subscription-metric-icon" aria-hidden="true"><svg class="ev-icon"><use href="#ev-chart"></use></svg></span>
+            <div><span class="ev-subscription-label">Mensualidad</span><strong>RD$ @Model.Empresa.Plan.PrecioMensual.ToString("N2", money)</strong><small>Precio mensual del plan</small></div>
+        </article>
+        <article class="ev-subscription-card ev-subscription-metric">
+            <span class="ev-subscription-metric-icon @(expired ? "amber" : "")" aria-hidden="true"><svg class="ev-icon"><use href="#ev-check"></use></svg></span>
+            <div><span class="ev-subscription-label">Fin de cobertura</span><strong>@(ends?.ToString("dd/MM/yyyy") ?? "Sin fecha")</strong><small>@(expired ? "Cobertura vencida" : ends.HasValue ? "Calendario de Santo Domingo" : "Sin fecha histórica registrada")</small></div>
+        </article>
+    </div>
+
+    <div class="ev-subscription-note">
+        <svg class="ev-icon" aria-hidden="true"><use href="#ev-card"></use></svg>
+        <p>Los pagos se realizan fuera de Envirapido y sólo el administrador confirma su recepción. Una solicitud de mejora no genera cargos ni cambia el plan por sí sola.</p>
+    </div>
+
+    <div class="ev-subscription-grid">
+        <section class="ev-subscription-card ev-subscription-section">
+            <div class="ev-subscription-section-heading"><div><h2>Solicitar cambio de plan</h2><p>Elige el plan que necesita tu empresa y explica el cambio.</p></div><span class="ev-badge teal">Revisión administrativa</span></div>
+            @if(pending) {
+                <div class="ev-alert" role="status">Ya tienes una solicitud pendiente de revisión.</div>
+                <p class="ev-subscription-helper">Puedes consultar su estado y la respuesta en Mis solicitudes.</p>
+            } else {
+                <form asp-action="SolicitarPlan" method="post" class="ev-subscription-form">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="clave" value="@Guid.NewGuid().ToString("N")" />
+                    <div class="ev-field"><label for="planId">Nuevo plan</label>
+                        <select id="planId" name="planId" required>
+                            @if(alternatives.Count == 0) { <option value="">No hay otros planes disponibles</option> }
+                            @foreach(var plan in alternatives) {
+                                <option value="@plan.Id">@plan.Nombre · RD$ @plan.PrecioMensual.ToString("N2", money) / mes · @(plan.MaxTiendas == 0 ? "Comercios ilimitados" : $"{plan.MaxTiendas} comercios") · @(plan.MaxPilotos == 0 ? "Pilotos ilimitados" : $"{plan.MaxPilotos} pilotos")</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="ev-field"><label for="motivo">Motivo</label><textarea id="motivo" name="motivo" required maxlength="500" rows="4" placeholder="Cuéntanos qué necesita tu empresa"></textarea><small>Hasta 500 caracteres. El cambio conserva tus órdenes y rutas.</small></div>
+                    <div class="ev-subscription-form-footer"><button type="submit" class="ev-btn primary" disabled="@(alternatives.Count == 0)">Enviar solicitud</button></div>
+                </form>
+            }
+        </section>
+        <aside class="ev-subscription-card ev-subscription-section">
+            <h2>Capacidad del plan</h2><p class="ev-subscription-helper">Límites generales de @Model.Empresa.Plan.Nombre. Las excepciones acordadas para tu empresa pueden modificar su capacidad efectiva.</p>
+            <dl class="ev-subscription-capacity"><dt>Comercios activos</dt><dd>@(Model.Empresa.Plan.MaxTiendas == 0 ? "Ilimitados" : Model.Empresa.Plan.MaxTiendas.ToString("N0"))</dd><dt>Pilotos activos</dt><dd>@(Model.Empresa.Plan.MaxPilotos == 0 ? "Ilimitados" : Model.Empresa.Plan.MaxPilotos.ToString("N0"))</dd><dt>Órdenes por mes</dt><dd>@(Model.Empresa.Plan.MaxOrdenesPorMes == 0 ? "Ilimitadas" : Model.Empresa.Plan.MaxOrdenesPorMes.ToString("N0"))</dd></dl>
+            <div class="ev-subscription-aside-note">La administración revisa la solicitud y valida la capacidad antes de aplicar un cambio de plan.</div>
+        </aside>
+    </div>
+
+    <section class="ev-subscription-card ev-subscription-table-section">
+        <div class="ev-subscription-section-heading"><div><h2>Facturas de mi empresa</h2><p>Consulta períodos, vencimientos y saldos registrados.</p></div><span class="ev-badge">@Model.Facturas.Count facturas</span></div>
+        <div class="ev-subscription-table-scroll" role="region" aria-label="Facturas de mi empresa" tabindex="0"><table class="ev-table"><thead><tr><th>Factura</th><th>Concepto</th><th>Periodo</th><th>Vence</th><th>Importe</th><th>Saldo</th><th>Estado</th></tr></thead><tbody>
+        @foreach(var invoice in Model.Facturas) {
+            var status = SaasBillingService.Status(invoice, Model.Hoy);
+            <tr><td><strong>SaaS-@invoice.Id</strong></td><td>@invoice.Concept</td><td class="ev-subscription-nowrap">@invoice.PeriodStart.ToString("dd/MM/yyyy") – @invoice.PeriodEnd.ToString("dd/MM/yyyy")</td><td>@invoice.DueDate.ToString("dd/MM/yyyy")</td><td class="ev-subscription-money">RD$ @invoice.Amount.ToString("N2", money)</td><td class="ev-subscription-money">@(invoice.VoidedAt == null ? "RD$ " + SaasBillingService.Balance(invoice).ToString("N2", money) : "—")</td><td><span class="ev-badge @(status == "Pagada" ? "green" : status == "Vencida" ? "red" : status == "Anulada" ? "" : "amber")">@status</span></td></tr>
+        }
+        @if(Model.Facturas.Count == 0) { <tr><td colspan="7"><div class="ev-empty"><strong>Todavía no hay facturas emitidas</strong>Esto no equivale a un pago confirmado.</div></td></tr> }
+        </tbody></table></div>
+    </section>
+
+    <section class="ev-subscription-card ev-subscription-section">
+        <div class="ev-subscription-section-heading"><div><h2>Mis solicitudes</h2><p>Historial de cambios solicitados y respuestas de administración.</p></div><span class="ev-badge">@Model.Solicitudes.Count solicitudes</span></div>
+        @if(Model.Solicitudes.Count == 0) { <div class="ev-empty"><strong>Aún no tienes solicitudes</strong>Cuando solicites un cambio podrás seguir su revisión aquí.</div> }
+        <ol class="ev-subscription-requests">
+            @foreach(var request in Model.Solicitudes) {
+                <li><div class="ev-subscription-request-heading"><strong>Solicitud #@request.Id</strong><span class="ev-badge @(request.Status == "Pendiente" ? "amber" : request.Status == "Aprobada" ? "green" : "")">@request.Status</span><time datetime="@request.CreatedAt.ToString("O")">@request.CreatedAt.AddHours(-4).ToString("dd/MM/yyyy HH:mm")</time></div><p>@request.Reason</p>@if(request.Resolution != null) { <div class="ev-subscription-resolution"><strong>Respuesta de administración</strong><span>@request.Resolution</span></div> }</li>
+            }
+        </ol>
+    </section>
+</div>

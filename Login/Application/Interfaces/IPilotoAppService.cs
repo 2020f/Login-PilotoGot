@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Login.Application.Operations;
 
 namespace Login.Application.Interfaces
 {
@@ -18,9 +19,15 @@ namespace Login.Application.Interfaces
 
         /// <summary>Devuelve el detalle de una orden específica (valida propiedad).</summary>
         Task<OrdenPilotoDto?> GetOrdenDetalleAsync(string identityUserId, int ordenId);
+        Task<PaginaOrdenesPilotoDto> GetHistorialAsync(string identityUserId, int pagina = 1, int tamano = 30, bool incluirGestionadas = true);
+        Task<OrdenPilotoDto?> GetOrdenHistoricaAsync(string identityUserId, int ordenId);
 
         /// <summary>Confirma la recolecta con el código B (valida que la orden sea del piloto).</summary>
-        Task ConfirmarRecolectaAsync(string identityUserId, string codigoB, int? ordenId = null);
+        Task ConfirmarRecolectaAsync(string identityUserId, string codigoB, int? ordenId = null, string? operacionId = null);
+        Task<EntregaParadaResult> ConfirmarEntregaParadaAsync(string identityUserId, int ordenId, int paradaId,
+            string codigoC, string? operacionId = null, string? revisionAsignacion = null);
+        Task<RecogidaParadasResult> ConfirmarRecogidaParadasAsync(string identityUserId, int ordenId,
+            string codigoB, IReadOnlyList<RevisionParadaRequest> paradas, string operacionId);
 
         /// <summary>Confirma la entrega con los códigos B + C (valida que la orden sea del piloto).</summary>
         Task ConfirmarEntregaAsync(string identityUserId, string codigoB, string codigoC, int? ordenId = null);
@@ -62,9 +69,41 @@ namespace Login.Application.Interfaces
         double? DistanciaKm,
         double? TiendaLatitud,
         double? TiendaLongitud,
-        string? CodigoA = null);
+        string? CodigoA = null)
+    {
+        public IReadOnlyList<ParadaPilotoDto> Paradas { get; init; } = Array.Empty<ParadaPilotoDto>();
+        public int TotalParadas => Paradas.Count;
+        public int Entregadas => Paradas.Count(p => p.Estado == "Entregada");
+        public int Devueltas => Paradas.Count(p => p.Estado == "Devuelta");
+        public DateTime? FinalizadaAt { get; init; }
+        public bool PuedeRecoger { get; init; }
+        public string? BloqueoRecogida { get; init; }
+        public bool GestionPorParadas { get; init; }
+    }
+
+    public sealed record ParadaPilotoDto(int ParadaId, int UsuarioFinalId, string Estado, DateTime? EntregadaAt,
+        string Nombre, string? Direccion, string? Telefono, string? MapaLink, double? Latitud,
+        double? Longitud, string? Instrucciones)
+    {
+        public DateTime? DevueltaAt { get; init; }
+        public bool PuedeConfirmarEntrega { get; init; }
+        public string? BloqueoEntrega { get; init; }
+        public string? RevisionAsignacion { get; init; }
+        public bool PuedeVerDestino { get; init; }
+        public DateTime? RecogidaAt { get; init; }
+        public bool PuedeRecoger { get; init; }
+        public string? BloqueoRecogida { get; init; }
+        public string? RecogidaNombre { get; init; }
+        public string? RecogidaDireccion { get; init; }
+        public double? RecogidaLatitud { get; init; }
+        public double? RecogidaLongitud { get; init; }
+    }
 
     public sealed record PilotoEstadoDto(
         bool EnLinea,
         string Estado);
+    public sealed record PaginaOrdenesPilotoDto(IReadOnlyList<OrdenPilotoDto> Items, int Pagina, int Total, int TotalPaginas);
+    public sealed record RecogidaParadaConfirmadaDto(int ParadaId, string RevisionAsignacion, DateTime RecogidaAt);
+    public sealed record RecogidaParadasResult(int OrdenId, string EstadoOrden, DateTime RecogidaAt,
+        IReadOnlyList<RecogidaParadaConfirmadaDto> Paradas);
 }

@@ -3,8 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>@ViewData["Title"] - PilotGo</title>
+    <title>@ViewData["Title"] - Envirapido</title>
     <link rel="stylesheet" href="~/css/piloto.css" asp-append-version="true" />
+    <partial name="_BrandHead" />
     @RenderSection("Styles", required: false)
 </head>
 <body class="pg-body">
@@ -12,17 +13,9 @@
     <div class="pg-app">
 
         <header class="pg-topbar">
-            <div class="pg-top-left">
-                <div class="pg-logo">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="1" y="3" width="15" height="13" rx="2"/>
-                        <path d="M16 8h4l3 5v3h-7V8z"/>
-                        <circle cx="5.5" cy="18.5" r="2.5"/>
-                        <circle cx="18.5" cy="18.5" r="2.5"/>
-                    </svg>
-                </div>
-                <div>
-                    <div class="pg-title">PilotGo</div>
+            <div class="pg-top-left envi-brand">
+                <div class="envi-piloto-lockup">
+                    <img class="envi-brand-logo" src="~/branding/logo-original.png" asp-append-version="true" alt="Envirapido" width="142" height="49" />
                     <div class="pg-subtitle">Repartidor</div>
                 </div>
             </div>

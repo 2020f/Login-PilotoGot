@@ -1,0 +1,28 @@
+@model Login.ViewModels.Envirapido.OperationsPageVm
+@{
+    var d=Model.Datos;
+}
+@if(Model.Seccion=="Operaciones")
+{
+<div class="ev-two-col"><section class="ev-card"><div class="ev-card-head"><h2>Asignación automática</h2></div><div class="ev-card-body"><p>La recepción automática se configura por comercio y por disponibilidad del repartidor.</p><a class="ev-btn" href="/Operaciones/Comercios">Gestionar comercios</a><a class="ev-btn" href="/Operaciones/Repartidores">Consultar disponibilidad</a></div></section><section class="ev-card"><div class="ev-card-head"><h2>Atención y alertas</h2></div><div class="ev-card-body"><p>Las reglas activas determinan la prioridad, el plazo y el efecto operativo de cada categoría.</p><a class="ev-btn" href="/Operaciones/Incidencias">Ver bandeja</a></div></section></div>
+@await Html.PartialAsync("_Reglas",Model)
+}
+else if(Model.Seccion=="Pedidos")
+{
+    if(Model.Tab=="Programados")
+    {
+        var list=d.DatosEnvios.Where(x=>x.ProgramadaPara.HasValue).OrderBy(x=>x.ProgramadaPara).ToList();
+        <section class="ev-card" data-ev-client-table><div class="ev-card-head"><h2>Pedidos programados</h2><button class="ev-btn primary" type="button" data-ev-open="evOrderDataDialog">Programar un envío existente</button><input class="ev-input" data-ev-table-search placeholder="Buscar pedido o referencia" aria-label="Buscar programados"/></div><div class="ev-card-body"><p class="ev-hint">La programación registra el compromiso y queda visible para despacho. Consulta la etapa real del pedido antes de asignarlo.</p></div><div class="ev-table-scroll"><table class="ev-table"><thead><tr><th>Pedido</th><th>Referencia / servicio</th><th data-sort="date">Programación RD ↕</th><th>Compromiso de entrega</th><th>Zona</th><th>Acción</th></tr></thead><tbody>@foreach(var x in list){<tr data-resource-id="@x.OrdenId" data-resource-kind="envio"><td><a href="/Operaciones/Pedido/@x.OrdenId">#@x.OrdenId</a></td><td>@x.Referencia<span class="ev-secondary">@x.Servicio</span></td><td data-sort-value="@x.ProgramadaPara?.ToString("O")">@x.ProgramadaPara?.AddHours(-4).ToString("dd/MM/yyyy HH:mm")</td><td>@(x.CompromisoEntrega?.AddHours(-4).ToString("dd/MM/yyyy HH:mm")??"Sin compromiso")</td><td>@(d.Zonas.FirstOrDefault(z=>z.Id==x.ZonaId)?.Nombre??"Sin zona")</td><td><button class="ev-btn small" type="button" data-ev-order-data="@x.OrdenId">Editar programación</button></td></tr>}</tbody></table></div><div class="ev-table-footer" data-ev-client-pagination></div></section>
+    }
+
+}
+else if(Model.Seccion=="Reportes")
+{
+@await Html.PartialAsync("_Metricas",Model.Operacion)
+<div class="ev-two-col"><section class="ev-card"><div class="ev-card-head"><h2>Operación de la empresa</h2></div><div class="ev-card-body"><dl class="ev-key-values"><dt>Órdenes registradas</dt><dd>@Model.Operacion.Total</dd><dt>Por asignar</dt><dd>@Model.Operacion.PorAsignar</dd><dt>Recogiendo</dt><dd>@Model.Operacion.Recogiendo</dd><dt>En ruta</dt><dd>@Model.Operacion.EnRuta</dd><dt>Entregadas</dt><dd>@Model.Operacion.Entregados</dd><dt>Incidencias abiertas</dt><dd>@d.Incidencias.Count(i=>i.Estado!="Resuelta")</dd><dt>Rutas incluidas en consulta</dt><dd>@d.Rutas.Count</dd></dl><a class="ev-btn" href="/Supervisor/Estadisticas">Estadísticas por período, comercio y repartidor</a></div></section><section class="ev-card"><div class="ev-card-head"><h2>Reportes y exportación</h2></div><div class="ev-card-body"><p>Exporta datos autorizados de tu empresa y consulta cada operación desde su contexto.</p><div class="ev-actions"><a class="ev-btn" href="/Operaciones/Exportar">Pedidos CSV</a><a class="ev-btn" href="/Operaciones/Rutas?tab=Historial">Historial de rutas</a><a class="ev-btn" href="/Operaciones/Incidencias?tab=Historial">Historial de incidencias</a><a class="ev-btn" href="/Operaciones/Liquidaciones?tab=Historial">Movimientos financieros</a></div></div></section></div>
+}
+else if(Model.Seccion=="Configuración")
+{
+<div class="ev-two-col"><section class="ev-card"><div class="ev-card-head"><h2>Empresa y equipo</h2></div><div class="ev-card-body"><h3>@Model.Empresa</h3><p>El acceso administrativo se limita a esta empresa.</p><div class="ev-actions"><a class="ev-btn" href="/Operaciones/Usuarios">Usuarios y permisos</a><a class="ev-btn" href="/Operaciones/Comercios">Comercios y asignación automática</a><a class="ev-btn" href="/Identity/Account/Manage">Perfil y credenciales</a></div></div></section><section class="ev-card"><div class="ev-card-head"><h2>Tarifas y cobertura</h2></div><div class="ev-card-body"><p>Configura los precios base/por kilómetro y las reglas de cobertura de la empresa.</p><div class="ev-actions"><a class="ev-btn" href="/Supervisor/Mapa">Tarifas de envío y GPS</a><a class="ev-btn" href="/Operaciones/Rutas?tab=Zonas%20de%20cobertura">Zonas de cobertura</a><button class="ev-btn" type="button" data-ev-open="evOrderDataDialog">Datos y compromiso de envío</button></div></div></section></div>
+@await Html.PartialAsync("_Reglas",Model)
+}

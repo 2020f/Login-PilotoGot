@@ -1,0 +1,115 @@
+@model Login.ViewModels.Supervisor.OrderDetailVm
+@{
+    Layout = "_LayoutGestor";
+    ViewData["Title"] = $"Orden {Model.CodigoA}";
+    var estadoClase = Model.Estado == "Entregada" ? "is-complete"
+        : Model.Estado == "Incidente" ? "is-incident" : "";
+}
+
+<style>
+    .pg-order-detail .pg-detail-toolbar { display: flex; align-items: center; flex-shrink: 0; }
+    .pg-order-detail .pg-detail-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 0 4px 12px 0; }
+    .pg-order-detail .pg-detail-card { padding: 22px 24px; margin-bottom: 16px; }
+    .pg-order-detail .pg-detail-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .pg-order-detail .pg-detail-title { margin: 0; font-size: 25px; line-height: 1.25; font-weight: 600; overflow-wrap: anywhere; }
+    .pg-order-detail .pg-detail-subtitle { margin-top: 7px; color: var(--pg-muted); font-size: 13px; line-height: 1.6; }
+    .pg-order-detail .pg-detail-state { display: inline-flex; padding: 7px 12px; border-radius: 999px; background: var(--pg-blue-soft); color: #1d4ed8; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .pg-order-detail .pg-detail-state.is-complete { background: #dcfce7; color: #166534; }
+    .pg-order-detail .pg-detail-state.is-incident { background: #fee2e2; color: #991b1b; }
+    .pg-order-detail .pg-detail-section-title { font-size: 16px; font-weight: 600; line-height: 1.4; }
+    .pg-order-detail .pg-detail-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 24px; margin-top: 22px; }
+    .pg-order-detail .pg-detail-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+    .pg-order-detail .pg-detail-field dt { font-size: 11px; font-weight: 600; color: var(--pg-muted); text-transform: uppercase; letter-spacing: .6px; line-height: 1.4; }
+    .pg-order-detail .pg-detail-field dd { margin: 0; font-size: 14px; line-height: 1.6; color: var(--pg-text); overflow-wrap: anywhere; }
+    .pg-order-detail .pg-detail-zone { display: block; margin-top: 3px; font-size: 12px; color: var(--pg-muted); }
+    .pg-order-detail .pg-detail-history-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding-bottom: 16px; border-bottom: 1px solid var(--pg-border); }
+    .pg-order-detail .pg-detail-event-count { font-size: 12px; color: var(--pg-muted); }
+    .pg-order-detail .pg-event-list { list-style: none; margin: 4px 0 0; padding: 0; }
+    .pg-order-detail .pg-event-item { position: relative; display: grid; grid-template-columns: 135px minmax(0, 1fr); column-gap: 28px; padding: 22px 0; }
+    .pg-order-detail .pg-event-item + .pg-event-item { border-top: 1px solid var(--pg-border); }
+    .pg-order-detail .pg-event-when { color: var(--pg-muted); font-size: 12px; line-height: 1.7; }
+    .pg-order-detail .pg-event-hour { display: block; font-size: 14px; font-weight: 500; color: var(--pg-text); }
+    .pg-order-detail .pg-event-content { position: relative; min-width: 0; padding-left: 18px; border-left: 2px solid var(--pg-blue-soft); }
+    .pg-order-detail .pg-event-content::before { content: ""; position: absolute; left: -5px; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--pg-blue); }
+    .pg-order-detail .pg-event-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .pg-order-detail .pg-event-title { font-size: 14px; font-weight: 600; line-height: 1.5; }
+    .pg-order-detail .pg-event-role { padding: 3px 8px; border-radius: 6px; background: #f3f4f6; color: var(--pg-muted); font-size: 11px; line-height: 1.5; }
+    .pg-order-detail .pg-event-description { margin-top: 8px; font-size: 13px; line-height: 1.75; color: #374151; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .pg-order-detail .pg-detail-empty { margin-top: 18px; padding: 20px; border: 1px dashed var(--pg-border); border-radius: 10px; color: var(--pg-muted); font-size: 13px; line-height: 1.6; background: #f9fafb; }
+    @@media (max-width: 1100px) {
+        .pg-order-detail .pg-detail-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @@media (max-width: 680px) {
+        .pg-order-detail .pg-detail-card { padding: 18px 16px; }
+        .pg-order-detail .pg-detail-heading { flex-direction: column; gap: 12px; }
+        .pg-order-detail .pg-detail-title { font-size: 22px; }
+        .pg-order-detail .pg-detail-fields { grid-template-columns: 1fr; gap: 18px; }
+        .pg-order-detail .pg-event-item { grid-template-columns: 1fr; row-gap: 12px; padding: 20px 0; }
+        .pg-order-detail .pg-event-hour { display: inline; margin-left: 8px; }
+    }
+</style>
+
+<div class="pg-page pg-order-detail">
+    <div class="pg-detail-toolbar">
+        <a class="pg-btn pg-btn-ghost" asp-action="Ordenes" asp-route-historial="true">
+            <span aria-hidden="true">←</span> Volver al historial
+        </a>
+    </div>
+
+    <div class="pg-detail-scroll">
+        <section class="pg-card pg-detail-card" aria-labelledby="pgDetailTitle">
+            <header class="pg-detail-heading">
+                <div>
+                    <h1 class="pg-detail-title" id="pgDetailTitle">Orden @Model.CodigoA</h1>
+                    <p class="pg-detail-subtitle">Identificador permanente: <strong>#@Model.Id</strong></p>
+                </div>
+                <span class="pg-detail-state @estadoClase">@Model.Estado</span>
+            </header>
+
+            <dl class="pg-detail-fields">
+                <div class="pg-detail-field"><dt>Comercio</dt><dd>@Model.Tienda</dd></div>
+                <div class="pg-detail-field"><dt>Destinatario</dt><dd>@Model.Destinatario</dd></div>
+                <div class="pg-detail-field"><dt>Dirección de entrega</dt><dd>@Model.Direccion</dd></div>
+                <div class="pg-detail-field"><dt>Piloto asignado</dt><dd>@(Model.Piloto ?? "Sin asignar")</dd></div>
+                <div class="pg-detail-field">
+                    <dt>Fecha de creación</dt>
+                    <dd>@Model.CreatedAt.AddHours(-4).ToString("dd/MM/yyyy HH:mm")<span class="pg-detail-zone">Hora de Santo Domingo</span></dd>
+                </div>
+                <div class="pg-detail-field"><dt>Tarifa de envío</dt><dd>@(Model.Precio.HasValue ? $"RD$ {Model.Precio:N2}" : "Sin tarifa")</dd></div>
+            </dl>
+        </section>
+
+        <section class="pg-card pg-detail-card" aria-labelledby="pgHistoryTitle">
+            <header class="pg-detail-history-head">
+                <h2 class="pg-detail-section-title" id="pgHistoryTitle">Historial de la orden</h2>
+                <span class="pg-detail-event-count">@Model.Eventos.Count @(Model.Eventos.Count == 1 ? "evento registrado" : "eventos registrados")</span>
+            </header>
+
+            @if (Model.Eventos.Count == 0)
+            {
+                <p class="pg-detail-empty">Esta orden no registra eventos.</p>
+            }
+            else
+            {
+                <ol class="pg-event-list">
+                    @foreach (var e in Model.Eventos)
+                    {
+                        <li class="pg-event-item">
+                            <time class="pg-event-when" datetime="@DateTime.SpecifyKind(e.CreatedAt, DateTimeKind.Utc).ToString("O")">
+                                @e.CreatedAt.AddHours(-4).ToString("dd/MM/yyyy")
+                                <span class="pg-event-hour">@e.CreatedAt.AddHours(-4).ToString("HH:mm")</span>
+                            </time>
+                            <div class="pg-event-content">
+                                <div class="pg-event-heading">
+                                    <h3 class="pg-event-title">@e.Tipo</h3>
+                                    <span class="pg-event-role">@e.Rol</span>
+                                </div>
+                                <p class="pg-event-description">@e.Descripcion</p>
+                            </div>
+                        </li>
+                    }
+                </ol>
+            }
+        </section>
+    </div>
+</div>

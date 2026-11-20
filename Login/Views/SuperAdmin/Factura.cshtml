@@ -1,0 +1,171 @@
+@model Login.ViewModels.SuperAdmin.FacturaDetalleVm
+@using Login.Application.Services
+@using System.Globalization
+@{ Layout = "_LayoutSuperAdmin"; var f = Model.Factura; ViewData["Title"] = $"Factura FAC-{f.Id:D5}"; var money = CultureInfo.GetCultureInfo("es-DO"); var status = SaasBillingService.Status(f, Model.Hoy); var paid = SaasBillingService.Paid(f); var balance = SaasBillingService.Balance(f); }
+<div class="sa-page-head">
+<div>
+<a class="sa-sub" asp-action="Facturacion" asp-route-empresaId="@f.ClienteAppId">← Volver a facturación</a>
+<h2>Factura FAC-@f.Id.ToString("D5")</h2>
+<p>@Model.Empresa · @f.Concept</p>
+</div>
+<div class="sa-actions">
+<span class="sa-pill @(status == "Pagada" ? "sa-pill-ok" : status == "Vencida" ? "sa-pill-bad" : "sa-pill-warn")">@status</span>
+<a class="sa-btn" asp-action="DetalleCliente" asp-route-id="@f.ClienteAppId">Ver empresa</a>
+</div>
+</div>
+@if(!string.IsNullOrWhiteSpace(Model.Ok)) { <div class="sa-notice" role="status">@Model.Ok</div> }@if(!string.IsNullOrWhiteSpace(Model.Error)) { <div class="sa-notice sa-notice-error" role="alert">@Model.Error</div> }
+@if(f.VoidedAt != null) { <div class="sa-notice sa-notice-warning">
+<strong>Factura anulada.</strong> @f.VoidReason</div> }
+<div class="sa-grid-3">
+<article class="sa-card sa-card-pad">
+<div class="sa-kpi-label">Total de la factura</div>
+<div class="sa-kpi-value">RD$@f.Amount.ToString("N2",money)</div>
+<div class="sa-kpi-foot">Moneda DOP</div>
+</article>
+<article class="sa-card sa-card-pad sa-kpi-accent">
+<div class="sa-kpi-label">Pagos confirmados</div>
+<div class="sa-kpi-value">RD$@paid.ToString("N2",money)</div>
+<div class="sa-kpi-foot">Sin pagos anulados</div>
+</article>
+<article class="sa-card sa-card-pad @(status == "Vencida" ? "sa-kpi-danger" : "sa-kpi-warning")">
+<div class="sa-kpi-label">Saldo pendiente</div>
+<div class="sa-kpi-value">@(f.VoidedAt == null ? "RD$" + balance.ToString("N2",money) : "—")</div>
+<div class="sa-kpi-foot">Vencimiento @f.DueDate.ToString("dd/MM/yyyy")</div>
+</article>
+</div>
+<div class="sa-grid-2 sa-section-gap">
+<section class="sa-card sa-card-pad">
+<h3>Detalle del período</h3>
+<dl class="sa-definition">
+<dt>Empresa</dt>
+<dd>@Model.Empresa (#@f.ClienteAppId)</dd>
+<dt>Concepto</dt>
+<dd>@f.Concept</dd>
+<dt>Período facturado</dt>
+<dd>@f.PeriodStart.ToString("dd/MM/yyyy") – @f.PeriodEnd.ToString("dd/MM/yyyy")</dd>
+<dt>Vencimiento</dt>
+<dd>@f.DueDate.ToString("dd/MM/yyyy")</dd>
+<dt>Emisión</dt>
+<dd>@f.CreatedAt.AddHours(-4).ToString("dd/MM/yyyy HH:mm")</dd>
+<dt>Emitida por</dt>
+<dd>@f.CreatedBy</dd>
+</dl>
+</section>
+<section class="sa-card sa-card-pad">
+<h3>Conciliación y cobertura</h3>
+<p class="sa-sub">Los cobros se realizan fuera del sistema. Registra únicamente fondos realmente recibidos y comprobados.</p>
+<div class="sa-notice">La factura se considera pagada al cubrir el importe completo. Un pago parcial conserva el saldo y no renueva por sí solo la cobertura.</div>
+<p class="sa-sub">La fecha de vencimiento incluye el día completo de Santo Domingo. Una factura con saldo se muestra vencida al superar ese día.</p>
+</section>
+</div>
+@if(f.VoidedAt == null && balance > 0) {
+<section class="sa-card sa-card-pad sa-section-gap" id="registrar-pago">
+<div class="sa-section-head">
+<h3>Registrar pago recibido</h3>
+<span class="sa-pill sa-pill-info">Confirmación manual</span>
+</div>
+<form asp-action="RegistrarPago" method="post">@Html.AntiForgeryToken()<input type="hidden" name="EmpresaId" value="@f.ClienteAppId" />
+<input type="hidden" name="FacturaId" value="@f.Id" />
+<input type="hidden" name="Clave" value="@Guid.NewGuid().ToString("N")" />
+<div class="sa-form-grid">
+<div class="sa-field">
+<label for="payAmount">Importe recibido (RD$)</label>
+<input id="payAmount" name="Importe" type="number" min="0.01" max="@balance.ToString("0.00",CultureInfo.InvariantCulture)" step="0.01" required value="@balance.ToString("0.00",CultureInfo.InvariantCulture)" />
+<span class="sa-sub">Puedes registrar un abono por un importe menor al saldo.</span>
+</div>
+<div class="sa-field">
+<label for="payDate">Fecha real del pago</label>
+<input id="payDate" name="Fecha" type="date" min="2000-01-01" max="@Model.Hoy.ToString("yyyy-MM-dd")" value="@Model.Hoy.ToString("yyyy-MM-dd")" required />
+</div>
+<div class="sa-field">
+<label for="payMethod">Método</label>
+<select id="payMethod" name="Metodo" required>
+<option value="Transferencia">Transferencia bancaria</option>
+<option value="Efectivo">Efectivo</option>
+<option value="Tarjeta">Tarjeta, cobrada fuera del sistema</option>
+<option value="Otro">Otro</option>
+</select>
+</div>
+<div class="sa-field">
+<label for="payRef">Referencia o número de recibo</label>
+<input id="payRef" name="Referencia" maxlength="100" required autocomplete="off" placeholder="Referencia verificable y única para la empresa" />
+</div>
+<label class="sa-check sa-field-full">
+<input type="checkbox" name="Confirmado" value="true" required /> Confirmo que el dinero fue recibido y verifiqué su comprobante.</label>
+</div>
+<div class="sa-form-footer">
+<button class="sa-btn sa-btn-primary" type="submit">Confirmar registro del pago</button>
+</div>
+</form>
+</section>
+}
+<section class="sa-card sa-section-gap">
+<div class="sa-card-pad">
+<h3>Historial de pagos</h3>
+<p class="sa-sub">Los registros se conservan, incluidas las anulaciones y sus motivos.</p>
+</div>
+<div class="sa-table-scroll" role="region" aria-label="Pagos de la factura" tabindex="0">
+<table class="sa-table">
+<thead>
+<tr>
+<th>Pago / fecha</th>
+<th>Método / referencia</th>
+<th>Importe RD$</th>
+<th>Registrado por</th>
+<th>Estado</th>
+<th>Corrección</th>
+</tr>
+</thead>
+<tbody>
+@foreach(var p in f.Payments.OrderByDescending(x=>x.Id)) { <tr>
+<td>
+<strong>PAG-@p.Id.ToString("D5")</strong>
+<div class="sa-sub">@p.PaidOn.ToString("dd/MM/yyyy")</div>
+</td>
+<td>@p.Method<div class="sa-sub">@p.Reference</div>
+</td>
+<td class="sa-number">@p.Amount.ToString("N2",money)</td>
+<td>@p.CreatedBy<div class="sa-sub">@p.CreatedAt.AddHours(-4).ToString("dd/MM/yyyy HH:mm")</div>
+</td>
+<td>
+<span class="sa-pill @(p.VoidedAt == null ? "sa-pill-ok" : "sa-pill-bad")">@(p.VoidedAt == null ? "Confirmado" : "Anulado")</span>@if(p.VoidedAt != null) { <div class="sa-sub">@p.VoidReason</div> }</td>
+<td>@if(p.VoidedAt == null) { <details>
+<summary>Corregir pago</summary>
+<form asp-action="AnularPago" method="post" class="sa-section-gap">@Html.AntiForgeryToken()<input type="hidden" name="empresaId" value="@f.ClienteAppId" />
+<input type="hidden" name="pagoId" value="@p.Id" />
+<input type="hidden" name="clave" value="@Guid.NewGuid().ToString("N")" />
+<div class="sa-field">
+<label for="voidPay-@p.Id">Motivo de la anulación</label>
+<input id="voidPay-@p.Id" name="motivo" required maxlength="500" />
+</div>
+<button class="sa-btn sa-btn-danger sa-btn-small sa-section-gap" type="submit">Anular pago</button>
+</form>
+</details> } else { <span class="sa-sub">Conservado para auditoría</span> }</td>
+</tr> }
+@if(f.Payments.Count == 0) { <tr>
+<td colspan="6">
+<div class="sa-empty">
+<strong>Aún no hay pagos registrados</strong>La factura permanece pendiente hasta confirmar fondos recibidos.</div>
+</td>
+</tr> }
+</tbody>
+</table>
+</div>
+</section>
+@if(f.VoidedAt == null && paid == 0) { <section class="sa-card sa-card-pad sa-section-gap">
+<details>
+<summary>Anular esta factura</summary>
+<p class="sa-sub sa-section-gap">La factura se conserva como anulada y deja de generar saldo. Debes registrar el motivo.</p>
+<form asp-action="AnularFactura" method="post">@Html.AntiForgeryToken()<input type="hidden" name="empresaId" value="@f.ClienteAppId" />
+<input type="hidden" name="facturaId" value="@f.Id" />
+<input type="hidden" name="clave" value="@Guid.NewGuid().ToString("N")" />
+<div class="sa-field">
+<label for="voidInvoice">Motivo de anulación</label>
+<input id="voidInvoice" name="motivo" maxlength="500" required />
+</div>
+<div class="sa-form-footer">
+<button class="sa-btn sa-btn-danger" type="submit">Anular factura</button>
+</div>
+</form>
+</details>
+</section> }

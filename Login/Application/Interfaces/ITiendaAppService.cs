@@ -25,11 +25,19 @@ namespace Login.Application.Interfaces
 
         // Órdenes
         Task<List<OrdenTiendaDto>> GetOrdenesAsync(string identityUserId);
+        Task<List<OrdenTiendaDto>> GetOrdenesActivasAsync(string identityUserId);
+        Task<PaginaOrdenesTiendaDto> GetHistorialOrdenesAsync(string identityUserId, int pagina = 1, int tamano = 30, string? buscar = null);
+        Task<ResumenOrdenesTiendaDto> GetResumenOrdenesAsync(string identityUserId);
         Task<OrdenQrDto> GetOrdenQrAsync(string identityUserId, int ordenId);
-        Task<OrdenCreadaResult> CrearOrdenAsync(string identityUserId, int usuarioFinalId, string? notaPedido);
+        Task<OrdenCreadaResult> CrearOrdenAsync(string identityUserId, int usuarioFinalId, string? notaPedido,
+            string? operacionId = null, IReadOnlyList<OrdenDestinatarioRequest>? destinatarios = null);
     }
 
     public sealed record TiendaInfoDto(int Id, string Nombre, string Direccion, bool Activo);
+    public sealed record PaginaOrdenesTiendaDto(IReadOnlyList<OrdenTiendaDto> Items, int Pagina, int Tamano,
+        int Total, int TotalPaginas);
+    public sealed record ResumenOrdenesTiendaDto(int Asignadas, int EnRuta, int EntregadasHoy,
+        int Pendientes, int Incidentes, int TotalActivas);
     public sealed record TiendaActivaDto(int Id, string Nombre, string Direccion, string Telefono, int ClienteAppId);
 
     public sealed record UsuarioFinalDto(
@@ -54,17 +62,27 @@ namespace Login.Application.Interfaces
         DateTime? EntregadaAt,
         decimal? Precio,
         double? DistanciaKm,
-        string? CodigoA = null);
+        string? CodigoA = null)
+    {
+        public IReadOnlyList<ParadaPilotoDto> Paradas { get; init; } = Array.Empty<ParadaPilotoDto>();
+        public int TotalParadas => Paradas.Count;
+        public int Entregadas => Paradas.Count(p => p.Estado == "Entregada");
+        public int Devueltas => Paradas.Count(p => p.Estado == "Devuelta");
+        public DateTime? FinalizadaAt { get; init; }
+    }
 
     public sealed record OrdenQrDto(
         int OrdenId,
         int NumeroOrdenA,
         string Estado,
         string CodigoB,
-        string CodigoC,
+        string? CodigoC,
         string UsuarioFinalNombre,
         string DireccionUbicacion,
         string? MapaLink,
         string? Descripcion,
-        string? CodigoA = null);
+        string? CodigoA = null)
+    {
+        public IReadOnlyList<ParadaCreadaDto> Paradas { get; init; } = Array.Empty<ParadaCreadaDto>();
+    }
 }

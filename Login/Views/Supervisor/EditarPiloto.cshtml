@@ -9,7 +9,7 @@
     <div class="pg-card-head-row">
         <div>
             <div class="pg-card-title">Editar Piloto</div>
-            <div class="pg-card-sub">Actualiza datos, estado y activación.</div>
+            <div class="pg-card-sub">Actualiza los datos del piloto y su acceso a la app.</div>
         </div>
         <a asp-action="Pilotos" class="pg-btn pg-btn-outline">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -19,14 +19,7 @@
         </a>
     </div>
 
-    @if (!string.IsNullOrWhiteSpace(Model.EmailPiloto))
-    {
-        <div class="pg-info-block">
-            <div class="pg-info-lbl">Email de acceso</div>
-            <div class="pg-info-val">@Model.EmailPiloto</div>
-        </div>
-    }
-
+    <div asp-validation-summary="ModelOnly" class="pg-alert pg-alert-bad"></div>
     <form method="post" asp-action="EditarPiloto">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
@@ -44,15 +37,36 @@
             </div>
         </div>
 
+        <div class="pg-field" style="margin-top:16px;">
+            <label class="pg-label" asp-for="EmailPiloto">Correo de acceso</label>
+            <input class="pg-input" asp-for="EmailPiloto" type="email" autocomplete="off" readonly="@(!Model.PuedeEditarAcceso)" />
+            <span class="pg-val" asp-validation-for="EmailPiloto"></span>
+        </div>
+        @if (!Model.PuedeEditarAcceso)
+        {
+            <div class="pg-alert pg-alert-bad" role="status" style="margin-top:12px;">@Model.MotivoAccesoBloqueado</div>
+        }
+        <div class="pg-grid-2" style="margin-top:12px;">
+            <div class="pg-field">
+                <label class="pg-label" asp-for="NuevoPassword">Nueva contraseña</label>
+                <input class="pg-input" asp-for="NuevoPassword" type="password" autocomplete="new-password" disabled="@(!Model.PuedeEditarAcceso)" />
+                <span class="pg-val" asp-validation-for="NuevoPassword"></span>
+            </div>
+            <div class="pg-field">
+                <label class="pg-label" asp-for="ConfirmarPassword">Confirmar nueva contraseña</label>
+                <input class="pg-input" asp-for="ConfirmarPassword" type="password" autocomplete="new-password" disabled="@(!Model.PuedeEditarAcceso)" />
+                <span class="pg-val" asp-validation-for="ConfirmarPassword"></span>
+            </div>
+        </div>
+        <p style="color:var(--pg-muted);font-size:12.5px;margin-top:8px;">
+            Deja las contraseñas vacías para conservar la actual. Si la cambias, usa entre 6 y 100 caracteres.
+            Al cambiar el correo o la contraseña, el piloto deberá volver a iniciar sesión en la app. Sus pedidos y rutas se conservan.
+        </p>
+
         <div class="pg-grid-2" style="margin-top:12px;">
             <div class="pg-field">
                 <label class="pg-label">Estado</label>
-                <select class="pg-select" asp-for="Estado">
-                    <option value="@EstadoPiloto.Disponible">Disponible</option>
-                    <option value="@EstadoPiloto.Ocupado">Ocupado</option>
-                    <option value="@EstadoPiloto.Inactivo">Inactivo</option>
-                </select>
-            </div>
+                <div class="pg-info-val">@Model.Estado (calculado según actividad)</div>            </div>
             <div class="pg-field" style="justify-content:flex-end;padding-bottom:2px;">
                 <label class="pg-check" style="margin-top:auto;">
                     <input class="pg-check-input" type="checkbox" asp-for="Activo" />
@@ -70,6 +84,11 @@
                 Guardar cambios
             </button>
 
+
+
+            <a asp-action="Pilotos" class="pg-btn pg-btn-ghost">Cancelar</a>
+        </div>
+    </form>
             <form method="post" asp-action="EliminarPiloto" style="display:inline;margin:0;">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.Id" />
@@ -78,13 +97,9 @@
                         <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
                         <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
                     </svg>
-                    Eliminar
+                    Desactivar
                 </button>
             </form>
-
-            <a asp-action="Pilotos" class="pg-btn pg-btn-ghost">Cancelar</a>
-        </div>
-    </form>
 </div>
 
 @section Scripts {

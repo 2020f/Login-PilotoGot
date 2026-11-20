@@ -1,0 +1,62 @@
+@model Login.ViewModels.SuperAdmin.CrearFacturaVm
+@{ Layout = "_LayoutSuperAdmin"; ViewData["Title"] = "Crear factura de suscripción"; }
+<div class="sa-form-container">
+<div class="sa-page-head">
+<div>
+<h2>Crear factura</h2>
+<p>Emite un cobro de suscripción para una empresa.</p>
+</div>
+<a class="sa-btn" asp-action="Facturacion" asp-route-empresaId="@Model.EmpresaId">← Volver a facturación</a>
+</div>
+<div class="sa-notice">La factura nace pendiente. La cobertura se renueva al registrar pagos confirmados que cubran su importe completo.</div>
+<div class="sa-card sa-card-pad">
+<form method="post" asp-action="CrearFactura">@Html.AntiForgeryToken()<input type="hidden" asp-for="Clave" />
+<div asp-validation-summary="All">
+</div>
+<div class="sa-form-grid">
+<div class="sa-field sa-field-full">
+<label asp-for="EmpresaId">Empresa</label>
+<select asp-for="EmpresaId" required>
+<option value="">Selecciona una empresa</option>@foreach(var e in Model.Empresas) { <option value="@e.Id">@e.NombreComercial</option> }</select>
+<span asp-validation-for="EmpresaId">
+</span>
+</div>
+<div class="sa-field sa-field-full">
+<label asp-for="Concepto">Concepto</label>
+<input asp-for="Concepto" maxlength="200" required />
+<span asp-validation-for="Concepto">
+</span>
+</div>
+<div class="sa-field">
+<label asp-for="Inicio">Inicio del período</label>
+<input asp-for="Inicio" type="date" asp-format="{0:yyyy-MM-dd}" required />
+<span asp-validation-for="Inicio">
+</span>
+</div>
+<div class="sa-field">
+<label asp-for="Fin">Fin del período</label>
+<input asp-for="Fin" type="date" asp-format="{0:yyyy-MM-dd}" required />
+<span asp-validation-for="Fin">
+</span>
+</div>
+<div class="sa-field">
+<label asp-for="Vencimiento">Fecha de vencimiento</label>
+<input asp-for="Vencimiento" type="date" asp-format="{0:yyyy-MM-dd}" required />
+<span asp-validation-for="Vencimiento">
+</span>
+<span class="sa-sub">Válida hasta el final de ese día en Santo Domingo.</span>
+</div>
+<div class="sa-field">
+<label asp-for="Importe">Importe total (RD$)</label>
+<input asp-for="Importe" type="number" step="0.01" min="0.01" max="999999999" required />
+<span asp-validation-for="Importe">
+</span>
+</div>
+</div>
+<div class="sa-form-footer">
+<a class="sa-btn" asp-action="Facturacion">Cancelar</a>
+<button class="sa-btn sa-btn-primary" type="submit">Emitir factura pendiente</button>
+</div>
+</form>
+</div>
+</div>

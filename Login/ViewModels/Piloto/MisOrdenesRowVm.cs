@@ -12,6 +12,8 @@ namespace Login.ViewModels.Piloto
         public DateTime CreatedAt { get; set; }
 
         public bool PuedeVerDestinoFinal { get; set; }
+        public bool PuedeRecoger { get; set; }
+        public string? BloqueoRecogida { get; set; }
 
         // Antes del scan (Asignada): datos de tienda + nota
         public string TiendaNombre { get; set; } = "";
@@ -28,5 +30,7 @@ namespace Login.ViewModels.Piloto
         // Precio / distancia
         public decimal? Precio { get; set; }
         public double? DistanciaKm { get; set; }
+        public IReadOnlyList<Login.Application.Interfaces.ParadaPilotoDto> Paradas { get; set; }
+            = Array.Empty<Login.Application.Interfaces.ParadaPilotoDto>();
     }
 }

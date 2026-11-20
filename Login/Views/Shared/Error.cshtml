@@ -1,25 +1,22 @@
-﻿@model ErrorViewModel
+@model ErrorViewModel
 @{
-    ViewData["Title"] = "Error";
+    Layout = "_LayoutAuth";
+    ViewData["AuthBrandHeader"] = false;
+    ViewData["Title"] = "No se pudo completar la solicitud";
+    var home = User.IsInRole("SuperAdmin") ? "/SuperAdmin/Dashboard"
+        : User.IsInRole("Gestor") ? "/Operaciones"
+        : User.IsInRole("Cliente") ? "/Tienda/Ordenes"
+        : User.IsInRole("Piloto") ? "/Piloto/Index" : "/Identity/Account/Login";
 }
-
-<h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
-
-@if (Model.ShowRequestId)
-{
-    <p>
-        <strong>Request ID:</strong> <code>@Model.RequestId</code>
-    </p>
-}
-
-<h3>Development Mode</h3>
-<p>
-    Swapping to <strong>Development</strong> environment will display more detailed information about the error that occurred.
-</p>
-<p>
-    <strong>The Development environment shouldn't be enabled for deployed applications.</strong>
-    It can result in displaying sensitive information from exceptions to end users.
-    For local debugging, enable the <strong>Development</strong> environment by setting the <strong>ASPNETCORE_ENVIRONMENT</strong> environment variable to <strong>Development</strong>
-    and restarting the app.
-</p>
+<main style="min-height:100dvh;display:grid;place-items:center;padding:24px">
+    <section style="width:100%;max-width:560px;padding:36px;border-radius:22px;background:#fff;color:#14252b;box-shadow:0 18px 55px #0002" aria-labelledby="errorTitle">
+        <img class="envi-brand-logo envi-card-brand" src="~/branding/logo-original.png" asp-append-version="true" alt="Envirapido" width="190" height="65" />
+        <h1 id="errorTitle" style="font-size:28px">No se pudo completar la solicitud</h1>
+        <p style="line-height:1.6;color:#526874">Vuelve a tu panel e inténtalo de nuevo. Si el problema continúa, comparte esta referencia con el administrador.</p>
+        @if (Model.ShowRequestId)
+        {
+            <p style="overflow-wrap:anywhere;font-size:13px;color:#60747e">Referencia: <code>@Model.RequestId</code></p>
+        }
+        <a href="@home" style="display:inline-block;margin-top:16px;padding:12px 18px;border-radius:10px;background:#007e80;color:#fff;text-decoration:none;font-weight:700">Volver a mi panel</a>
+    </section>
+</main>

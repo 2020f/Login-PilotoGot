@@ -1,0 +1,14 @@
+@model Login.ViewModels.Envirapido.PanelVm
+<form class="ev-filter-form" method="get" action="@(Model.Seccion == "Pedidos" ? "/Operaciones/Pedidos" : "/Operaciones")" data-ev-filter-form>
+    <input type="hidden" name="tab" value="@Model.Tab" />
+    @if (!string.IsNullOrEmpty(Model.Estado)) { <input type="hidden" name="estado" value="@Model.Estado" /> }
+    <label class="ev-search"><svg class="ev-icon"><use href="#ev-search"></use></svg><input name="buscar" value="@Model.Buscar" placeholder="Buscar pedido, referencia o destinatario" aria-label="Buscar pedidos" /></label>
+    <input class="ev-input" type="date" name="fecha" value="@Model.Fecha?.ToString("yyyy-MM-dd")" aria-label="Fecha de creación en República Dominicana" />
+    <select class="ev-select" name="comercioId" asp-for="ComercioId" asp-items="Model.Comercios" aria-label="Comercio"><option value="">Todos los comercios</option></select>
+    <select class="ev-select" name="repartidorId" asp-for="RepartidorId" asp-items="Model.Repartidores" aria-label="Repartidor"><option value="">Todos los repartidores</option></select>
+    <select class="ev-select" name="zonaId" aria-label="Zona asignada"><option value="">Todas las zonas</option>@foreach(var z in Model.Zonas){<option value="@z.Key" selected="@(Model.ZonaId==z.Key)">@z.Value</option>}</select>
+    <select class="ev-select" name="orden" aria-label="Ordenar"><option value="recientes" selected="@(Model.Orden == "recientes")">Más recientes</option><option value="antiguos" selected="@(Model.Orden == "antiguos")">Más antiguos</option><option value="comercio" selected="@(Model.Orden == "comercio")">Comercio</option></select>
+    <button class="ev-btn" type="submit">Filtrar</button>
+    <label class="ev-chip"><input type="checkbox" name="demorados" value="true" checked="@Model.Demorados"/> Demorados</label>
+    @if (Model.Fecha.HasValue || Model.ComercioId.HasValue || Model.RepartidorId.HasValue || !string.IsNullOrWhiteSpace(Model.Buscar)) { <a class="ev-btn ghost" href="@(Model.Seccion == "Pedidos" ? "/Operaciones/Pedidos" : "/Operaciones")">Limpiar</a> }
+</form>

@@ -1,0 +1,20 @@
+{
+  "Outcome": "PASS",
+  "Runtime": "10.0.15",
+  "AspNetCore": "10.0.15\u002B8e0f8ed2312954727f8919d7d1c2f78b483b4ee7",
+  "Issuer": "Actual .NET/ASP.NET Core 8 process",
+  "Consumer": "Actual .NET/ASP.NET Core 10.0.15 process",
+  "ProtectedTicketReadable": true,
+  "BinaryTicketSerializerReadable": true,
+  "IdentityAndRolePreserved": true,
+  "AuthenticationScheme": "Identity.Application",
+  "ExpiresUtcPreserved": true,
+  "TamperedTicketRejected": true,
+  "WrongApplicationRejected": true,
+  "WrongPurposeRejected": true,
+  "SharedKeyRingEncryptedDpapi": true,
+  "DatabaseUsed": false,
+  "HostQaCookieContinuityClaimed": false,
+  "Limitation": "Isolated cookie/serializer compatibility using the same persisted key ring, application name and purposes. The live QA host uses ephemeral keys; this does not prove continuity of its cookies across a restart.",
+  "VerifiedAtUtc": "2026-11-12T21:42:23.4455098+00:00"
+}

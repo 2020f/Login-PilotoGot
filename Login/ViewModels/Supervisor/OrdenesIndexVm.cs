@@ -18,6 +18,11 @@ namespace Login.ViewModels.Supervisor
         public List<SelectListItem> Tiendas { get; set; } = new();
         public List<SelectListItem> Pilotos { get; set; } = new();
         public List<SelectListItem> Estados { get; set; } = new();
+        public List<PilotOperationsVm> Candidatos { get; set; } = new();
+        public int Pagina { get; set; } = 1;
+        public int Total { get; set; }
+        public bool EsHistorial { get; set; }
+        public bool HaySiguiente => Pagina * 50 < Total;
 
         // Tabla
         public List<OrdenRowVm> Ordenes { get; set; } = new();

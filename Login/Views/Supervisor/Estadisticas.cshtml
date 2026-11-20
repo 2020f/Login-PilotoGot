@@ -30,11 +30,11 @@
             </div>
             <div class="stats-filter">
                 <label>Tienda</label>
-                <select name="tiendaId" asp-items="Model.Tiendas"></select>
+                <select asp-for="TiendaId" asp-items="Model.Tiendas"></select>
             </div>
             <div class="stats-filter">
                 <label>Piloto</label>
-                <select name="pilotoId" asp-items="Model.Pilotos"></select>
+                <select asp-for="PilotoId" asp-items="Model.Pilotos"></select>
             </div>
             <button class="stats-btn" type="submit">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -51,7 +51,7 @@
             <div class="stats-card">
                 <div class="kpi-label">Total órdenes</div>
                 <div class="kpi-value">@Model.Cards.Total</div>
-                <div class="kpi-sub">En el rango seleccionado</div>
+                <div class="kpi-sub">Órdenes creadas en el rango (Santo Domingo)</div>
             </div>
             <div class="stats-card ok">
                 <div class="kpi-label">Entregadas</div>

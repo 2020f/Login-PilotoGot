@@ -1,0 +1,75 @@
+@model Login.ViewModels.SuperAdmin.AccesosVm
+@{ Layout = "_LayoutSuperAdmin"; ViewData["Title"] = "Accesos y sesiones"; }
+<div class="sa-page-head">
+<div>
+<h2>Accesos y sesiones</h2>
+<p>Consulta permisos, pertenencias y sesiones de las identidades de la plataforma.</p>
+</div>
+<span class="sa-pill sa-pill-info">Administración global</span>
+</div>
+@if(!string.IsNullOrWhiteSpace(Model.Ok)) { <div class="sa-notice" role="status">@Model.Ok</div> }@if(!string.IsNullOrWhiteSpace(Model.Error)) { <div class="sa-notice sa-notice-error" role="alert">@Model.Error</div> }
+<form class="sa-toolbar" method="get" asp-action="Accesos">
+<div class="sa-field sa-field-wide">
+<label for="accessQ">Buscar usuario por correo</label>
+<input id="accessQ" name="q" value="@Model.Q" type="search" maxlength="100" placeholder="Correo del gestor, piloto o comercio" />
+</div>
+<button class="sa-btn" type="submit">Buscar</button>
+<a class="sa-btn" asp-action="Accesos">Limpiar</a>
+</form>
+<div class="sa-notice">Los roles y pertenencias se muestran para consulta. Revocar sesiones cierra el acceso móvil de la identidad, incluidas sus empresas vinculadas; conserva las órdenes, rutas, permisos y contraseña.</div>
+<div class="sa-card">
+<div class="sa-table-scroll" role="region" aria-label="Usuarios y sesiones de la plataforma" tabindex="0">
+<table class="sa-table">
+<thead>
+<tr>
+<th>Usuario</th>
+<th>Rol / empresas</th>
+<th>Acceso</th>
+<th>Doble factor</th>
+<th>Sesiones móviles</th>
+<th>Acción de seguridad</th>
+</tr>
+</thead>
+<tbody>
+@foreach(var u in Model.Usuarios) { <tr>
+<td>
+<strong>@(u.Email ?? "Sin correo")</strong>@if(u.Protegido) { <div class="sa-sub">Cuenta de plataforma protegida</div> }</td>
+<td>@u.Roles<div class="sa-sub">@(string.IsNullOrWhiteSpace(u.Empresas) ? "Sin empresa vinculada" : u.Empresas)</div>
+</td>
+<td>
+<span class="sa-pill @(u.Bloqueado ? "sa-pill-bad" : "sa-pill-ok")">@(u.Bloqueado ? "Bloqueado" : "Sin bloqueo")</span>
+</td>
+<td>
+<span class="sa-pill @(u.DobleFactor ? "sa-pill-ok" : "")">@(u.DobleFactor ? "Habilitado" : "Sin habilitar")</span>
+</td>
+<td>@u.SesionesMoviles</td>
+<td>@if(!u.Protegido) { <details>
+<summary>Revocar sesiones</summary>
+<form asp-action="RevocarSesiones" method="post" class="sa-section-gap">@Html.AntiForgeryToken()<input type="hidden" name="userId" value="@u.Id" />
+<div class="sa-field">
+<label for="revoke-@u.Id">Motivo</label>
+<input id="revoke-@u.Id" name="motivo" maxlength="500" required />
+</div>
+<label class="sa-check sa-section-gap">
+<input type="checkbox" name="confirmado" value="true" required /> Confirmo cerrar las sesiones de esta identidad en todas sus empresas.</label>
+<div class="sa-actions sa-section-gap">
+<button class="sa-btn sa-btn-danger sa-btn-small" type="submit">Revocar sesiones</button>
+</div>
+</form>
+</details> } else { <span class="sa-sub">Gestionada por el propietario</span> }</td>
+</tr> }
+@if(Model.Usuarios.Count == 0) { <tr>
+<td colspan="6">
+<div class="sa-empty">
+<strong>Sin usuarios para esta búsqueda</strong>Prueba con otro correo.</div>
+</td>
+</tr> }
+</tbody>
+</table>
+</div>
+<div class="sa-pagination">
+<span>@Model.Total usuarios · Página @Model.Pagina</span>
+<div class="sa-actions">@if(Model.Pagina>1) { <a class="sa-btn sa-btn-small" asp-action="Accesos" asp-route-q="@Model.Q" asp-route-pagina="@(Model.Pagina-1)">← Anterior</a> }@if(Model.Pagina*20<Model.Total) { <a class="sa-btn sa-btn-small" asp-action="Accesos" asp-route-q="@Model.Q" asp-route-pagina="@(Model.Pagina+1)">Siguiente →</a> }</div>
+</div>
+</div>
+<div class="sa-notice sa-notice-warning sa-section-gap">La revocación exige un motivo y queda auditada. Las sesiones web se invalidan en su siguiente comprobación de seguridad.</div>

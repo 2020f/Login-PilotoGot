@@ -2,23 +2,33 @@
 using System.Threading.Tasks;
 using System.Globalization;
 using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Login.Application.Exceptions;
 using Login.Application.Interfaces;
+using Login.Application.Operations;
 using Login.Data;
 using Login.Domain.Entities;
 using Login.Domain.Enums;
+using Login.Domain.Operations;
 using Microsoft.EntityFrameworkCore;
 
 namespace Login.Application.Services
 {
-    public class OrdenService : IOrdenService
+    public partial class OrdenService : IOrdenService
     {
         private readonly ApplicationDbContext _db;
         private readonly IGoogleMapsService _googleMaps;
+        private readonly QuotaPolicyService _quotas;
+        private readonly TimeProvider _clock;
 
-        public OrdenService(ApplicationDbContext db, IGoogleMapsService googleMaps)
+        public OrdenService(ApplicationDbContext db, IGoogleMapsService googleMaps, QuotaPolicyService quotas, TimeProvider? clock = null)
         {
             _db = db;
             _googleMaps = googleMaps;
+            _quotas = quotas;
+            _clock = clock ?? TimeProvider.System;
         }
 
         public async Task<OrdenCreadaResult> CrearOrdenAsync(
@@ -27,11 +37,22 @@ namespace Login.Application.Services
             int usuarioFinalId,
             string? notaPedido = null,
             string actorIdentityUserId = "System",
-            string actorRol = "System")
+            string actorRol = "System",
+            string? operacionId = null,
+            IReadOnlyList<OrdenDestinatarioRequest>? destinatarios = null)
         {
+            var destinos = NormalizarDestinatarios(usuarioFinalId, destinatarios);
+            usuarioFinalId = destinos[0].UsuarioFinalId;
             if (clienteAppId <= 0) throw new ArgumentException("clienteAppId inválido.");
             if (tiendaId <= 0) throw new ArgumentException("tiendaId inválido.");
             if (usuarioFinalId <= 0) throw new ArgumentException("usuarioFinalId inválido.");
+            var clave = NormalizarOperacionId(operacionId);
+            var nota = string.IsNullOrWhiteSpace(notaPedido) ? null : notaPedido.Trim();
+            if (nota?.Length > 400) throw new ArgumentException("La nota no puede superar 400 caracteres.");
+            // Mantener el hash del contrato simple ya emitido; incluir todas las filas nuevas.
+            var payloadHash = Hash(destinos.Count == 1 && destinos[0].Instrucciones is null
+                ? JsonSerializer.Serialize(new { tiendaId, usuarioFinalId, nota })
+                : JsonSerializer.Serialize(new { tiendaId, destinatarios = destinos, nota }));
 
             // 2) Validar tienda pertenece al ClienteApp
             var tienda = await _db.Tiendas
@@ -41,26 +62,94 @@ namespace Login.Application.Services
             if (tienda is null)
                 throw new InvalidOperationException("La tienda no existe o no pertenece a este ClienteApp.");
 
-            // 3) Validar usuario final pertenece a esa tienda
-            var uf = await _db.UsuariosFinales
-                .AsNoTracking()
-                .SingleOrDefaultAsync(u => u.Id == usuarioFinalId && u.TiendaId == tiendaId && u.Activo);
-
-            if (uf is null)
-                throw new InvalidOperationException("El usuario final no existe o no pertenece a esa tienda.");
+            var ids = destinos.Select(d => d.UsuarioFinalId).Distinct().ToArray();
+            var contactosPrevios = await _db.UsuariosFinales.AsNoTracking().Where(u => ids.Contains(u.Id)
+                && u.TiendaId == tiendaId && u.Activo).ToDictionaryAsync(u => u.Id);
+            contactosPrevios.TryGetValue(usuarioFinalId, out var uf);
 
             var cliente = await _db.ClientesApp.AsNoTracking().SingleOrDefaultAsync(c => c.Id == clienteAppId);
             if (cliente is null) throw new InvalidOperationException("ClienteApp no existe.");
-            // Resolver mapas antes de mantener un bloqueo en la base de datos.
-            var (distanciaKm, precio) = await CalcularPrecioAsync(cliente, tienda, uf);
+            // Evitar llamadas a Maps en un reintento ya confirmado. La comprobación
+            // definitiva de idempotencia se hace bajo el bloqueo del tenant.
+            var hayOperacion = clave is not null && await _db.OperacionesOrden.AsNoTracking().AnyAsync(x =>
+                x.ClienteAppId == clienteAppId && x.ActorIdentityUserId == actorIdentityUserId
+                && x.Tipo == "CrearOrden" && x.Clave == clave);
+            (double? distanciaKm, decimal? precio) = (null, null);
+            // Resolver cada fuente una sola vez por solicitud (también un resultado
+            // nulo). Reutilizar exactamente esas coordenadas para tarifa y snapshot,
+            // sin modificar los contactos ni las órdenes históricas.
+            var ubicaciones = new Dictionary<FuenteUbicacion, Coordenadas?>();
+            async Task<Coordenadas?> ResolverAsync(string direccion, double? lat, double? lng)
+            {
+                var fuente = new FuenteUbicacion(direccion, lat, lng);
+                if (ubicaciones.TryGetValue(fuente, out var cached)) return cached;
+                Coordenadas? resolved = CoordenadaValida(lat, lng) ? new(lat!.Value, lng!.Value) : null;
+                if (resolved is null)
+                {
+                    var geocode = await _googleMaps.GeocodificarAsync(direccion);
+                    if (geocode is { } value && CoordenadaValida(value.Lat, value.Lng)) resolved = new(value.Lat, value.Lng);
+                }
+                ubicaciones.Add(fuente, resolved);
+                return resolved;
+            }
+            Coordenadas? origen = null;
+            var puntosDestino = new Dictionary<int, Coordenadas?>();
+            if (!hayOperacion && contactosPrevios.Count == ids.Length)
+            {
+                origen = await ResolverAsync(tienda.Direccion, tienda.Latitud, tienda.Longitud);
+                foreach (var contacto in contactosPrevios.Values)
+                    puntosDestino[contacto.Id] = await ResolverAsync(contacto.DireccionUbicacion, contacto.Latitud, contacto.Longitud);
+                if (destinos.Count == 1) (distanciaKm, precio) = await CalcularPrecioAsync(cliente, origen, puntosDestino[usuarioFinalId]);
+            }
 
             using var tx = await _db.Database.BeginTransactionAsync();
-            // El UPDATE serializa creación y cuota por tenant, incluso desde otras instancias.
+            // El UPDATE sin incremento bloquea antes de deduplicar. Así un reintento
+            // concurrente no consume secuencia, cuota, códigos ni historial.
             var actualizadas = await _db.ClientesApp
                 .Where(c => c.Id == clienteAppId && c.Estado == EstadoClienteApp.Activo)
-                .ExecuteUpdateAsync(s => s.SetProperty(c => c.OrdenSeq, c => c.OrdenSeq + 1));
+                .ExecuteUpdateAsync(s => s.SetProperty(c => c.OrdenSeq, c => c.OrdenSeq));
             if (actualizadas != 1) throw new InvalidOperationException("ClienteApp no activo.");
-            await ValidarLimitePorPlanAsync(clienteAppId, DateTime.UtcNow);
+
+            var tiendaActual = await _db.Tiendas.AsNoTracking().SingleOrDefaultAsync(t =>
+                t.Id == tiendaId && t.ClienteAppId == clienteAppId && t.Activo);
+            if (tiendaActual is null) throw new InvalidOperationException("La tienda no está disponible.");
+            if (actorRol == "Cliente" && !await _db.UsuariosTienda.AnyAsync(x =>
+                x.IdentityUserId == actorIdentityUserId && x.TiendaId == tiendaId && x.Activo))
+                throw new InvalidOperationException("No tienes acceso a esta tienda.");
+
+            var repetida = await LeerOperacionAsync(clienteAppId, actorIdentityUserId, clave, payloadHash);
+            if (repetida is not null)
+            {
+                await tx.CommitAsync();
+                return repetida;
+            }
+
+            var contactos = await _db.UsuariosFinales.AsNoTracking().Where(u => ids.Contains(u.Id)
+                && u.TiendaId == tiendaId && u.Activo).ToDictionaryAsync(u => u.Id);
+            if (!contactos.TryGetValue(usuarioFinalId, out var ufActual))
+                throw new OrdenSolicitudRechazadaException("El destinatario no existe, está inactivo o no pertenece a esta tienda.");
+            if (contactos.Count != ids.Length) throw new OrdenSolicitudRechazadaException(
+                "Uno de los destinatarios no existe, está inactivo o no pertenece a esta tienda.");
+            try { await ValidarLimitePorPlanAsync(clienteAppId, DateTime.UtcNow); }
+            catch (InvalidOperationException ex) { throw new OrdenSolicitudRechazadaException(ex.Message); }
+
+            // Si dirección/coordenadas/tarifa cambiaron mientras Maps respondía,
+            // cotizar de nuevo con los mismos datos que se van a congelar.
+            var clienteActual = await _db.ClientesApp.AsNoTracking().SingleAsync(c => c.Id == clienteAppId);
+            origen = await ResolverAsync(tiendaActual.Direccion, tiendaActual.Latitud, tiendaActual.Longitud);
+            foreach (var contacto in contactos.Values)
+                puntosDestino[contacto.Id] = await ResolverAsync(contacto.DireccionUbicacion, contacto.Latitud, contacto.Longitud);
+            if (destinos.Count == 1 && (uf is null || hayOperacion || tienda.Direccion != tiendaActual.Direccion
+                || tienda.Latitud != tiendaActual.Latitud || tienda.Longitud != tiendaActual.Longitud
+                || uf.DireccionUbicacion != ufActual.DireccionUbicacion
+                || uf.Latitud != ufActual.Latitud || uf.Longitud != ufActual.Longitud
+                || cliente.PrecioBase != clienteActual.PrecioBase || cliente.PrecioPorKm != clienteActual.PrecioPorKm))
+                (distanciaKm, precio) = await CalcularPrecioAsync(clienteActual, origen, puntosDestino[usuarioFinalId]);
+            tienda = tiendaActual;
+            uf = ufActual;
+
+            await _db.ClientesApp.Where(c => c.Id == clienteAppId)
+                .ExecuteUpdateAsync(s => s.SetProperty(c => c.OrdenSeq, c => c.OrdenSeq + 1));
             var numeroA = await _db.ClientesApp.Where(c => c.Id == clienteAppId).Select(c => c.OrdenSeq).SingleAsync();
             var codigoA = await GenerarCodigoAAsync(clienteAppId, numeroA);
 
@@ -70,21 +159,48 @@ namespace Login.Application.Services
                 ClienteAppId = clienteAppId,
                 TiendaId = tiendaId,
                 UsuarioFinalId = usuarioFinalId,
+                DatosEntregaCongelados = true,
+                RecogidaNombre = tienda.Nombre,
+                RecogidaDireccion = tienda.Direccion,
+                RecogidaTelefono = tienda.Telefono,
+                RecogidaLatitud = origen?.Latitud,
+                RecogidaLongitud = origen?.Longitud,
+                DestinoNombre = uf.Nombre,
+                DestinoDireccion = uf.DireccionUbicacion,
+                DestinoTelefono = uf.Telefono,
+                DestinoMapaLink = uf.MapaLink,
+                DestinoLatitud = puntosDestino[usuarioFinalId]?.Latitud,
+                DestinoLongitud = puntosDestino[usuarioFinalId]?.Longitud,
                 NumeroOrdenA = numeroA,
                 CodigoA = codigoA,
                 Estado = EstadoOrden.Creada,
                 EsAuto = tienda.AutoAsignacion,
                 Precio = precio,
                 DistanciaKm = distanciaKm,
-                NotaPedido = string.IsNullOrWhiteSpace(notaPedido) ? null : notaPedido
+                NotaPedido = nota
             };
 
+            if (destinos.Count > 1)
+            {
+                orden.UsuarioFinalId = null;
+                orden.DestinoNombre = $"{destinos.Count} destinatarios";
+                orden.DestinoDireccion = orden.DestinoTelefono = "";
+                orden.DestinoMapaLink = null; orden.DestinoLatitud = orden.DestinoLongitud = null;
+            }
+            foreach (var (destino, posicion) in destinos.Select((d, i) => (d, i + 1)))
+            {
+                var contacto = contactos[destino.UsuarioFinalId];
+                orden.Paradas.Add(new ParadaEntrega { ClienteAppId = clienteAppId, TiendaId = tiendaId,
+                    UsuarioFinalId = contacto.Id, Posicion = posicion, Nombre = contacto.Nombre,
+                    Direccion = contacto.DireccionUbicacion, Telefono = contacto.Telefono, MapaLink = contacto.MapaLink,
+                    Latitud = puntosDestino[contacto.Id]?.Latitud, Longitud = puntosDestino[contacto.Id]?.Longitud,
+                    Instrucciones = destino.Instrucciones });
+            }
             _db.OrdenesEntrega.Add(orden);
             await _db.SaveChangesAsync();
 
             // 6) Crear B y C en tabla CodigoEntrega
             var codigoB = await GenerarCodigoAsync(clienteAppId, TipoCodigo.B_Recoleccion, codigoA);
-            var codigoC = await GenerarCodigoAsync(clienteAppId, TipoCodigo.C_Finalizacion, codigoA, codigoB);
 
             _db.CodigosEntrega.Add(new CodigoEntrega
             {
@@ -94,13 +210,21 @@ namespace Login.Application.Services
                 Codigo = codigoB
             });
 
-            _db.CodigosEntrega.Add(new CodigoEntrega
+            var excluidos = new List<string> { codigoA, codigoB };
+            foreach (var parada in orden.Paradas.OrderBy(p => p.Posicion))
             {
-                OrdenEntregaId = orden.Id,
-                ClienteAppId = clienteAppId,
-                Tipo = TipoCodigo.C_Finalizacion,
-                Codigo = codigoC
-            });
+                var codigoC = await GenerarCodigoAsync(clienteAppId, TipoCodigo.C_Finalizacion, excluidos.ToArray());
+                excluidos.Add(codigoC);
+                orden.Codigos.Add(new CodigoEntrega { OrdenEntregaId = orden.Id, ClienteAppId = clienteAppId,
+                    Tipo = TipoCodigo.C_Finalizacion, Codigo = codigoC, ParadaEntregaId = parada.Id });
+            }
+
+            if (clave is not null)
+                _db.OperacionesOrden.Add(new OperacionOrden
+                {
+                    ClienteAppId = clienteAppId, ActorIdentityUserId = actorIdentityUserId,
+                    Clave = clave, PayloadHash = payloadHash, OrdenEntregaId = orden.Id
+                });
 
             // 7) Historial
             RegistrarHistorial(                orden.Id,
@@ -112,7 +236,7 @@ namespace Login.Application.Services
             await _db.SaveChangesAsync();
             await tx.CommitAsync();
 
-            return new OrdenCreadaResult(orden.Id, numeroA, codigoB, codigoC, codigoA);
+            return ResultadoCreacion(orden);
         }
 
         public async Task AsignarPilotoAsync(string codigoB, int pilotoId, string actorIdentityUserId, string actorRol, int? ordenId = null)
@@ -130,6 +254,10 @@ namespace Login.Application.Services
 
             var orden = codeB.OrdenEntrega;
 
+            using var tx = await _quotas.BeginTenantMutationAsync(orden.ClienteAppId);
+            await _db.Entry(orden).ReloadAsync();
+            if (orden.GestionPorParadas) throw new OperationsException(426, "La asignación de esta orden se administra por parada.");
+
             // Validar piloto pertenece al mismo ClienteApp
             if (!await _db.ClientesApp.AnyAsync(c => c.Id == orden.ClienteAppId
                 && c.GestorIdentityUserId == actorIdentityUserId && c.Estado == EstadoClienteApp.Activo))
@@ -144,8 +272,10 @@ namespace Login.Application.Services
 
             if (orden.Estado != EstadoOrden.Creada)
                 throw new InvalidOperationException("Solo se puede asignar si la orden está en estado Creada.");
+            var asignacion = Task.CompletedTask;
+            ValidarAsignacionOperativa(orden.ClienteAppId, orden.Id, pilotoId, ref asignacion);
+            await asignacion;
 
-            using var tx = await _db.Database.BeginTransactionAsync();
             var now = DateTime.UtcNow;
             var asignadas = await _db.OrdenesEntrega
                 .Where(o => o.Id == orden.Id && o.ClienteAppId == piloto.ClienteAppId
@@ -167,115 +297,79 @@ namespace Login.Application.Services
             await tx.CommitAsync();
         }
 
-        public async Task ConfirmarRecolectaAsync(string codigoB, string actorIdentityUserId, string actorRol, int? ordenId = null)
+        public async Task ConfirmarRecolectaAsync(string codigoB, string actorIdentityUserId, string actorRol,
+            int? ordenId = null, string? operacionId = null)
         {
-            if (string.IsNullOrWhiteSpace(codigoB)) throw new ArgumentException("codigoB requerido.");
-
-            var codeB = await CodigoBQuery(codigoB, ordenId)
-                .SingleOrDefaultAsync(c => c.OrdenEntrega.Estado == EstadoOrden.Asignada
-                    && c.OrdenEntrega.Piloto != null
-                    && c.OrdenEntrega.Piloto.IdentityUserId == actorIdentityUserId);
-
-            if (codeB?.OrdenEntrega is null)
-                throw new InvalidOperationException("Código B inválido.");
-
-            if (codeB.Usado)
-                throw new InvalidOperationException("Este código B ya fue usado.");
-
-            var orden = codeB.OrdenEntrega;
-
-            if (orden.PilotoId is null)
-                throw new InvalidOperationException("No se puede recolectar: la orden no tiene piloto asignado.");
-
+            var clave = NormalizarOperacionId(operacionId);
+            if (!ordenId.HasValue && codigoB?.Length == 4)
+                throw new InvalidOperationException("Los códigos cortos requieren seleccionar la orden.");
+            var id = ordenId ?? await _db.CodigosEntrega.AsNoTracking().Where(c => c.Codigo == codigoB
+                && c.Tipo == TipoCodigo.B_Recoleccion && c.OrdenEntrega.Piloto != null
+                && c.OrdenEntrega.Piloto.IdentityUserId == actorIdentityUserId)
+                .Select(c => c.OrdenEntregaId).SingleOrDefaultAsync();
+            if (await _db.OrdenesEntrega.AsNoTracking().AnyAsync(o => o.Id == id && o.GestionPorParadas
+                && _db.Pilotos.Any(p => p.IdentityUserId == actorIdentityUserId && p.ClienteAppId == o.ClienteAppId
+                    && p.Activo && p.ClienteApp.Estado == EstadoClienteApp.Activo)))
+            {
+                await ReproducirRecogidaLegadaGestionadaAsync(id, codigoB, actorIdentityUserId, clave);
+                return;
+            }
+            var orden = await CargarOrdenAutorizadaAsync(id, actorIdentityUserId);
+            if (orden.GestionPorParadas) throw new OperationsException(426, "Utiliza la recogida por lote con la revisión de cada parada.");
+            using var tx = await _quotas.BeginTenantMutationAsync(orden.ClienteAppId);
+            orden = await CargarOrdenAutorizadaAsync(id, actorIdentityUserId);
+            if (orden.GestionPorParadas) throw new OperationsException(426, "Utiliza la recogida por lote con la revisión de cada parada.");
+            var hash = Hash(JsonSerializer.Serialize(new { ordenId = id, codigoB }));
+            var repetida = await OperacionConfirmacionAsync(orden.ClienteAppId, actorIdentityUserId, "ConfirmarRecogida", clave, hash);
+            if (repetida is not null) { await tx.CommitAsync(); return; }
             if (orden.Estado != EstadoOrden.Asignada)
-                throw new InvalidOperationException("La orden no está en estado válido para recolecta.");
-
-            await ValidarPilotoAsignadoAsync(orden, actorIdentityUserId);
-            using var tx = await _db.Database.BeginTransactionAsync();
+                throw new OrdenSolicitudRechazadaException("La orden no está asignada para recoger.");
+            var trabajo = Task.CompletedTask;
+            ValidarTrabajoOperativo(orden.ClienteAppId, orden.Id, null, true, ref trabajo);
+            await trabajo;
+            var codeB = await _db.CodigosEntrega.SingleOrDefaultAsync(c => c.OrdenEntregaId == id
+                && c.ClienteAppId == orden.ClienteAppId && c.Tipo == TipoCodigo.B_Recoleccion
+                && c.Codigo == codigoB && !c.Usado && c.Reservado);
+            if (codeB is null) throw new OrdenSolicitudRechazadaException("Código B inválido para esta orden.");
             var now = DateTime.UtcNow;
-            var updated = await _db.OrdenesEntrega.Where(o => o.Id == orden.Id
-                && o.Estado == EstadoOrden.Asignada && o.PilotoId == orden.PilotoId)
-                .ExecuteUpdateAsync(s => s.SetProperty(o => o.Estado, EstadoOrden.Recolectada)
+            var rows = await _db.OrdenesEntrega.Where(o => o.Id == id && o.Estado == EstadoOrden.Asignada
+                && o.PilotoId == orden.PilotoId).ExecuteUpdateAsync(v => v.SetProperty(o => o.Estado, EstadoOrden.Recolectada)
                     .SetProperty(o => o.RecolectadaAt, now));
-            if (updated != 1) throw new InvalidOperationException("La orden ya cambió de estado.");
-            await RefrescarOrdenLocalAsync(orden.Id);
-
-            // Marcar B como usado
-            codeB.Usado = true;
-            codeB.UsadoAt = DateTime.UtcNow;
-
-            RegistrarHistorial(
-                orden.Id,
-                TipoEventoOrden.Recolectada,
-                actorIdentityUserId,
-                actorRol,
-                "Recolecta confirmada con código B.");
-
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
+            if (rows != 1) throw new InvalidOperationException("La orden ya cambió de estado.");
+            await RefrescarOrdenLocalAsync(id);
+            codeB.Usado = true; codeB.UsadoAt = now;
+            RegistrarHistorial(id, TipoEventoOrden.Recolectada, actorIdentityUserId, actorRol, "Recolecta confirmada con código B.");
+            GuardarConfirmacion(orden.ClienteAppId, id, actorIdentityUserId, "ConfirmarRecogida", clave, hash, new { ok = true });
+            await _db.SaveChangesAsync(); await tx.CommitAsync();
         }
 
-        public async Task ConfirmarEntregaAsync(string codigoB, string codigoC, string actorIdentityUserId, string actorRol, int? ordenId = null)
+        public async Task ConfirmarEntregaAsync(string codigoB, string codigoC, string actorIdentityUserId,
+            string actorRol, int? ordenId = null)
         {
-            if (string.IsNullOrWhiteSpace(codigoB)) throw new ArgumentException("codigoB requerido.");
-            if (string.IsNullOrWhiteSpace(codigoC)) throw new ArgumentException("codigoC requerido.");
-
-            // Buscar orden por B
-            var codeB = await CodigoBQuery(codigoB, ordenId)
-                .SingleOrDefaultAsync(c => c.OrdenEntrega.Estado == EstadoOrden.Recolectada
-                    && c.OrdenEntrega.Piloto != null
-                    && c.OrdenEntrega.Piloto.IdentityUserId == actorIdentityUserId);
-
-            if (codeB?.OrdenEntrega is null)
-                throw new InvalidOperationException("Código B inválido.");
-
-            var orden = codeB.OrdenEntrega;
-
-            // Buscar C de la misma orden
-            var codeC = await _db.CodigosEntrega
-                .SingleOrDefaultAsync(c =>
-                    c.OrdenEntregaId == orden.Id &&
-                    c.Codigo == codigoC &&
-                    c.Tipo == TipoCodigo.C_Finalizacion);
-
-            if (codeC is null)
-                throw new InvalidOperationException("Código C inválido para esta orden.");
-
-            if (codeC.Usado)
-                throw new InvalidOperationException("Este código C ya fue usado.");
-
-            if (orden.Estado != EstadoOrden.Recolectada)
-                throw new InvalidOperationException("La orden no está en estado válido para entrega.");
-
-            await ValidarPilotoAsignadoAsync(orden, actorIdentityUserId);
-            using var tx = await _db.Database.BeginTransactionAsync();
-            var now = DateTime.UtcNow;
-            var updated = await _db.OrdenesEntrega.Where(o => o.Id == orden.Id
-                && o.Estado == EstadoOrden.Recolectada && o.PilotoId == orden.PilotoId)
-                .ExecuteUpdateAsync(s => s.SetProperty(o => o.Estado, EstadoOrden.Entregada)
-                    .SetProperty(o => o.EntregadaAt, now));
-            if (updated != 1) throw new InvalidOperationException("La orden ya cambió de estado.");
-            await RefrescarOrdenLocalAsync(orden.Id);
-
-            // Marcar C usado
-            codeC.Usado = true;
-            codeC.UsadoAt = DateTime.UtcNow;
-            codeB.Reservado = false;
-            codeC.Reservado = false;
-
-            RegistrarHistorial(
-                orden.Id,
-                TipoEventoOrden.Entregada,
-                actorIdentityUserId,
-                actorRol,
-                "Entrega confirmada con códigos B + C.");
-
-            await _db.SaveChangesAsync();
-            await tx.CommitAsync();
+            OrdenEntrega orden;
+            if (ordenId.HasValue && string.IsNullOrWhiteSpace(codigoB))
+                orden = await CargarOrdenAutorizadaAsync(ordenId.Value, actorIdentityUserId);
+            else
+            {
+                var code = await CodigoBQuery(codigoB, ordenId).AsNoTracking().SingleOrDefaultAsync(c =>
+                    c.OrdenEntrega.Piloto != null && c.OrdenEntrega.Piloto.IdentityUserId == actorIdentityUserId);
+                if (code is null) throw new InvalidOperationException("Código B inválido.");
+                orden = await CargarOrdenAutorizadaAsync(code.OrdenEntregaId, actorIdentityUserId);
+            }
+            int paradaId;
+            using (var tx = await _quotas.BeginTenantMutationAsync(orden.ClienteAppId))
+            {
+                orden = await CargarOrdenAutorizadaAsync(orden.Id, actorIdentityUserId);
+                if (orden.GestionPorParadas) throw new OperationsException(426, "Confirma cada parada con su asignación vigente.");
+                paradaId = (await AsegurarParadaLegadaAsync(orden)).Id;
+                await tx.CommitAsync();
+            }
+            await ConfirmarParadaCoreAsync(orden.Id, paradaId, codigoC, actorIdentityUserId, null);
         }
 
         private async Task ValidarPilotoAsignadoAsync(OrdenEntrega orden, string identityUserId)
         {
+            if (orden.GestionPorParadas) throw new OperationsException(426, "Esta orden se administra por parada.");
             var autorizado = await _db.Pilotos.AnyAsync(p => p.Id == orden.PilotoId
                 && p.IdentityUserId == identityUserId && p.ClienteAppId == orden.ClienteAppId
                 && p.Activo && p.ClienteApp.Estado == EstadoClienteApp.Activo);
@@ -292,7 +386,9 @@ namespace Login.Application.Services
 
         public async Task ValidarLimitePorPlanAsync(int clienteAppId, DateTime fechaUtc)
         {
-            var inicioMes = new DateTime(fechaUtc.Year, fechaUtc.Month, 1);
+            await _quotas.EnsureSubscriptionAllowsNewWorkAsync(clienteAppId);
+            var fechaLocal = fechaUtc.AddHours(-4);
+            var inicioMes = DateTime.SpecifyKind(new DateTime(fechaLocal.Year, fechaLocal.Month, 1).AddHours(4), DateTimeKind.Utc);
             var finMes = inicioMes.AddMonths(1);
 
             var cliente = await _db.ClientesApp
@@ -303,14 +399,16 @@ namespace Login.Application.Services
             if (cliente is null) throw new InvalidOperationException("ClienteApp no existe.");
             if (cliente.Plan is null) throw new InvalidOperationException("ClienteApp no tiene plan asignado.");
 
-            var limite = cliente.Plan.MaxOrdenesPorMes;
+            var limite = (await _quotas.ResolveAsync(clienteAppId)).MaxOrdenesMes;
+            if (limite < 0)
+                throw new InvalidOperationException("La cuota mensual de la empresa no está configurada correctamente.");
 
             var usadas = await _db.OrdenesEntrega.CountAsync(o =>
                 o.ClienteAppId == clienteAppId &&
                 o.CreatedAt >= inicioMes &&
                 o.CreatedAt < finMes);
 
-            if (usadas >= limite)
+            if (limite > 0 && usadas >= limite)
                 throw new InvalidOperationException("Límite mensual de órdenes alcanzado según el plan.");
         }
 
@@ -334,6 +432,7 @@ namespace Login.Application.Services
 
             if (orden.PilotoId != pilotoId)
                 throw new InvalidOperationException("Esta orden no está asignada a ese piloto.");
+            if (orden.GestionPorParadas) throw new OperationsException(426, "Consulta sólo las paradas de tu asignación vigente.");
 
             // 🔒 Regla: no ve destino hasta recolectar
             var puedeVer = orden.Estado == EstadoOrden.Recolectada || orden.Estado == EstadoOrden.Entregada;
@@ -343,9 +442,9 @@ namespace Login.Application.Services
                 NumeroOrdenA: orden.NumeroOrdenA,
                 Estado: orden.Estado.ToString(),
                 PuedeVerDestino: puedeVer,
-                DestinoDireccion: puedeVer ? orden.UsuarioFinal.DireccionUbicacion : null,
-                NombreUsuarioFinal: puedeVer ? orden.UsuarioFinal.Nombre : null,
-                TelefonoUsuarioFinal: puedeVer ? orden.UsuarioFinal.Telefono : null,
+                DestinoDireccion: puedeVer ? (orden.DatosEntregaCongelados ? orden.DestinoDireccion : orden.UsuarioFinal.DireccionUbicacion) : null,
+                NombreUsuarioFinal: puedeVer ? (orden.DatosEntregaCongelados ? orden.DestinoNombre : orden.UsuarioFinal.Nombre) : null,
+                TelefonoUsuarioFinal: puedeVer ? (orden.DatosEntregaCongelados ? orden.DestinoTelefono : orden.UsuarioFinal.Telefono) : null,
                 CodigoA: orden.CodigoA
             );
         }
@@ -356,14 +455,6 @@ namespace Login.Application.Services
 
         public async Task<List<OrdenAutoDisponibleDto>> GetOrdenesAutoDisponiblesAsync(int pilotoId)
         {
-            // Regla: si el piloto tiene una orden auto activa, no recibe nuevas hasta entregarla
-            var tieneAutoActiva = await _db.OrdenesEntrega.AnyAsync(o =>
-                o.PilotoId == pilotoId && o.EsAuto &&
-                (o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada));
-
-            if (tieneAutoActiva)
-                return new List<OrdenAutoDisponibleDto>();
-
             var piloto = await _db.Pilotos.AsNoTracking()
                 .SingleOrDefaultAsync(p => p.Id == pilotoId && p.Activo && p.ClienteApp.Estado == EstadoClienteApp.Activo);
 
@@ -374,10 +465,13 @@ namespace Login.Application.Services
                 .Where(r => r.PilotoId == pilotoId)
                 .Select(r => r.OrdenEntregaId);
 
-            return await _db.OrdenesEntrega.AsNoTracking()
+            IQueryable<OrdenEntrega> ofertas = _db.OrdenesEntrega.AsNoTracking();
+            FiltrarOfertasOperativas(ref ofertas);
+            return await ofertas
                 .Include(o => o.Tienda)
                 .Include(o => o.UsuarioFinal)
                 .Where(o => o.ClienteAppId == piloto.ClienteAppId
+                         && !o.GestionPorParadas
                          && o.EsAuto
                          && o.Estado == EstadoOrden.Creada
                          && o.PilotoId == null
@@ -386,13 +480,14 @@ namespace Login.Application.Services
                 .Select(o => new OrdenAutoDisponibleDto(
                     o.Id,
                     o.NumeroOrdenA,
-                    o.Tienda.Nombre,
-                    o.Tienda.Direccion,
-                    o.UsuarioFinal.Nombre,
+                    o.DatosEntregaCongelados ? o.RecogidaNombre : o.Tienda.Nombre,
+                    o.DatosEntregaCongelados ? o.RecogidaDireccion : o.Tienda.Direccion,
+                    "",
                     o.NotaPedido,
                     o.CreatedAt,
                     o.DistanciaKm,
-                    o.CodigoA))
+                    o.CodigoA,
+                    o.Paradas.Count == 0 ? 1 : o.Paradas.Count))
                 .ToListAsync();
         }
 
@@ -401,8 +496,14 @@ namespace Login.Application.Services
             if (ordenId <= 0) throw new ArgumentException("ordenId inválido.");
             if (pilotoId <= 0) throw new ArgumentException("pilotoId inválido.");
 
-            using var tx = await _db.Database.BeginTransactionAsync();
-            // Bloquear primero la fila del piloto evita aceptar dos ofertas simultáneas.
+            var tenantId = await _db.Pilotos.AsNoTracking()
+                .Where(p => p.Id == pilotoId && p.IdentityUserId == actorIdentityUserId)
+                .Select(p => p.ClienteAppId).SingleOrDefaultAsync();
+            if (tenantId == 0) throw new InvalidOperationException("Piloto no disponible.");
+            using var tx = await _quotas.BeginTenantMutationAsync(tenantId);
+            // La fila del piloto coordina aceptación y cambios de disponibilidad.
+            // Varias órdenes distintas pueden asignarse al mismo piloto; cada
+            // orden conserva su UPDATE condicional y las guardas de su ruta.
             var disponible = await _db.Pilotos
                 .Where(p => p.Id == pilotoId && p.IdentityUserId == actorIdentityUserId && p.Activo && p.EnLinea
                     && p.ClienteApp.Estado == EstadoClienteApp.Activo)
@@ -415,18 +516,15 @@ namespace Login.Application.Services
             if (piloto is null)
                 throw new InvalidOperationException("Piloto no encontrado o inactivo.");
 
-            // Regla: no puede aceptar otra auto si tiene una activa
-            var tieneAutoActiva = await _db.OrdenesEntrega.AnyAsync(o =>
-                o.PilotoId == pilotoId && o.EsAuto &&
-                (o.Estado == EstadoOrden.Asignada || o.Estado == EstadoOrden.Recolectada));
-
-            if (tieneAutoActiva)
-                throw new InvalidOperationException("Debes finalizar tu entrega automática actual antes de aceptar otra.");
+            var asignacion = Task.CompletedTask;
+            ValidarAsignacionOperativa(tenantId, ordenId, pilotoId, ref asignacion);
+            await asignacion;
 
             // Tenant y disponibilidad forman parte del UPDATE, no solo de la consulta de ofertas.
             var now = DateTime.UtcNow;
             var rows = await _db.OrdenesEntrega
                 .Where(o => o.Id == ordenId && o.ClienteAppId == piloto.ClienteAppId && o.EsAuto
+                    && !o.GestionPorParadas
                     && o.Estado == EstadoOrden.Creada && o.PilotoId == null
                     && !_db.OrdenesAutoRechazo.Any(r => r.OrdenEntregaId == o.Id && r.PilotoId == pilotoId))
                 .ExecuteUpdateAsync(s => s.SetProperty(o => o.PilotoId, pilotoId)
@@ -452,7 +550,10 @@ namespace Login.Application.Services
             if (ordenId <= 0) return;
             if (pilotoId <= 0) return;
 
-            using var tx = await _db.Database.BeginTransactionAsync();
+            var tenantId = await _db.Pilotos.AsNoTracking().Where(p => p.Id == pilotoId)
+                .Select(p => p.ClienteAppId).SingleOrDefaultAsync();
+            if (tenantId == 0) throw new InvalidOperationException("Piloto no disponible.");
+            using var tx = await _quotas.BeginTenantMutationAsync(tenantId);
             var disponible = await _db.Pilotos.Where(p => p.Id == pilotoId && p.Activo && p.EnLinea
                     && p.ClienteApp.Estado == EstadoClienteApp.Activo)
                 .ExecuteUpdateAsync(s => s.SetProperty(p => p.EnLinea, true));
@@ -460,7 +561,7 @@ namespace Login.Application.Services
             var tenant = await _db.Pilotos.Where(p => p.Id == pilotoId).Select(p => p.ClienteAppId).SingleAsync();
             var ordenDisponible = await _db.OrdenesEntrega.AsNoTracking()
                 .AnyAsync(o => o.Id == ordenId && o.ClienteAppId == tenant && o.EsAuto &&
-                               o.Estado == EstadoOrden.Creada && o.PilotoId == null);
+                               !o.GestionPorParadas && o.Estado == EstadoOrden.Creada && o.PilotoId == null);
 
             if (!ordenDisponible) throw new InvalidOperationException("Orden no disponible para este piloto.");
 
@@ -483,40 +584,21 @@ namespace Login.Application.Services
         // Helpers
         // -------------------------
 
-        private async Task<(double? km, decimal precio)> CalcularPrecioAsync(ClienteApp cliente, Tienda tienda, UsuarioFinal uf)
+        private readonly record struct FuenteUbicacion(string Direccion, double? Latitud, double? Longitud);
+        private readonly record struct Coordenadas(double Latitud, double Longitud);
+        private static bool CoordenadaValida(double? lat, double? lng) => lat.HasValue && lng.HasValue
+            && double.IsFinite(lat.Value) && double.IsFinite(lng.Value) && lat.Value is >= -90 and <= 90 && lng.Value is >= -180 and <= 180;
+
+        private async Task<(double? km, decimal precio)> CalcularPrecioAsync(ClienteApp cliente, Coordenadas? origen, Coordenadas? destino)
         {
             var basePrecio = cliente.PrecioBase;
 
-            if (cliente.PrecioPorKm <= 0)
+            if (cliente.PrecioPorKm <= 0 || origen is null || destino is null)
                 return (null, basePrecio);
 
-            // Resolver coordenadas de origen (tienda)
-            var latOrigen = tienda.Latitud;
-            var lngOrigen = tienda.Longitud;
-
-            if (latOrigen is null || lngOrigen is null)
-            {
-                var g = await _googleMaps.GeocodificarAsync(tienda.Direccion);
-                if (g is null) return (null, basePrecio);
-                latOrigen = g.Value.Lat;
-                lngOrigen = g.Value.Lng;
-            }
-
-            // Resolver coordenadas de destino (usuario final)
-            var latDestino = uf.Latitud;
-            var lngDestino = uf.Longitud;
-
-            if (latDestino is null || lngDestino is null)
-            {
-                var g = await _googleMaps.GeocodificarAsync(uf.DireccionUbicacion);
-                if (g is null) return (null, basePrecio);
-                latDestino = g.Value.Lat;
-                lngDestino = g.Value.Lng;
-            }
-
             // Distancia real de ruta (Routes API); si falla, línea recta
-            var km = await _googleMaps.DistanciaRutaKmAsync(latOrigen.Value, lngOrigen.Value, latDestino.Value, lngDestino.Value)
-                     ?? _googleMaps.CalcularDistanciaKm(latOrigen.Value, lngOrigen.Value, latDestino.Value, lngDestino.Value);
+            var km = await _googleMaps.DistanciaRutaKmAsync(origen.Value.Latitud, origen.Value.Longitud, destino.Value.Latitud, destino.Value.Longitud)
+                     ?? _googleMaps.CalcularDistanciaKm(origen.Value.Latitud, origen.Value.Longitud, destino.Value.Latitud, destino.Value.Longitud);
 
             var precio = basePrecio + (decimal)km * cliente.PrecioPorKm;
             return (km, Math.Round(precio, 2));
@@ -531,10 +613,36 @@ namespace Login.Application.Services
                     && (ordenId == null || c.OrdenEntregaId == ordenId));
         }
 
+        private static string? NormalizarOperacionId(string? clave)
+        {
+            if (clave is null) return null; // compatibilidad con clientes anteriores
+            clave = clave.Trim();
+            if (clave.Length is < 1 or > 64)
+                throw new ArgumentException("OperacionId debe ser un GUID o una cadena hexadecimal de hasta 64 caracteres.");
+            if (Guid.TryParse(clave, out var guid)) return guid.ToString("N");
+            if (!Regex.IsMatch(clave, "^[a-fA-F0-9]+$"))
+                throw new ArgumentException("OperacionId debe ser un GUID o una cadena hexadecimal de hasta 64 caracteres.");
+            return clave.ToLowerInvariant();
+        }
+
+        private async Task<OrdenCreadaResult?> LeerOperacionAsync(int tenantId, string actorId, string? clave, string hash)
+        {
+            if (clave is null) return null;
+            var operacion = await _db.OperacionesOrden.AsNoTracking()
+                .Include(x => x.OrdenEntrega).ThenInclude(o => o.Codigos)
+                .Include(x => x.OrdenEntrega).ThenInclude(o => o.Paradas)
+                .SingleOrDefaultAsync(x => x.ClienteAppId == tenantId && x.ActorIdentityUserId == actorId
+                    && x.Tipo == "CrearOrden" && x.Clave == clave);
+            if (operacion is null) return null;
+            if (operacion.PayloadHash != hash)
+                throw new OperacionOrdenConflictoException("Esta operación ya creó otra solicitud. Conserva la referencia y revisa el pedido original.");
+            return ResultadoCreacion(operacion.OrdenEntrega);
+        }
+
         private async Task<string> GenerarCodigoAAsync(int tenantId, int secuencia)
         {
             var abiertas = await _db.OrdenesEntrega.AsNoTracking()
-                .Where(o => o.ClienteAppId == tenantId && o.Estado != EstadoOrden.Entregada)
+                .Where(o => o.ClienteAppId == tenantId && !EstadosEntrega.Terminales.Contains(o.Estado))
                 .Select(o => new { o.CodigoA, o.NumeroOrdenA }).ToListAsync();
             var reservados = abiertas.Select(o => o.CodigoA
                 ?? o.NumeroOrdenA.ToString("D4", CultureInfo.InvariantCulture)).ToHashSet();

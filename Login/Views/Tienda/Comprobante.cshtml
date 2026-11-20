@@ -1,0 +1,12 @@
+@model Login.ViewModels.Tienda.QrCodigosVm
+@{
+    Layout = "_LayoutTienda";
+    ViewData["Title"] = "Comprobante de orden";
+    ViewData["PageTitle"] = "Comprobante de orden";
+}
+<div class="tp-page"><div class="tp-scroll"><div class="tp-form-page">
+    <div class="tp-alert tp-alert-ok">Orden creada. Conserva estos códigos para la recogida y la entrega.</div>
+    @await Html.PartialAsync("_ModalQrCodigos", Model)
+    <a class="tp-btn tp-btn-primary" asp-action="Ordenes">Ver órdenes</a>
+    <a class="tp-btn" asp-action="CrearOrden">Crear otra orden</a>
+</div></div></div>

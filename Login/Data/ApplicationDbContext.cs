@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Login.Data
 {
-    public class ApplicationDbContext
+    public partial class ApplicationDbContext
         : IdentityDbContext<IdentityUser>
     {
         public ApplicationDbContext(
@@ -26,6 +26,12 @@ namespace Login.Data
         public DbSet<UserContext> UserContexts { get; set; } = null!;
         public DbSet<UsuarioClienteApp> UsuariosClienteApp { get; set; } = null!;
         public DbSet<OrdenAutoRechazo> OrdenesAutoRechazo => Set<OrdenAutoRechazo>();
+        public DbSet<OperacionOrden> OperacionesOrden => Set<OperacionOrden>();
+        public DbSet<ParadaEntrega> ParadasEntrega => Set<ParadaEntrega>();
+        partial void ConfigureOperativos(ModelBuilder b);
+        partial void ConfigureDevoluciones(ModelBuilder b);
+        partial void ConfigureSaas(ModelBuilder b);
+        partial void ConfigureReasignaciones(ModelBuilder b);
 
 
 
@@ -33,6 +39,13 @@ namespace Login.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            builder.Entity<OperacionOrden>()
+                .HasIndex(x => new { x.ClienteAppId, x.ActorIdentityUserId, x.Tipo, x.Clave }).IsUnique();
+            builder.Entity<OperacionOrden>().HasOne(x => x.ClienteApp).WithMany()
+                .HasForeignKey(x => x.ClienteAppId).OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<OperacionOrden>().HasOne(x => x.OrdenEntrega).WithMany()
+                .HasForeignKey(x => x.OrdenEntregaId).OnDelete(DeleteBehavior.Restrict);
 
             // ✅ Precisión para montos (evita truncados)
             builder.Entity<ClienteApp>()
@@ -51,7 +64,7 @@ namespace Login.Data
             builder.Entity<OrdenEntrega>()
                 .HasIndex(o => new { o.ClienteAppId, o.CodigoA })
                 .IsUnique()
-                .HasFilter("[CodigoA] IS NOT NULL AND [Estado] <> 4");
+                .HasFilter("[CodigoA] IS NOT NULL AND [Estado] <> 4 AND [Estado] <> 6 AND [Estado] <> 7 AND [Estado] <> 8");
 
             builder.Entity<CodigoEntrega>()
                 .HasIndex(c => c.Codigo);
@@ -66,9 +79,31 @@ namespace Login.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // ✅ Una orden solo tiene 1 B y 1 C
-            builder.Entity<CodigoEntrega>()
-                .HasIndex(c => new { c.OrdenEntregaId, c.Tipo })
-                .IsUnique();
+            builder.Entity<CodigoEntrega>().HasIndex(c => new { c.OrdenEntregaId, c.Tipo })
+                .IsUnique().HasFilter("[ParadaEntregaId] IS NULL");
+            builder.Entity<CodigoEntrega>().HasIndex(c => c.ParadaEntregaId)
+                .IsUnique().HasFilter("[ParadaEntregaId] IS NOT NULL");
+            builder.Entity<CodigoEntrega>().ToTable(t => t.HasCheckConstraint("CK_CodigoEntrega_ParadaTipo",
+                "([Tipo] = 1 AND [ParadaEntregaId] IS NULL) OR [Tipo] = 2"));
+            builder.Entity<OrdenEntrega>().HasAlternateKey(o => new { o.ClienteAppId, o.Id, o.TiendaId });
+            builder.Entity<OrdenEntrega>().HasAlternateKey(o => new { o.ClienteAppId, o.Id });
+            builder.Entity<Tienda>().HasAlternateKey(t => new { t.ClienteAppId, t.Id });
+            builder.Entity<Piloto>().HasAlternateKey(p => new { p.ClienteAppId, p.Id });
+            builder.Entity<UsuarioFinal>().HasAlternateKey(u => new { u.TiendaId, u.Id });
+            builder.Entity<ParadaEntrega>().HasAlternateKey(p => new { p.ClienteAppId, p.OrdenEntregaId, p.Id });
+            builder.Entity<ParadaEntrega>().HasIndex(p => new { p.OrdenEntregaId, p.Posicion }).IsUnique();
+            builder.Entity<ParadaEntrega>().HasOne(p => p.OrdenEntrega).WithMany(o => o.Paradas)
+                .HasForeignKey(p => new { p.ClienteAppId, p.OrdenEntregaId, p.TiendaId })
+                .HasPrincipalKey(o => new { o.ClienteAppId, o.Id, o.TiendaId }).OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<ParadaEntrega>().HasOne(p => p.UsuarioFinal).WithMany()
+                .HasForeignKey(p => new { p.TiendaId, p.UsuarioFinalId })
+                .HasPrincipalKey(u => new { u.TiendaId, u.Id }).OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<CodigoEntrega>().HasOne(c => c.OrdenEntrega).WithMany(o => o.Codigos)
+                .HasForeignKey(c => new { c.ClienteAppId, c.OrdenEntregaId })
+                .HasPrincipalKey(o => new { o.ClienteAppId, o.Id }).OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<CodigoEntrega>().HasOne(c => c.ParadaEntrega).WithMany(p => p.Codigos)
+                .HasForeignKey(c => new { c.ClienteAppId, c.OrdenEntregaId, c.ParadaEntregaId })
+                .HasPrincipalKey(p => new { p.ClienteAppId, p.OrdenEntregaId, p.Id }).OnDelete(DeleteBehavior.Restrict);
 
             // Relaciones con restricciones (evita cascadas peligrosas)
             builder.Entity<OrdenEntrega>()
@@ -147,6 +182,10 @@ namespace Login.Data
 
 
 
+            ConfigureOperativos(builder);
+            ConfigureDevoluciones(builder);
+            ConfigureSaas(builder);
+            ConfigureReasignaciones(builder);
         }
     }
 }

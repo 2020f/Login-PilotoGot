@@ -1,0 +1,183 @@
+@model Login.ViewModels.SuperAdmin.EmpresaDetalleVm
+@using Login.Application.Services
+@using System.Globalization
+@{ Layout = "_LayoutSuperAdmin"; ViewData["Title"] = Model.Empresa.NombreComercial; var e = Model.Empresa; var money = CultureInfo.GetCultureInfo("es-DO"); string Limit(int n) => n == 0 ? "Ilimitado" : n.ToString("N0"); }
+<div class="sa-page-head">
+<div>
+<a asp-action="Clientes" class="sa-sub">← Volver a empresas</a>
+<h2>@e.NombreComercial</h2>
+<p>Empresa #@e.Id · @(Model.GestorEmail ?? "Sin gestor asignado")</p>
+</div>
+<div class="sa-actions">
+<span class="sa-pill @(e.Estado.ToString() == "Activo" ? "sa-pill-ok" : "sa-pill-bad")">@e.Estado</span>
+<a class="sa-btn" asp-action="EditarCliente" asp-route-id="@e.Id">Editar empresa</a>
+<a class="sa-btn sa-btn-primary" asp-action="CrearFactura" asp-route-empresaId="@e.Id">+ Crear factura</a>
+</div>
+</div>
+@if(!string.IsNullOrWhiteSpace(Model.Ok)) { <div class="sa-notice" role="status">@Model.Ok</div> }
+@if(!string.IsNullOrWhiteSpace(Model.Error)) { <div class="sa-notice sa-notice-error" role="alert">@Model.Error</div> }
+@if(Model.Vencida) { <div class="sa-notice sa-notice-warning">
+<strong>Suscripción vencida.</strong> La empresa necesita renovar su cobertura. No se acreditan pagos automáticamente al alcanzar una fecha. Las entregas activas conservan su flujo de cierre.</div> }
+@if(Model.GestorEmail == null) { <div class="sa-notice sa-notice-warning">Esta empresa todavía no tiene gestor. <a asp-action="CrearGestor" asp-route-clienteAppId="@e.Id">Crear su acceso de administración</a>.</div> }
+<div class="sa-grid-4">
+<article class="sa-card sa-card-pad">
+<div class="sa-kpi-label">Comercios activos</div>
+<div class="sa-kpi-value">@Model.Comercios</div>
+<div class="sa-kpi-foot">Límite @Limit(Model.Cuotas.MaxTiendas)</div>
+</article>
+<article class="sa-card sa-card-pad">
+<div class="sa-kpi-label">Pilotos activos</div>
+<div class="sa-kpi-value">@Model.Pilotos</div>
+<div class="sa-kpi-foot">Límite @Limit(Model.Cuotas.MaxPilotos)</div>
+</article>
+<article class="sa-card sa-card-pad">
+<div class="sa-kpi-label">Órdenes este mes</div>
+<div class="sa-kpi-value">@Model.OrdenesMes</div>
+<div class="sa-kpi-foot">Límite @Limit(Model.Cuotas.MaxOrdenesMes)</div>
+</article>
+<article class="sa-card sa-card-pad">
+<div class="sa-kpi-label">Usuarios activos</div>
+<div class="sa-kpi-value">@Model.Usuarios</div>
+<div class="sa-kpi-foot">Límite @Limit(Model.Cuotas.MaxUsuarios)</div>
+</article>
+</div>
+<div class="sa-grid-equal sa-section-gap">
+<section class="sa-card sa-card-pad">
+<h3>Suscripción</h3>
+<dl class="sa-definition">
+<dt>Plan actual</dt>
+<dd>@e.Plan.Nombre</dd>
+<dt>Precio del plan</dt>
+<dd>RD$@e.Plan.PrecioMensual.ToString("N2", money) / mes</dd>
+<dt>Cobertura</dt>
+<dd>
+<span class="sa-pill @(Model.Vencida ? "sa-pill-bad" : "sa-pill-info")">@(Model.Vencida ? "Vencida" : e.FechaFinPlan == null ? "Sin fecha establecida" : "Vigente")</span>
+</dd>
+<dt>Inicio</dt>
+<dd>@(e.FechaInicioPlan?.ToString("dd/MM/yyyy") ?? "Sin fecha")</dd>
+<dt>Fin de cobertura</dt>
+<dd>@(e.FechaFinPlan?.ToString("dd/MM/yyyy") ?? "Sin fecha establecida")</dd>
+<dt>Último pago registrado</dt>
+<dd>@(e.UltimoPago?.ToString("dd/MM/yyyy") ?? "Sin pagos registrados")</dd>
+<dt>Próximo cobro</dt>
+<dd>@(e.ProximoCobro?.ToString("dd/MM/yyyy") ?? "Sin fecha")</dd>
+<dt>Período de prueba</dt>
+<dd>@(e.EsTrial == true ? "Sí" : "No")</dd>
+</dl>
+<p class="sa-sub sa-section-gap">Fechas de cobertura y vencimiento en el calendario de Santo Domingo. Una factura se paga únicamente con cobros confirmados suficientes.</p>
+</section>
+<section class="sa-card sa-card-pad">
+<h3>Contacto y operación</h3>
+<dl class="sa-definition">
+<dt>Correo</dt>
+<dd>@(e.Email ?? "Sin correo")</dd>
+<dt>Teléfono</dt>
+<dd>@(e.Telefono ?? "Sin teléfono")</dd>
+<dt>Responsable</dt>
+<dd>@(e.ContactoResponsable ?? "Sin responsable")</dd>
+<dt>RNC</dt>
+<dd>@(e.RNC ?? "Sin RNC")</dd>
+<dt>Ubicación</dt>
+<dd>@(e.Ubicacion ?? "Sin ubicación")</dd>
+<dt>Órdenes abiertas</dt>
+<dd>@Model.OrdenesAbiertas</dd>
+</dl>@if(!string.IsNullOrWhiteSpace(e.Observaciones)) { <h3 class="sa-section-gap">Notas internas</h3>
+<p class="sa-sub">@e.Observaciones</p> }</section>
+</div>
+<section class="sa-card sa-card-pad sa-section-gap" id="cambiar-plan">
+<div class="sa-section-head">
+<h3>Cambiar plan</h3>
+<span class="sa-pill sa-pill-info">Con validación de capacidad</span>
+</div>
+<p class="sa-sub">El cambio conserva las órdenes y rutas de esta empresa. No registra un pago ni modifica las facturas ya emitidas.</p>
+<form asp-action="CambiarPlan" method="post">@Html.AntiForgeryToken()<input type="hidden" name="EmpresaId" value="@e.Id" />
+<input type="hidden" name="Clave" value="@Guid.NewGuid().ToString("N")" />
+<div class="sa-form-grid">
+<div class="sa-field">
+<label for="planId">Nuevo plan</label>
+<select id="planId" name="PlanId" required>
+<option value="">Selecciona un plan</option>@foreach(var p in Model.Planes) { <option value="@p.Id">@p.Nombre · RD$@p.PrecioMensual.ToString("N2", money) / mes</option> }</select>
+</div>
+<div class="sa-field">
+<label for="planReason">Motivo del cambio</label>
+<input id="planReason" name="Motivo" required maxlength="500" placeholder="Acuerdo o solicitud de la empresa" />
+</div>
+<label class="sa-check sa-field-full">
+<input type="checkbox" name="RestablecerLimites" value="true" checked /> Usar los límites del nuevo plan y quitar las excepciones de pilotos, órdenes y usuarios</label>
+</div>
+<div class="sa-form-footer">
+<button class="sa-btn sa-btn-primary" type="submit">Aplicar cambio de plan</button>
+</div>
+</form>
+</section>
+<section class="sa-card sa-card-pad sa-section-gap">
+<h3>Solicitudes de cambio de plan</h3>@if(Model.Solicitudes.Count == 0) { <p class="sa-sub">La empresa no tiene solicitudes registradas.</p> }@foreach(var s in Model.Solicitudes) { <article class="sa-notice @(s.Status == "Pendiente" ? "sa-notice-warning" : "")">
+<div class="sa-section-head">
+<strong>Solicitud #@s.Id · @(s.RequestedPlan?.Nombre ?? $"Plan #{s.RequestedPlanId}")</strong>
+<span class="sa-pill">@s.Status</span>
+</div>
+<p>@s.Reason</p>
+<p class="sa-sub">@s.CreatedAt.AddHours(-4).ToString("dd/MM/yyyy HH:mm") · @s.RequestedBy</p>@if(s.Status == "Pendiente") { <form asp-action="ResolverSolicitud" method="post">@Html.AntiForgeryToken()<input type="hidden" name="solicitudId" value="@s.Id" />
+<input type="hidden" name="clave" value="@Guid.NewGuid().ToString("N")" />
+<div class="sa-field">
+<label for="resolution-@s.Id">Motivo de la decisión</label>
+<input id="resolution-@s.Id" name="motivo" maxlength="500" required />
+</div>
+<label class="sa-check sa-section-gap">
+<input type="checkbox" name="restablecerLimites" value="true" checked /> Usar límites del nuevo plan al aprobar</label>
+<div class="sa-actions sa-section-gap">
+<button class="sa-btn sa-btn-primary" type="submit" name="aprobar" value="true">Aprobar solicitud</button>
+<button class="sa-btn" type="submit" name="aprobar" value="false">Rechazar solicitud</button>
+</div>
+</form> } else { <p class="sa-sub">@s.Resolution · @s.ResolvedBy</p> }</article> }</section>
+<section class="sa-card sa-section-gap">
+<div class="sa-card-pad sa-section-head">
+<h3>Facturas de la empresa</h3>
+<a asp-action="Facturacion" asp-route-empresaId="@e.Id">Ver todas →</a>
+</div>
+<div class="sa-table-scroll" role="region" aria-label="Facturas de la empresa" tabindex="0">
+<table class="sa-table">
+<thead>
+<tr>
+<th>Factura</th>
+<th>Período</th>
+<th>Vence</th>
+<th>Total</th>
+<th>Saldo</th>
+<th>Estado</th>
+<th>Acción</th>
+</tr>
+</thead>
+<tbody>@foreach(var f in Model.Facturas) { var status = SaasBillingService.Status(f, Model.Hoy); <tr>
+<td>
+<strong>FAC-@f.Id.ToString("D5")</strong>
+<div class="sa-sub">@f.Concept</div>
+</td>
+<td>@f.PeriodStart.ToString("dd/MM/yyyy") – @f.PeriodEnd.ToString("dd/MM/yyyy")</td>
+<td>@f.DueDate.ToString("dd/MM/yyyy")</td>
+<td class="sa-number">RD$@f.Amount.ToString("N2", money)</td>
+<td class="sa-number">@(f.VoidedAt == null ? "RD$" + SaasBillingService.Balance(f).ToString("N2", money) : "—")</td>
+<td>
+<span class="sa-pill @(status == "Pagada" ? "sa-pill-ok" : status == "Vencida" ? "sa-pill-bad" : "sa-pill-warn")">@status</span>
+</td>
+<td>
+<a asp-action="Factura" asp-route-id="@f.Id">Ver factura</a>
+</td>
+</tr> }@if(Model.Facturas.Count == 0) { <tr>
+<td colspan="7">
+<div class="sa-empty">No hay facturas emitidas para esta empresa.</div>
+</td>
+</tr> }</tbody>
+</table>
+</div>
+</section>
+<section class="sa-card sa-card-pad sa-section-gap">
+<div class="sa-section-head">
+<h3>Actividad administrativa</h3>
+<a asp-action="Auditoria" asp-route-empresaId="@e.Id">Ver auditoría →</a>
+</div>
+<ul class="sa-timeline">@foreach(var a in Model.Actividad) { <li>
+<strong>@a.Action</strong>
+<div>@a.Detail</div>
+<time>@a.CreatedAt.AddHours(-4).ToString("dd/MM/yyyy HH:mm") · @a.Actor</time>
+</li> }</ul>@if(Model.Actividad.Count == 0) { <p class="sa-sub">Aún no hay eventos administrativos registrados.</p> }</section>

@@ -313,6 +313,21 @@ paket-files/
 .cr/personal
 
 # Python Tools for Visual Studio (PTVS)
+# Portal: dependencias y archivos privados generados localmente.
+portal-web/node_modules/
+portal-web/.next/
+portal-web/out/
+portal-web/.env*
+!portal-web/.env.example
+Envirapido.Portal.Api/App_Data/
+Envirapido.Portal.Api/PortalState/
+Envirapido.Portal.Api/.portal-data/
+# Windows trata Artifacts y artifacts sin distinguir mayúsculas. Esta carpeta
+# contiene código fuente, no resultados de QA ni archivos APK privados.
+!Envirapido.Portal.Api/Artifacts/
+!Envirapido.Portal.Api/Artifacts/**
+
+# Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
 

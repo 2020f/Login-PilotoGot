@@ -1,0 +1,61 @@
+{
+  "checkedUtc": "2026-11-12T22:02:25.8200593Z",
+  "scope": "LOCAL_QA_NET10",
+  "runtime": "10.0.15",
+  "aspNetCore": "10.0.15",
+  "sdk": "10.0.201",
+  "framework": "net10.0",
+  "serverBranch": "codex/confiabilidad-panel-app",
+  "serverHead": "36d15c7696f1b0a8018251cbcdd6be9897ae7248",
+  "appHead": "8ca95af1ea7c2481be73e38d7abf3c0156ceaae9",
+  "sqlTests": {
+    "failed": 0,
+    "skipped": 0,
+    "total": 231,
+    "passed": 231,
+    "configuration": "Debug"
+  },
+  "flutterTests": {
+    "fresh": true,
+    "passed": 93
+  },
+  "nativeCookieInterop": "PASS_NET8_TO_NET10_SHARED_PERSISTED_KEYS",
+  "nativeJwtRefreshInterop": "PASS_NET8_TO_LIVE_NET10",
+  "noKnownNugetVulnerabilities": true,
+  "modelSnapshotDiff": false,
+  "newMigrationForUpgrade": false,
+  "backupChecksumVerifyOnly": true,
+  "actualBackupRestoreTested": false,
+  "originalFingerprintsUnchanged": true,
+  "emulator": {
+    "serial": "emulator-5554",
+    "activeOrdersAtEnd": 5,
+    "maximumActiveOrdersObserved": 6,
+    "pickupBAndFinalOnlyC": "PASS",
+    "autoOrderId": 19,
+    "version": "2.0.0+8",
+    "priorActiveOrders": 4,
+    "package": "com.pilotgo.app.qa",
+    "priorSessionPreserved": true,
+    "configuration": "Release",
+    "deliveredInHistory": true,
+    "manualOrderId": 18,
+    "newApkBuilt": false
+  },
+  "crossTenantLinks": {
+    "route": 0,
+    "pilot": 0,
+    "code": 0
+  },
+  "productPublication": "artifacts/envirapido-net10-release",
+  "productAndQaReleaseAssemblySha256": "7AF4A33072C32B99339D828D7D822767EC2C9AC6D25B2904A36F3B17F9730F9A",
+  "productionDeployed": false,
+  "githubPushed": false,
+  "limits": [
+    "Public server and SMTP not validated",
+    "No actual backup restore executed",
+    "QA database historically EnsureCreated; real migration history requires review",
+    "QA web cookies ephemeral; cross-version native cookie test used persisted keys",
+    "No physical GPS or Samsung validation in this upgrade"
+  ]
+}

@@ -4,6 +4,8 @@ using System.Threading.RateLimiting;
 using Login.Application.Interfaces;
 using Login.Application.Services;
 using Login.Data;
+using Login.Configuration;
+using Login.Application.Portal;
 using Login.Filters;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -20,17 +22,23 @@ builder.Services.AddScoped<ClienteAppEstadoFilter>(); // ✅ filtro tenant
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<ClienteAppEstadoFilter>(); // ✅ global: bloquea Gestor/Cliente/Piloto si tenant no está Activo
-});
+}).AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(
+    new Login.Serialization.UtcDateTimeJsonConverter()));
 
 builder.Services.AddRazorPages();
+builder.Services.AddHttpContextAccessor();
 
 // 2) DbContext + SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), sql =>
+        sql.UseParameterizedCollectionMode(ParameterTranslationMode.Parameter)));
 
 // 3) Identity (usuarios + roles)
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
+    // Conservar el esquema de Identity y sus claves emitidas en .NET 8.
+    options.Stores.SchemaVersion = IdentitySchemaVersions.Version1;
+    options.Stores.MaxLengthForKeys = 0;
     // DEV: para que no te bloquee el login por confirmación
     options.SignIn.RequireConfirmedAccount = false;
 
@@ -68,6 +76,20 @@ builder.Services.AddAuthentication()
         };
         options.Events = new JwtBearerEvents
         {
+            OnChallenge = context =>
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.Headers.WWWAuthenticate = "Bearer";
+                context.Response.Headers.CacheControl = "no-store";
+                return context.Response.WriteAsJsonAsync(new { error = "Inicia sesión para continuar." });
+            },
+            OnForbidden = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.Headers.CacheControl = "no-store";
+                return context.Response.WriteAsJsonAsync(new { error = "No tienes autorización para esta operación." });
+            },
             OnTokenValidated = async context =>
             {
                 var sessions = context.HttpContext.RequestServices.GetRequiredService<MobileSessionService>();
@@ -86,22 +108,57 @@ builder.Services.ConfigureApplicationCookie(options =>
 
     options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
     options.SlidingExpiration = true;
+    options.Events.OnRedirectToLogin = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+        { context.Response.StatusCode = 401; return context.Response.WriteAsJsonAsync(new { error = "Inicia sesión para continuar." }); }
+        context.Response.Redirect(context.RedirectUri); return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+        { context.Response.StatusCode = 403; return context.Response.WriteAsJsonAsync(new { error = "No tienes permiso para esta operación." }); }
+        context.Response.Redirect(context.RedirectUri); return Task.CompletedTask;
+    };
 });
 
+// HTTPS original sólo desde el proxy inmediato autorizado; cookies seguras.
+builder.Services.AddTransportSecurity(builder.Configuration, builder.Environment);
+
 // 5) App services
-builder.Services.AddTransient<IEmailSender, EmailSender>(); // o Scoped
+builder.Services.Configure<Login.Services.AccountEmailOptions>(builder.Configuration.GetSection("Email"));
+builder.Services.AddTransient<Login.Services.IAccountEmailSender, EmailSender>();
+builder.Services.AddTransient<IEmailSender>(sp => sp.GetRequiredService<Login.Services.IAccountEmailSender>());
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options => options.TokenLifespan = TimeSpan.FromHours(1));
 builder.Services.AddScoped<IOrdenService, OrdenService>();
 builder.Services.AddScoped<IUserContextService, UserContextService>();
 builder.Services.AddScoped<ITiendaAppService, TiendaAppService>();
 builder.Services.AddScoped<IPilotoAppService, PilotoAppService>();
 builder.Services.AddScoped<MobileSessionService>();
+builder.Services.AddScoped<QuotaPolicyService>();
+builder.Services.AddScoped<SaasBillingService>();
+builder.Services.AddScoped<Login.Application.Operations.EnvirapidoOperationsService>();
+builder.Services.AddHostedService<Login.Application.Operations.OperationsAutomationWorker>();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<Login.Application.Operations.RecorridosService>(client => client.Timeout = TimeSpan.FromSeconds(8));
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.Configure<PortalIntegrationOptions>(builder.Configuration.GetSection(PortalIntegrationOptions.Section));
+builder.Services.AddHttpClient<PortalAdminClient>(client => client.Timeout = TimeSpan.FromSeconds(45))
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false });
 builder.Services.AddHttpClient<IGoogleMapsService, GoogleMapsService>();
 
 // Limita intentos de validación de PIN por usuario, compartido entre API y web.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("AccountRecovery", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "local",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        }));
     options.AddPolicy("CodigosEntrega", context => RateLimitPartition.GetFixedWindowLimiter(
         context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous",
         _ => new FixedWindowRateLimiterOptions
@@ -121,6 +178,11 @@ builder.Services.AddRateLimiter(options =>
 var app = builder.Build();
 
 // Middleware
+app.UseForwardedHeaders();
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
+{
+    app.UseHttpsRedirection();
+}
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -134,6 +196,7 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 // Rutas
+app.MapPortalCatalog();
 app.MapRazorPages();
 app.MapControllerRoute(
     name: "default",

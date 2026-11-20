@@ -1,0 +1,8 @@
+@model Login.ViewModels.Envirapido.PanelVm
+@{ Layout = "_LayoutEnvirapido"; ViewData["Title"] = "Pedidos"; }
+<div class="ev-page-heading"><div><h1>Pedidos</h1><p>Gestiona y da seguimiento a todos los envíos de tu operación</p></div><div class="ev-actions"><a class="ev-btn" href="/Operaciones/Importaciones">↥ Importar</a><a class="ev-btn" href="@("/Operaciones/Exportar"+Context.Request.QueryString.ToString())"><svg class="ev-icon"><use href="#ev-download"></use></svg>Exportar</a><a class="ev-btn primary" href="/Operaciones/CrearEnvio"><span class="ev-plus">+</span>Crear envío</a></div></div>
+<nav class="ev-tabs" aria-label="Pedidos">@foreach(var tab in new[] {("Listado","Pedidos"),("Programados","Programados"),("Importaciones","Importaciones"),("Devoluciones","Devoluciones"),("Reasignación y cancelación","Reasignaciones")}) { <a class="@(tab.Item1 == Model.Tab ? "active" : "")" href="/Operaciones/@tab.Item2">@tab.Item1</a> }</nav>
+@await Html.PartialAsync("_Metricas",Model)
+@await Html.PartialAsync("_Filtros",Model)
+<div data-ev-live-orders data-section="Pedidos">@await Html.PartialAsync("_PedidosTabla",Model)</div>
+@await Html.PartialAsync("_Asignar",Model)

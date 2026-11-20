@@ -1,0 +1,85 @@
+@model Login.ViewModels.SuperAdmin.DashboardVm
+@using System.Globalization
+@{ Layout = "_LayoutSuperAdmin"; ViewData["Title"] = "Resumen de la plataforma"; var money = CultureInfo.GetCultureInfo("es-DO"); }
+<div class="sa-page-head">
+<div>
+<h2>Tu plataforma, en una vista</h2>
+<p>Actividad de las empresas, suscripciones y cobros de Envirapido.</p>
+</div>
+<div class="sa-actions">
+<span class="sa-pill sa-pill-info">Actualizado @Model.GeneradoAt.AddHours(-4).ToString("dd/MM/yyyy HH:mm")</span>
+<a class="sa-btn sa-btn-primary" asp-action="CrearCliente">+ Crear empresa</a>
+</div>
+</div>
+<div class="sa-grid-4">
+    <article class="sa-card sa-card-pad sa-kpi-accent">
+<div class="sa-kpi-label">Empresas de la plataforma</div>
+<div class="sa-kpi-value">@Model.Empresas</div>
+<div class="sa-kpi-foot">@Model.EmpresasActivas activas · @Model.EmpresasBloqueadas bloqueadas</div>
+</article>
+    <article class="sa-card sa-card-pad">
+<div class="sa-kpi-label">Cobrado este mes</div>
+<div class="sa-kpi-value" style="font-size:25px">RD$@Model.CobradoMes.ToString("N2", money)</div>
+<div class="sa-kpi-foot">Pagos externos registrados y vigentes</div>
+</article>
+    <article class="sa-card sa-card-pad sa-kpi-warning">
+<div class="sa-kpi-label">Saldo por cobrar</div>
+<div class="sa-kpi-value" style="font-size:25px">RD$@Model.PendienteCobro.ToString("N2", money)</div>
+<div class="sa-kpi-foot">@Model.FacturasVencidas facturas vencidas</div>
+</article>
+    <article class="sa-card sa-card-pad">
+<div class="sa-kpi-label">Cambios de plan pendientes</div>
+<div class="sa-kpi-value">@Model.SolicitudesPendientes</div>
+<div class="sa-kpi-foot">Solicitudes de las empresas</div>
+</article>
+</div>
+<div class="sa-grid-2 sa-section-gap">
+    <section class="sa-card sa-card-pad">
+<div class="sa-section-head">
+<h3>Actividad de última milla</h3>
+<span class="sa-pill">Hoy · Santo Domingo</span>
+</div>
+<div class="sa-grid-3">
+<div>
+<div class="sa-kpi-value">@Model.OrdenesHoy</div>
+<div class="sa-kpi-label">Órdenes creadas hoy</div>
+</div>
+<div>
+<div class="sa-kpi-value">@Model.EntregadasHoy</div>
+<div class="sa-kpi-label">Entregadas hoy</div>
+</div>
+<div>
+<div class="sa-kpi-value">@Model.OrdenesAbiertas</div>
+<div class="sa-kpi-label">Órdenes abiertas</div>
+</div>
+</div>
+<div class="sa-notice sa-section-gap">Estos indicadores reúnen la actividad global. Cada empresa administra su propio centro de operaciones.</div>
+</section>
+    <section class="sa-card sa-card-pad">
+<h3>Capacidad de la plataforma</h3>
+<dl class="sa-definition">
+<dt>Comercios activos</dt>
+<dd>@Model.ComerciosActivos</dd>
+<dt>Pilotos activos</dt>
+<dd>@Model.PilotosActivos</dd>
+<dt>Empresas por vencer</dt>
+<dd>@Model.EmpresasPorVencer</dd>
+<dt>Empresas sin gestor</dt>
+<dd>@Model.SinGestor</dd>
+</dl>
+</section>
+</div>
+<div class="sa-grid-3 sa-section-gap">
+    <a class="sa-card sa-card-pad" asp-action="Clientes" style="text-decoration:none">
+<h3>Administrar empresas →</h3>
+<p class="sa-sub">Consulta planes, consumo, fechas de suscripción y solicitudes.</p>
+</a>
+    <a class="sa-card sa-card-pad" asp-action="Facturacion" style="text-decoration:none">
+<h3>Revisar facturación →</h3>
+<p class="sa-sub">Registra cobros comprobados, concilia saldos y revisa vencimientos.</p>
+</a>
+    <a class="sa-card sa-card-pad" asp-action="Auditoria" style="text-decoration:none">
+<h3>Consultar auditoría →</h3>
+<p class="sa-sub">Sigue los cambios de plan, pagos y decisiones administrativas.</p>
+</a>
+</div>

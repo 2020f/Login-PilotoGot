@@ -1,9 +1,11 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Login.Application.Interfaces;
+using Login.Application.Services;
 using Login.Data;
 using Login.Domain.Entities;
 using Login.Domain.Enums;
+using Login.Domain.Operations;
 using Login.ViewModels.Supervisor;
 using Login.ViewModels.Tienda;
 using Microsoft.AspNetCore.Authorization;
@@ -22,17 +24,20 @@ namespace Login.Controllers
         private readonly IOrdenService _ordenService;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly IGoogleMapsService _googleMaps;
+        private readonly QuotaPolicyService _quotas;
 
         public SupervisorController(
             ApplicationDbContext db,
             IOrdenService ordenService,
             UserManager<IdentityUser> userManager,
-            IGoogleMapsService googleMaps)
+            IGoogleMapsService googleMaps,
+            QuotaPolicyService quotas)
         {
             _db = db;
             _ordenService = ordenService;
             _userManager = userManager;
             _googleMaps = googleMaps;
+            _quotas = quotas;
         }
 
         private string GetUserId()
@@ -89,95 +94,27 @@ namespace Login.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CrearTienda(TiendaCreateVm input)
         {
-            if (!ModelState.IsValid)
-                return View(input);
-
-            var userId = _userManager.GetUserId(User);
-
-            // ✅ ClienteApp del Gestor (tenant)
-            var cliente = await _db.ClientesApp
-                .Include(c => c.Plan)
-                .SingleAsync(c => c.GestorIdentityUserId == userId);
-
-            // ✅ límite por plan
-            var total = await _db.Tiendas.CountAsync(t => t.ClienteAppId == cliente.Id && t.Activo);
-            if (total >= cliente.Plan.MaxTiendas)
-                return RedirectToAction(nameof(Tiendas), new { error = "Límite de tiendas alcanzado por tu plan." });
-
-            // ✅ validar email no usado
-            var email = input.EmailCliente.Trim().ToLower();
-            var existing = await _userManager.FindByEmailAsync(email);
-            if (existing != null)
+            if (!ModelState.IsValid) return View(input);
+            try
             {
-                ModelState.AddModelError(nameof(input.EmailCliente), "Ese email ya existe. Usa otro.");
-                return View(input);
+                var tenantId = await GetClienteAppIdDelGestorAsync();
+                var coords = await _googleMaps.GeocodificarAsync(input.Direccion.Trim());
+                await using var tx = await _quotas.BeginTenantMutationAsync(tenantId);
+                await _quotas.EnsureNewStoreAsync(tenantId, createsUser: true);
+                var email = input.EmailCliente.Trim().ToLowerInvariant();
+                if (await _userManager.FindByEmailAsync(email) != null) throw new InvalidOperationException("Ese email ya existe. Usa otro.");
+                var user = new IdentityUser { UserName = email, Email = email, EmailConfirmed = true };
+                var created = await _userManager.CreateAsync(user, input.PasswordCliente);
+                if (!created.Succeeded) throw new InvalidOperationException(string.Join(" | ", created.Errors.Select(e => e.Description)));
+                var role = await _userManager.AddToRoleAsync(user, "Cliente");
+                if (!role.Succeeded) throw new InvalidOperationException(string.Join(" | ", role.Errors.Select(e => e.Description)));
+                var tienda = new Tienda { ClienteAppId = tenantId, Nombre = input.Nombre.Trim(), Direccion = input.Direccion.Trim(),
+                    Telefono = input.Telefono.Trim(), Latitud = coords?.Lat, Longitud = coords?.Lng, Activo = true };
+                _db.UsuariosTienda.Add(new UsuarioTienda { Tienda = tienda, IdentityUserId = user.Id, Activo = true, EsPrincipal = true });
+                await _db.SaveChangesAsync(); await tx.CommitAsync();
+                return RedirectToAction(nameof(Tiendas), new { ok = "Comercio y acceso creados." });
             }
-
-            // ✅ 1) Crear Tienda (BD)
-            var coords = await _googleMaps.GeocodificarAsync(input.Direccion.Trim());
-
-            var tienda = new Tienda
-            {
-                ClienteAppId = cliente.Id,
-                Nombre = input.Nombre.Trim(),
-                Direccion = input.Direccion.Trim(),
-                Telefono = input.Telefono.Trim(),
-                Latitud = coords?.Lat,
-                Longitud = coords?.Lng,
-                Activo = true
-            };
-
-            _db.Tiendas.Add(tienda);
-            await _db.SaveChangesAsync(); // para obtener tienda.Id
-
-            // ✅ 2) Crear IdentityUser para esa Tienda (rol Cliente)
-            var user = new IdentityUser
-            {
-                UserName = email,
-                Email = email,
-                EmailConfirmed = true
-            };
-
-            var createRes = await _userManager.CreateAsync(user, input.PasswordCliente);
-            if (!createRes.Succeeded)
-            {
-                // rollback simple: borrar la tienda creada si el usuario falla
-                _db.Tiendas.Remove(tienda);
-                await _db.SaveChangesAsync();
-
-                foreach (var e in createRes.Errors)
-                    ModelState.AddModelError("", e.Description);
-
-                return View(input);
-            }
-
-            // ✅ 3) asignar rol Cliente
-            var roleRes = await _userManager.AddToRoleAsync(user, "Cliente");
-            if (!roleRes.Succeeded)
-            {
-                // rollback: borrar user y tienda si falla
-                await _userManager.DeleteAsync(user);
-                _db.Tiendas.Remove(tienda);
-                await _db.SaveChangesAsync();
-
-                foreach (var e in roleRes.Errors)
-                    ModelState.AddModelError("", e.Description);
-
-                return View(input);
-            }
-
-            // ✅ 4) vincular usuario ↔ tienda (UsuariosTienda)
-            _db.UsuariosTienda.Add(new UsuarioTienda
-            {
-                IdentityUserId = user.Id,
-                TiendaId = tienda.Id,
-                Activo = true,
-                EsPrincipal = true
-            });
-
-            await _db.SaveChangesAsync();
-
-            return RedirectToAction(nameof(Tiendas), new { ok = "Tienda creada y usuario Cliente generado ✅" });
+            catch (InvalidOperationException ex) { ModelState.AddModelError("", ex.Message); return View(input); }
         }
 
 
@@ -233,35 +170,23 @@ namespace Login.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditarTienda(Login.ViewModels.Tienda.TiendaEditVm input)
         {
-            if (!ModelState.IsValid)
-                return View(input);
-
-            int clienteAppId;
-            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
-            catch (System.Exception ex) { return RedirectToAction(nameof(Tiendas), new { error = ex.Message }); }
-
-            var tienda = await _db.Tiendas
-                .SingleOrDefaultAsync(t => t.Id == input.Id && t.ClienteAppId == clienteAppId);
-
-            if (tienda is null)
-                return RedirectToAction(nameof(Tiendas), new { error = "Tienda no encontrada." });
-
-            tienda.Nombre = input.Nombre.Trim();
-            tienda.Direccion = input.Direccion.Trim();
-            tienda.Telefono = input.Telefono.Trim();
-            tienda.Activo = input.Activo;
-
-            // Re-geocodificar la dirección (solo actualiza si Google devuelve coordenadas)
-            var coordsEdit = await _googleMaps.GeocodificarAsync(tienda.Direccion);
-            if (coordsEdit is not null)
+            if (!ModelState.IsValid) return View(input);
+            var tenantId = await GetClienteAppIdDelGestorAsync();
+            try
             {
-                tienda.Latitud = coordsEdit.Value.Lat;
-                tienda.Longitud = coordsEdit.Value.Lng;
+                var coords = await _googleMaps.GeocodificarAsync(input.Direccion.Trim());
+                await using var tx = await _quotas.BeginTenantMutationAsync(tenantId);
+                var tienda = await _db.Tiendas.SingleOrDefaultAsync(t => t.Id == input.Id && t.ClienteAppId == tenantId);
+                if (tienda == null) return NotFound();
+                if (!input.Activo) await _quotas.EnsureNoOpenStoreOrdersAsync(tenantId, tienda.Id);
+                else if (!tienda.Activo) await _quotas.EnsureStoreReactivationAsync(tenantId, tienda.Id);
+                tienda.Nombre = input.Nombre.Trim(); tienda.Direccion = input.Direccion.Trim();
+                tienda.Telefono = input.Telefono.Trim(); tienda.Activo = input.Activo;
+                if (coords != null) { tienda.Latitud = coords.Value.Lat; tienda.Longitud = coords.Value.Lng; }
+                await _db.SaveChangesAsync(); await tx.CommitAsync();
+                return RedirectToAction(nameof(Tiendas), new { ok = "Comercio actualizado." });
             }
-
-            await _db.SaveChangesAsync();
-
-            return RedirectToAction(nameof(Tiendas), new { ok = "Tienda actualizada ✅" });
+            catch (InvalidOperationException ex) { ModelState.AddModelError("", ex.Message); return View(input); }
         }
 
 
@@ -269,47 +194,19 @@ namespace Login.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DesactivarTienda(int id)
         {
-            int clienteAppId;
-            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
-            catch (System.Exception ex) { return RedirectToAction(nameof(Tiendas), new { error = ex.Message }); }
-
-            var tienda = await _db.Tiendas
-                .SingleOrDefaultAsync(t => t.Id == id && t.ClienteAppId == clienteAppId);
-
-            if (tienda is null)
-                return RedirectToAction(nameof(Tiendas), new { error = "Tienda no encontrada." });
-
-            // Bloqueo si tiene órdenes pendientes
-            var tienePendientes = await _db.OrdenesEntrega
-                .AnyAsync(o => o.TiendaId == tienda.Id &&
-                               (o.Estado == EstadoOrden.Creada ||
-                                o.Estado == EstadoOrden.Asignada ||
-                                o.Estado == EstadoOrden.Recolectada));
-
-            if (tienePendientes)
-                return RedirectToAction(nameof(Tiendas), new { error = "No puedes desactivar: la tienda tiene órdenes activas." });
-
-            tienda.Activo = false;
-
-            // (Opcional) También desactivar el usuario principal de la tienda en Identity
-            var identityId = await _db.UsuariosTienda
-                .Where(ut => ut.TiendaId == tienda.Id && ut.Activo && ut.EsPrincipal)
-                .Select(ut => ut.IdentityUserId)
-                .FirstOrDefaultAsync();
-
-            if (!string.IsNullOrWhiteSpace(identityId))
+            var tenantId = await GetClienteAppIdDelGestorAsync();
+            try
             {
-                var user = await _userManager.FindByIdAsync(identityId);
-                if (user != null)
-                {
-                    user.LockoutEnabled = true;
-                    user.LockoutEnd = DateTimeOffset.UtcNow.AddYears(100); // “bloqueado por la eternidad”
-                    await _userManager.UpdateAsync(user);
-                }
+                await using var tx = await _quotas.BeginTenantMutationAsync(tenantId);
+                var tienda = await _db.Tiendas.SingleOrDefaultAsync(t => t.Id == id && t.ClienteAppId == tenantId);
+                if (tienda == null) return NotFound();
+                await _quotas.EnsureNoOpenStoreOrdersAsync(tenantId, id);
+                tienda.Activo = false;
+                // No bloquear la identidad: puede tener acceso a otros comercios.
+                await _db.SaveChangesAsync(); await tx.CommitAsync();
+                return RedirectToAction(nameof(Tiendas), new { ok = "Comercio desactivado." });
             }
-
-            await _db.SaveChangesAsync();
-            return RedirectToAction(nameof(Tiendas), new { ok = "Tienda desactivada ✅" });
+            catch (InvalidOperationException ex) { return RedirectToAction(nameof(Tiendas), new { error = ex.Message }); }
         }
 
         [HttpPost]
@@ -349,7 +246,18 @@ namespace Login.Controllers
                 return RedirectToAction(nameof(Tiendas), new { error = ex.Message });
             }
 
-            // ✅ Seguridad: la tienda debe ser del tenant del Gestor
+            // La credencial pertenece a Identity, no a una tienda. SERIALIZABLE
+            // protege también el conjunto de pertenencias/roles durante el reset:
+            // otra empresa no puede vincular esta identidad entre la guarda y el commit.
+            await using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            var tenantDisponible = await _db.ClientesApp
+                .Where(c => c.Id == clienteAppId && c.GestorIdentityUserId == GetUserId()
+                    && c.Estado == EstadoClienteApp.Activo)
+                .ExecuteUpdateAsync(s => s.SetProperty(c => c.OrdenSeq, c => c.OrdenSeq));
+            if (tenantDisponible != 1)
+                return Forbid();
+
+            // La tienda debe ser del tenant del gestor.
             var tiendaOk = await _db.Tiendas
                 .AsNoTracking()
                 .AnyAsync(t => t.Id == input.TiendaId && t.ClienteAppId == clienteAppId);
@@ -367,11 +275,31 @@ namespace Login.Controllers
             if (string.IsNullOrWhiteSpace(identityId))
                 return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, error = "La tienda no tiene usuario principal." });
 
+            // Tomar el lock de escritura antes de leer roles/pertenencias evita
+            // convertir un lock compartido de Identity en exclusivo al cambiar el sello.
+            var identityDisponible = await _db.Users.Where(u => u.Id == identityId)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.ConcurrencyStamp, u => u.ConcurrencyStamp));
+            if (identityDisponible != 1)
+                return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, error = "Usuario de la tienda no existe en Identity." });
+
             var user = await _userManager.FindByIdAsync(identityId);
             if (user is null)
                 return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, error = "Usuario de la tienda no existe en Identity." });
 
-            // ✅ Reset real de password (sin saber el actual)
+            var roles = await _userManager.GetRolesAsync(user);
+            var otraEmpresa = await _db.UsuariosTienda.AsNoTracking()
+                .AnyAsync(ut => ut.IdentityUserId == identityId && ut.Tienda.ClienteAppId != clienteAppId);
+            var otroPerfil = roles.Count != 1 || !roles.Contains("Cliente")
+                || await _db.Pilotos.AsNoTracking().AnyAsync(p => p.IdentityUserId == identityId)
+                || await _db.ClientesApp.AsNoTracking().AnyAsync(c => c.GestorIdentityUserId == identityId);
+            if (otraEmpresa || otroPerfil)
+                return RedirectToAction(nameof(EditarTienda), new {
+                    id = input.TiendaId,
+                    error = "Esta identidad tiene accesos compartidos. Su titular debe recuperar la contraseña desde la pantalla de acceso. El gestor sólo administra los accesos de su empresa."
+                });
+
+            // Sólo una identidad comercial exclusiva de esta empresa puede ser
+            // administrada aquí. El reset invalida sus sesiones mediante SecurityStamp.
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var resetRes = await _userManager.ResetPasswordAsync(user, token, input.NuevoPassword);
 
@@ -383,7 +311,11 @@ namespace Login.Controllers
 
             // ✅ Si estaba lockeado, lo desbloqueamos (por si desactivaste antes)
             user.LockoutEnd = null;
-            await _userManager.UpdateAsync(user);
+            var updateRes = await _userManager.UpdateAsync(user);
+            if (!updateRes.Succeeded)
+                return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, error = "No se pudo completar el cambio de contraseña. Inténtalo de nuevo." });
+
+            await tx.CommitAsync();
 
             return RedirectToAction(nameof(EditarTienda), new { id = input.TiendaId, ok = "Password reseteado ✅" });
         }
@@ -406,11 +338,9 @@ namespace Login.Controllers
             ViewBag.Ok = ok;
             ViewBag.Error = error;
 
-            var pilotos = await _db.Pilotos
-                .AsNoTracking()
-                .Where(p => p.ClienteAppId == clienteAppId)
-                .OrderByDescending(p => p.Id)
-                .ToListAsync();
+            var pilotos = await _db.Pilotos.AsNoTracking().Where(p => p.ClienteAppId == clienteAppId).OrderBy(p => p.Nombre)
+                .Select(p => new PilotOperationsVm { Id = p.Id, Nombre = p.Nombre, Telefono = p.Telefono, Activo = p.Activo,
+                    EnLinea = p.EnLinea, OrdenesActivas = p.Ordenes.Count(o => !EstadosEntrega.Terminales.Contains(o.Estado)) }).ToListAsync();
 
             return View(pilotos);
         }
@@ -425,96 +355,31 @@ namespace Login.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CrearPiloto(Login.ViewModels.Supervisor.PilotoCreateVm input)
         {
-            if (!ModelState.IsValid)
-                return View(input);
-
-            int clienteAppId;
-            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
-            catch (System.Exception ex) { return RedirectToAction(nameof(Pilotos), new { error = ex.Message }); }
-
-            // ✅ cargar cliente + plan para límites
-            var cliente = await _db.ClientesApp
-                .Include(c => c.Plan)
-                .SingleAsync(c => c.Id == clienteAppId);
-
-            // ✅ límite por plan (MaxPilotos)
-            var totalPilotos = await _db.Pilotos.CountAsync(p => p.ClienteAppId == clienteAppId && p.Activo);
-            if (totalPilotos >= cliente.Plan.MaxPilotos)
-                return RedirectToAction(nameof(Pilotos), new { error = "Límite de pilotos alcanzado por tu plan." });
-
-            // ✅ validar email no usado
-            var email = input.EmailPiloto.Trim().ToLower();
-            var existing = await _userManager.FindByEmailAsync(email);
-            if (existing != null)
+            if (!ModelState.IsValid) return View(input);
+            try
             {
-                ModelState.AddModelError(nameof(input.EmailPiloto), "Ese email ya existe. Usa otro.");
-                return View(input);
+                var tenantId = await GetClienteAppIdDelGestorAsync();
+                await using var tx = await _quotas.BeginTenantMutationAsync(tenantId);
+                await _quotas.EnsureNewPilotAsync(tenantId);
+                var email = input.EmailPiloto.Trim().ToLowerInvariant();
+                if (await _userManager.FindByEmailAsync(email) != null) throw new InvalidOperationException("Ese email ya existe. Usa otro.");
+                var user = new IdentityUser { UserName = email, Email = email, EmailConfirmed = true };
+                var created = await _userManager.CreateAsync(user, input.PasswordPiloto);
+                if (!created.Succeeded) throw new InvalidOperationException(string.Join(" | ", created.Errors.Select(e => e.Description)));
+                var role = await _userManager.AddToRoleAsync(user, "Piloto");
+                if (!role.Succeeded) throw new InvalidOperationException(string.Join(" | ", role.Errors.Select(e => e.Description)));
+                _db.Pilotos.Add(new Piloto { ClienteAppId = tenantId, Nombre = input.Nombre.Trim(), Telefono = input.Telefono.Trim(),
+                    Estado = EstadoPiloto.Disponible, IdentityUserId = user.Id, Activo = true });
+                await _db.SaveChangesAsync(); await tx.CommitAsync();
+                return RedirectToAction(nameof(Pilotos), new { ok = "Piloto y acceso creados." });
             }
-
-            // ✅ 1) crear IdentityUser del piloto
-            var user = new IdentityUser
-            {
-                UserName = email,
-                Email = email,
-                EmailConfirmed = true
-            };
-
-            var createRes = await _userManager.CreateAsync(user, input.PasswordPiloto);
-            if (!createRes.Succeeded)
-            {
-                foreach (var e in createRes.Errors)
-                    ModelState.AddModelError("", e.Description);
-
-                return View(input);
-            }
-
-            // ✅ 2) asignar rol Piloto
-            var roleRes = await _userManager.AddToRoleAsync(user, "Piloto");
-            if (!roleRes.Succeeded)
-            {
-                await _userManager.DeleteAsync(user);
-
-                foreach (var e in roleRes.Errors)
-                    ModelState.AddModelError("", e.Description);
-
-                return View(input);
-            }
-
-            // ✅ 3) crear Piloto en BD ligado al tenant + amarrado a IdentityUserId
-            var piloto = new Piloto
-            {
-                ClienteAppId = clienteAppId,
-                Nombre = input.Nombre.Trim(),
-                Telefono = input.Telefono.Trim(),
-                Estado = EstadoPiloto.Disponible,
-                IdentityUserId = user.Id,
-                Activo = true
-            };
-
-            _db.Pilotos.Add(piloto);
-            await _db.SaveChangesAsync();
-
-            return RedirectToAction(nameof(Pilotos), new { ok = "Piloto creado y usuario generado ✅" });
+            catch (InvalidOperationException ex) { ModelState.AddModelError("", ex.Message); return View(input); }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DesactivarPiloto(int id)
-        {
-            int clienteAppId;
-            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
-            catch (System.Exception ex) { return RedirectToAction(nameof(Pilotos), new { error = ex.Message }); }
-
-            var piloto = await _db.Pilotos.SingleOrDefaultAsync(p => p.Id == id && p.ClienteAppId == clienteAppId);
-            if (piloto is null)
-                return RedirectToAction(nameof(Pilotos), new { error = "Piloto no encontrado." });
-
-            piloto.Activo = false;
-            piloto.Estado = EstadoPiloto.Inactivo;
-
-            await _db.SaveChangesAsync();
-            return RedirectToAction(nameof(Pilotos), new { ok = "Piloto desactivado ✅" });
-        }
+        { return await CambiarBajaPilotoAsync(id); }
 
 
 
@@ -544,10 +409,10 @@ namespace Login.Controllers
                 Telefono = piloto.Telefono,
                 Estado = piloto.Estado,
                 Activo = piloto.Activo,
-                EmailPiloto = user?.Email
+                EmailPiloto = user?.Email ?? string.Empty
             };
 
-            return View(vm);
+            return await RenderPilotoEditAsync(vm, piloto, user);
         }
 
 
@@ -560,32 +425,103 @@ namespace Login.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditarPiloto(Login.ViewModels.Supervisor.PilotoEditVm input)
         {
-            if (!ModelState.IsValid)
-                return View(input);
+            var tenantId = await GetClienteAppIdDelGestorAsync();
+            Piloto? piloto = null;
+            IdentityUser? user = null;
+            try
+            {
+                // Identity es global. Bloquear primero empresa e identidad y
+                // comprobar sus vínculos dentro de la misma transacción.
+                await using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+                var tenantDisponible = await _db.ClientesApp
+                    .Where(c => c.Id == tenantId && c.GestorIdentityUserId == GetUserId()
+                        && c.Estado == EstadoClienteApp.Activo)
+                    .ExecuteUpdateAsync(s => s.SetProperty(c => c.OrdenSeq, c => c.OrdenSeq));
+                if (tenantDisponible != 1) return Forbid();
+                piloto = await _db.Pilotos.SingleOrDefaultAsync(p => p.Id == input.Id && p.ClienteAppId == tenantId);
+                if (piloto == null) return NotFound();
+                var identityDisponible = await _db.Users.Where(u => u.Id == piloto.IdentityUserId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(u => u.ConcurrencyStamp, u => u.ConcurrencyStamp));
+                user = identityDisponible == 1 ? await _userManager.FindByIdAsync(piloto.IdentityUserId) : null;
+                if (!ModelState.IsValid) return await RenderPilotoEditAsync(input, piloto, user);
 
-            int clienteAppId;
-            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
-            catch (System.Exception ex) { return RedirectToAction(nameof(Pilotos), new { error = ex.Message }); }
+                var email = input.EmailPiloto.ToLowerInvariant();
+                var cambiaCorreo = !string.Equals(user?.Email, email, StringComparison.OrdinalIgnoreCase);
+                var cambiaPassword = !string.IsNullOrEmpty(input.NuevoPassword);
+                var cambiaAcceso = cambiaCorreo || cambiaPassword;
+                if (cambiaAcceso && !await PuedeAdministrarAccesoPilotoAsync(piloto, user))
+                {
+                    ModelState.AddModelError("", AccesoPilotoCompartido);
+                    return await RenderPilotoEditAsync(input, piloto, user);
+                }
+                if (!input.Activo) await _quotas.EnsureNoOpenPilotOrdersAsync(tenantId, piloto.Id);
+                else if (!piloto.Activo) await _quotas.EnsurePilotReactivationAsync(tenantId, piloto.Id, piloto.IdentityUserId);
+                var ocupadas = await _quotas.HasOpenPilotWorkAsync(tenantId, piloto.Id);
 
-            var piloto = await _db.Pilotos
-                .SingleOrDefaultAsync(p => p.Id == input.Id && p.ClienteAppId == clienteAppId);
-
+                if (cambiaCorreo)
+                {
+                    // El login admite UserName además de Email: cambiar ambos
+                    // evita que el correo anterior siga sirviendo como alias.
+                    EnsurePilotIdentityUpdate(await _userManager.SetUserNameAsync(user!, email));
+                    EnsurePilotIdentityUpdate(await _userManager.SetEmailAsync(user!, email));
+                }
+                if (cambiaPassword)
+                {
+                    var token = await _userManager.GeneratePasswordResetTokenAsync(user!);
+                    EnsurePilotIdentityUpdate(await _userManager.ResetPasswordAsync(user!, token, input.NuevoPassword!));
+                }
+                piloto.Nombre = input.Nombre.Trim(); piloto.Telefono = input.Telefono.Trim(); piloto.Activo = input.Activo;
+                piloto.Estado = !input.Activo ? EstadoPiloto.Inactivo : ocupadas ? EstadoPiloto.Ocupado : EstadoPiloto.Disponible;
+                if (!input.Activo) piloto.EnLinea = false;
+                await _db.SaveChangesAsync(); await tx.CommitAsync();
+                return RedirectToAction(nameof(Pilotos), new { ok = cambiaAcceso
+                    ? "Piloto y acceso actualizados. El piloto debe volver a iniciar sesión en la app."
+                    : "Piloto actualizado." });
+            }
+            catch (InvalidOperationException ex) { ModelState.AddModelError("", ex.Message); }
+            catch (DbUpdateException)
+            {
+                ModelState.AddModelError("", "No se pudieron guardar los cambios. El correo puede estar en uso o los datos cambiaron. Recarga la página e inténtalo de nuevo.");
+            }
             if (piloto is null)
-                return RedirectToAction(nameof(Pilotos), new { error = "Piloto no encontrado." });
-
-            piloto.Nombre = input.Nombre.Trim();
-            piloto.Telefono = input.Telefono.Trim();
-            piloto.Estado = input.Estado;
-            piloto.Activo = input.Activo;
-
-            // Si lo desactivan desde editar, forzamos estado Inactivo
-            if (!piloto.Activo)
-                piloto.Estado = EstadoPiloto.Inactivo;
-
-            await _db.SaveChangesAsync();
-            return RedirectToAction(nameof(Pilotos), new { ok = "Piloto actualizado ✅" });
+                return RedirectToAction(nameof(Pilotos), new { error = "No se pudo guardar el piloto. Recarga la página e inténtalo de nuevo." });
+            return await RenderPilotoEditAsync(input, piloto, user);
         }
 
+        private const string AccesoPilotoCompartido = "Esta cuenta tiene accesos compartidos o un perfil administrativo. Solo puedes cambiar las credenciales de un piloto exclusivo de tu empresa. Su titular puede recuperar la contraseña desde la pantalla de acceso.";
+
+        private async Task<bool> PuedeAdministrarAccesoPilotoAsync(Piloto piloto, IdentityUser? user)
+        {
+            if (user is null) return false;
+            var roles = await _userManager.GetRolesAsync(user);
+            return roles.Count == 1 && roles.Contains("Piloto")
+                && !await _db.Pilotos.AnyAsync(p => p.IdentityUserId == user.Id && p.Id != piloto.Id)
+                && !await _db.UsuariosTienda.AnyAsync(u => u.IdentityUserId == user.Id)
+                && !await _db.UsuariosClienteApp.AnyAsync(u => u.IdentityUserId == user.Id)
+                && !await _db.ClientesApp.AnyAsync(c => c.GestorIdentityUserId == user.Id);
+        }
+
+        private static void EnsurePilotIdentityUpdate(IdentityResult result)
+        {
+            if (result.Succeeded) return;
+            if (result.Errors.Any(e => e.Code is "DuplicateEmail" or "DuplicateUserName"))
+                throw new InvalidOperationException("Ese correo ya está en uso. Usa otro.");
+            throw new InvalidOperationException("No se pudo actualizar el acceso del piloto. Revisa el correo y los requisitos de la nueva contraseña.");
+        }
+
+        private async Task<IActionResult> RenderPilotoEditAsync(PilotoEditVm input, Piloto piloto, IdentityUser? user)
+        {
+            Response.Headers.CacheControl = "no-store";
+            input.Estado = piloto.Estado;
+            input.PuedeEditarAcceso = await PuedeAdministrarAccesoPilotoAsync(piloto, user);
+            input.MotivoAccesoBloqueado = input.PuedeEditarAcceso ? null : AccesoPilotoCompartido;
+            // Conservar los errores, nunca devolver contraseñas en el HTML.
+            input.NuevoPassword = null;
+            input.ConfirmarPassword = null;
+            foreach (var key in new[] { nameof(input.NuevoPassword), nameof(input.ConfirmarPassword) })
+                if (ModelState.ContainsKey(key)) ModelState.SetModelValue(key, null, null);
+            return View(nameof(EditarPiloto), input);
+        }
 
 
 
@@ -595,21 +531,7 @@ namespace Login.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EliminarPiloto(int id)
-        {
-            int clienteAppId;
-            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
-            catch (System.Exception ex) { return RedirectToAction(nameof(Pilotos), new { error = ex.Message }); }
-
-            var piloto = await _db.Pilotos.SingleOrDefaultAsync(p => p.Id == id && p.ClienteAppId == clienteAppId);
-            if (piloto is null)
-                return RedirectToAction(nameof(Pilotos), new { error = "Piloto no encontrado." });
-
-            piloto.Activo = false;
-            piloto.Estado = EstadoPiloto.Inactivo;
-
-            await _db.SaveChangesAsync();
-            return RedirectToAction(nameof(Pilotos), new { ok = "Piloto eliminado (desactivado) ✅" });
-        }
+        { return await CambiarBajaPilotoAsync(id); }
 
 
 
@@ -620,129 +542,104 @@ namespace Login.Controllers
         // ==========================
         // ÓRDENES (Gestor)
         // ==========================
-        [HttpGet]
-        public async Task<IActionResult> Ordenes(int? tiendaId, int? pilotoId, string? estado, int? numeroOrdenA, DateTime? fecha, string? ok = null, string? error = null)
+        private async Task<IActionResult> CambiarBajaPilotoAsync(int id)
         {
-            int clienteAppId;
-            try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
-            catch (System.Exception ex) { return RedirectToAction("Clientes", "SuperAdmin", new { error = ex.Message }); }
-
-            var vm = new OrdenesIndexVm
+            var tenantId = await GetClienteAppIdDelGestorAsync();
+            try
             {
-                TiendaId = tiendaId,
-                PilotoId = pilotoId,
-                Estado = estado,
-                NumeroOrdenA = numeroOrdenA,
-                Fecha = fecha,
-                Ok = ok,
-                Error = error
-            };
+                await using var tx = await _quotas.BeginTenantMutationAsync(tenantId);
+                var piloto = await _db.Pilotos.SingleOrDefaultAsync(p => p.Id == id && p.ClienteAppId == tenantId);
+                if (piloto == null) return NotFound();
+                await _quotas.EnsureNoOpenPilotOrdersAsync(tenantId, id);
+                piloto.Activo = false; piloto.EnLinea = false; piloto.Estado = EstadoPiloto.Inactivo;
+                await _db.SaveChangesAsync(); await tx.CommitAsync();
+                return RedirectToAction(nameof(Pilotos), new { ok = "Piloto desactivado. Se conserva su historial." });
+            }
+            catch (InvalidOperationException ex) { return RedirectToAction(nameof(Pilotos), new { error = ex.Message }); }
+        }
 
-            vm.Tiendas = await _db.Tiendas
-                .Where(t => t.ClienteAppId == clienteAppId)
-                .OrderBy(t => t.Nombre)
-                .Select(t => new SelectListItem { Value = t.Id.ToString(), Text = t.Nombre })
-                .ToListAsync();
+        [HttpGet]
+        public async Task<IActionResult> Ordenes(int? tiendaId, int? pilotoId, string? estado, int? numeroOrdenA, DateTime? fecha, string? ok = null, string? error = null, int pagina = 1, bool historial = false)
+        {
+            var vm = await BuildOrdersAsync(tiendaId, pilotoId, estado, numeroOrdenA, fecha, pagina, historial);
+            vm.Ok = ok; vm.Error = error;
+            Response.Headers.CacheControl = "no-store";
+            return View(vm);
+        }
 
-            vm.Pilotos = await _db.Pilotos
-                .Where(p => p.ClienteAppId == clienteAppId)
-                .OrderBy(p => p.Nombre)
-                .Select(p => new SelectListItem { Value = p.Id.ToString(), Text = p.Nombre })
-                .ToListAsync();
 
-                 vm.Pilotos.Insert(0, new SelectListItem { Value = "", Text = "Todos" });
+        [HttpGet]
+        public async Task<IActionResult> OrdenesFragmento(int? tiendaId, int? pilotoId, string? estado, int? numeroOrdenA, DateTime? fecha, int pagina = 1, bool historial = false)
+        {
+            Response.Headers.CacheControl = "no-store";
+            return PartialView("_DespachoActualizable", await BuildOrdersAsync(tiendaId, pilotoId, estado, numeroOrdenA, fecha, pagina, historial));
+        }
 
-            vm.Estados = new()
-            {
-                new SelectListItem { Value = "", Text = "Todos" },
-                new SelectListItem { Value = EstadoOrden.Creada.ToString(), Text = "Creada" },
-                new SelectListItem { Value = EstadoOrden.Asignada.ToString(), Text = "Asignada" },
-                new SelectListItem { Value = EstadoOrden.Recolectada.ToString(), Text = "Recolectada" },
-                new SelectListItem { Value = EstadoOrden.Incidente.ToString(), Text = "Incidente" },
-            };
-
-            var q = _db.OrdenesEntrega
-                .AsNoTracking()
-                .Include(o => o.Tienda)
-                .Include(o => o.Piloto)
-                .Include(o => o.Codigos)
-                .AsQueryable();
-
-            // ✅ SIEMPRE filtrar por tenant
-            q = q.Where(o => o.ClienteAppId == clienteAppId);
-
-            // ✅ Las órdenes Entregadas salen de la vista de órdenes
-            q = q.Where(o => o.Estado != EstadoOrden.Entregada);
-
-            if (tiendaId.HasValue) q = q.Where(o => o.TiendaId == tiendaId.Value);
-            if (pilotoId.HasValue) q = q.Where(o => o.PilotoId == pilotoId.Value);
+        private async Task<OrdenesIndexVm> BuildOrdersAsync(int? tiendaId, int? pilotoId, string? estado, int? numeroOrdenA, DateTime? fecha, int pagina, bool historial)
+        {
+            var tenantId = await GetClienteAppIdDelGestorAsync();
+            var vm = new OrdenesIndexVm { TiendaId = tiendaId, PilotoId = pilotoId, Estado = estado, NumeroOrdenA = numeroOrdenA,
+                Fecha = fecha, Pagina = Math.Clamp(pagina, 1, 1000000), EsHistorial = historial };
+            vm.Tiendas = await _db.Tiendas.AsNoTracking().Where(t => t.ClienteAppId == tenantId).OrderBy(t => t.Nombre)
+                .Select(t => new SelectListItem { Value = t.Id.ToString(), Text = t.Nombre }).ToListAsync();
+            vm.Pilotos = await _db.Pilotos.AsNoTracking().Where(p => p.ClienteAppId == tenantId).OrderBy(p => p.Nombre)
+                .Select(p => new SelectListItem { Value = p.Id.ToString(), Text = p.Nombre }).ToListAsync();
+            vm.Pilotos.Insert(0, new SelectListItem { Value = "", Text = "Todos" });
+            vm.Estados = Enum.GetValues<EstadoOrden>().Where(e => historial || !EstadosEntrega.Terminales.Contains(e))
+                .Select(e => new SelectListItem { Value = e.ToString(), Text = e.ToString() }).ToList();
+            vm.Estados.Insert(0, new SelectListItem { Value = "", Text = "Todos" });
+            vm.Candidatos = await _db.Pilotos.AsNoTracking().Where(p => p.ClienteAppId == tenantId && p.Activo)
+                .OrderBy(p => p.Nombre).Select(p => new PilotOperationsVm { Id = p.Id, Nombre = p.Nombre, Telefono = p.Telefono,
+                    Activo = p.Activo, EnLinea = p.EnLinea, OrdenesActivas = p.Ordenes.Count(o => !EstadosEntrega.Terminales.Contains(o.Estado)) }).ToListAsync();
+            var query = _db.OrdenesEntrega.AsNoTracking().Where(o => o.ClienteAppId == tenantId);
+            if (!historial) query = query.Where(o => !EstadosEntrega.Terminales.Contains(o.Estado));
+            if (tiendaId.HasValue) query = query.Where(o => o.TiendaId == tiendaId.Value);
+            if (pilotoId.HasValue) query = query.Where(o => o.PilotoId == pilotoId.Value);
+            if (!string.IsNullOrWhiteSpace(estado) && Enum.TryParse<EstadoOrden>(estado, out var parsed))
+                query = query.Where(o => o.Estado == parsed);
             if (numeroOrdenA.HasValue)
             {
-                var codigoA = numeroOrdenA.Value.ToString("D4", System.Globalization.CultureInfo.InvariantCulture);
-                q = q.Where(o => o.CodigoA == codigoA || (o.CodigoA == null && o.NumeroOrdenA == numeroOrdenA.Value));
+                var code = numeroOrdenA.Value.ToString("D4", System.Globalization.CultureInfo.InvariantCulture);
+                query = query.Where(o => o.CodigoA == code || (o.CodigoA == null && o.NumeroOrdenA == numeroOrdenA.Value));
             }
-
-            if (!string.IsNullOrWhiteSpace(estado) && System.Enum.TryParse<EstadoOrden>(estado, out var est))
-                q = q.Where(o => o.Estado == est);
-
             if (fecha.HasValue)
             {
-                var d0 = fecha.Value.Date;
-                var d1 = d0.AddDays(1);
-                q = q.Where(o => o.CreatedAt >= d0 && o.CreatedAt < d1);
+                var fromUtc = DateTime.SpecifyKind(fecha.Value.Date.AddHours(4), DateTimeKind.Utc);
+                var toUtc = fromUtc.AddDays(1);
+                query = query.Where(o => o.CreatedAt >= fromUtc && o.CreatedAt < toUtc);
             }
+            vm.Total = await query.CountAsync();
+            vm.Ordenes = await query.OrderByDescending(o => o.CreatedAt).ThenByDescending(o => o.Id)
+                .Skip((vm.Pagina - 1) * 50).Take(50).Select(o => new OrdenRowVm
+                {
+                    OrdenId = o.Id, ClienteAppId = o.ClienteAppId,
+                    TiendaId = o.TiendaId, TiendaNombre = o.DatosEntregaCongelados ? o.RecogidaNombre : o.Tienda.Nombre,
+                    TiendaDireccion = o.DatosEntregaCongelados ? o.RecogidaDireccion : o.Tienda.Direccion,
+                    TiendaTelefono = o.DatosEntregaCongelados ? o.RecogidaTelefono : o.Tienda.Telefono,
+                    NumeroOrdenA = o.NumeroOrdenA, CodigoA = o.CodigoA, Estado = o.Estado.ToString(),
+                    PilotoId = o.PilotoId, PilotoNombre = o.Piloto != null ? o.Piloto.Nombre : null, PilotoTelefono = o.Piloto != null ? o.Piloto.Telefono : null,
+                    CreatedAt = o.CreatedAt, Notas = o.NotaPedido, EsAuto = o.EsAuto, TiendaAutoAsignacion = o.Tienda.AutoAsignacion,
+                    Precio = o.Precio, DistanciaKm = o.DistanciaKm,
+                    CodigoB = o.Codigos.Where(c => c.Tipo == TipoCodigo.B_Recoleccion).Select(c => c.Codigo).FirstOrDefault()
+                }).ToListAsync();
+            return vm;
+        }
 
-
-
-
-
-
-            vm.Ordenes = await q
-    .OrderByDescending(o => o.CreatedAt)
-    .Take(200)
-    .Select(o => new OrdenRowVm
-    {
-        OrdenId = o.Id,
-        ClienteAppId = o.ClienteAppId,
-
-        TiendaId = o.TiendaId,
-        TiendaNombre = o.Tienda.Nombre,
-
-        // ✅ NUEVO
-        TiendaDireccion = o.Tienda.Direccion,
-        TiendaTelefono = o.Tienda.Telefono,
-
-        NumeroOrdenA = o.NumeroOrdenA,
-                    CodigoA = o.CodigoA,
-        Estado = o.Estado.ToString(),
-
-        PilotoId = o.PilotoId,
-        PilotoNombre = o.Piloto != null ? o.Piloto.Nombre : null,
-        PilotoTelefono = o.Piloto != null ? o.Piloto.Telefono : null,
-
-        CreatedAt = o.CreatedAt,
-
-        // ✅ NUEVO: tu campo real
-        Notas = o.NotaPedido,
-
-        CodigoB = o.Codigos
-            .Where(c => c.Tipo == TipoCodigo.B_Recoleccion)
-            .Select(c => c.Codigo)
-            .FirstOrDefault(),
-
-        TiendaAutoAsignacion = o.Tienda.AutoAsignacion,
-        EsAuto = o.EsAuto,
-
-        Precio = o.Precio,
-        DistanciaKm = o.DistanciaKm
-    })
-    .ToListAsync();
-
-
-
-
-
-
+        [HttpGet]
+        public async Task<IActionResult> DetalleOrden(int id)
+        {
+            var tenantId = await GetClienteAppIdDelGestorAsync();
+            Response.Headers.CacheControl = "no-store";
+            var vm = await _db.OrdenesEntrega.AsNoTracking().Where(o => o.Id == id && o.ClienteAppId == tenantId)
+                .Select(o => new OrderDetailVm { Id = o.Id, CodigoA = o.CodigoA ?? o.NumeroOrdenA.ToString(), Estado = o.Estado.ToString(),
+                    Tienda = o.DatosEntregaCongelados ? o.RecogidaNombre : o.Tienda.Nombre,
+                    Destinatario = o.DatosEntregaCongelados ? o.DestinoNombre : o.UsuarioFinal.Nombre,
+                    Direccion = o.DatosEntregaCongelados ? o.DestinoDireccion : o.UsuarioFinal.DireccionUbicacion,
+                    Piloto = o.Piloto != null ? o.Piloto.Nombre : null, Precio = o.Precio, CreatedAt = o.CreatedAt }).SingleOrDefaultAsync();
+            if (vm == null) return NotFound();
+            vm.Eventos = await _db.HistorialOrdenes.AsNoTracking().Where(e => e.OrdenEntregaId == id && e.OrdenEntrega.ClienteAppId == tenantId)
+                .OrderBy(e => e.CreatedAt).ThenBy(e => e.Id).Select(e => new OrderEventVm { CreatedAt = e.CreatedAt,
+                    Tipo = e.TipoEvento.ToString(), Rol = e.ActorRol, Descripcion = e.Descripcion }).ToListAsync();
             return View(vm);
         }
 
@@ -809,14 +706,18 @@ namespace Login.Controllers
             try { clienteAppId = await GetClienteAppIdDelGestorAsync(); }
             catch (Exception ex) { return RedirectToAction(nameof(Ordenes), new { error = ex.Message }); }
 
-            // ✅ defaults: últimos 7 días (incluye hoy)
-            var to = (hasta ?? DateTime.UtcNow).Date.AddDays(1);  // exclusivo
-            var from = (desde ?? DateTime.UtcNow.AddDays(-6)).Date; // inclusive
+            var today = DateTime.UtcNow.AddHours(-4).Date;
+            var businessFrom = (desde ?? today.AddDays(-6)).Date;
+            var businessTo = (hasta ?? today).Date;
+            if (businessTo == DateTime.MaxValue.Date || businessTo < businessFrom || (businessTo - businessFrom).Days > 92)
+                return RedirectToAction(nameof(Ordenes), new { error = "Selecciona un rango válido de hasta 93 días." });
+            var from = DateTime.SpecifyKind(businessFrom.AddHours(4), DateTimeKind.Utc);
+            var to = DateTime.SpecifyKind(businessTo.AddDays(1).AddHours(4), DateTimeKind.Utc);
 
             var vm = new EstadisticasGestorVm
             {
-                Desde = from.Date,
-                Hasta = to.AddDays(-1).Date,
+                Desde = businessFrom,
+                Hasta = businessTo,
                 TiendaId = tiendaId,
                 PilotoId = pilotoId
             };
@@ -874,13 +775,13 @@ namespace Login.Controllers
             // Serie: Ordenes por día
             // =========
             var rawDia = await q
-                .GroupBy(o => o.CreatedAt.Date)
+                .GroupBy(o => o.CreatedAt.AddHours(-4).Date)
                 .Select(g => new { Dia = g.Key, Total = g.Count(), Entregadas = g.Count(x => x.Estado == EstadoOrden.Entregada), Incidentes = g.Count(x => x.Estado == EstadoOrden.Incidente) })
                 .ToListAsync();
 
             // Rellenar días faltantes
             var dias = Enumerable.Range(0, (to.Date - from.Date).Days)
-                .Select(i => from.Date.AddDays(i))
+                .Select(i => businessFrom.AddDays(i))
                 .ToList();
 
             vm.PorDia = dias.Select(d =>
@@ -1050,8 +951,9 @@ namespace Login.Controllers
                 {
                     Id = p.Id,
                     Nombre = p.Nombre,
-                    Estado = p.Estado.ToString(),
-                    EstadoNum = (int)p.Estado,
+                    Estado = !p.Activo ? "Inactivo" : p.Ordenes.Any(o => !EstadosEntrega.Terminales.Contains(o.Estado)) ? "Con entregas" : "Sin entregas",
+                    EstadoNum = !p.Activo ? 3 : p.Ordenes.Any(o => !EstadosEntrega.Terminales.Contains(o.Estado)) ? 2 : 1,
+                    Activo = p.Activo, EnLinea = p.EnLinea, OrdenesActivas = p.Ordenes.Count(o => !EstadosEntrega.Terminales.Contains(o.Estado)),
                     Latitud = p.Latitud,
                     Longitud = p.Longitud,
                     UltimaUbicacionAt = p.UltimaUbicacionAt

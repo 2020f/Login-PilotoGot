@@ -853,3 +853,7 @@ svg { display: block; flex-shrink: 0; }
   .tp-stats { grid-template-columns: 1fr; }
   .tp-grid-3 { grid-template-columns: 1fr; }
 }
+
+/* Estados terminales distintos de la entrega al destinatario. */
+.tp-pill.st-closed{background:#edf2f6;color:#52616e;border:1px solid #d6e0e6}
+.tp-ocard.st-closed{border-color:#d6e0e6}

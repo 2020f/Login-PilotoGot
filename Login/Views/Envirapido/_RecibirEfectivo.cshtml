@@ -1,0 +1,5 @@
+@model Login.ViewModels.Envirapido.OperationsPageVm
+@if(Model.Seccion=="Liquidaciones")
+{
+<dialog class="ev-dialog" id="evCashReceiptDialog"><form data-ev-api=""><div class="ev-dialog-head"><h2>Recibir efectivo en la empresa</h2><button class="ev-icon-button" type="button" data-ev-close-dialog>✕</button></div><div class="ev-dialog-body"><input name="version" type="hidden"/><input name="operacionId" type="hidden"/><div class="ev-alert neutral">Confirma únicamente el dinero recibido físicamente por la empresa. El efectivo no se descuenta automáticamente de las ganancias del repartidor.</div><div class="ev-field"><label>Importe recibido (RD$)</label><input name="importe" type="number" min="0" step="0.01" required data-type="number"/></div><div class="ev-field"><label>Referencia o comprobante interno de recepción</label><input name="referencia" required maxlength="120"/></div><div data-ev-form-error role="alert"></div></div><div class="ev-dialog-foot"><button class="ev-btn" type="button" data-ev-close-dialog>Cancelar</button><button class="ev-btn primary" type="submit">Confirmar recepción en la empresa</button></div></form></dialog>
+}

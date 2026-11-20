@@ -1,5 +1,19 @@
 # CLAUDE.md
 
+## Actualización de portada interactiva
+
+Leer primero **[DESPLEGAR-PORTADA.md](DESPLEGAR-PORTADA.md)** para esta entrega.
+Si el portal base ya funciona, actualizar sólo Next; no repetir migraciones ni
+publicar/reiniciar CRM o API. Las demás vistas, app y multitenant se conservan.
+
+## Portal comercial: entrega y despliegue
+
+Antes de desplegar el portal, leer **[DESPLEGAR-PORTAL.md](DESPLEGAR-PORTAL.md)**.
+Este cambio añade React/Next y una API con base SQL **separada**. No ejecutar las
+migraciones del portal con el proyecto Login ni sobre DefaultConnection. Preservar
+CRM, JWT/Identity, sesiones, pedidos/rutas y API móvil. Las instrucciones genéricas
+de EF que siguen corresponden al CRM, no al SQL comercial nuevo.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Build & Run
@@ -27,6 +41,10 @@ See `docs/ANALISIS-SESION-ORDENES-MULTITENANT-20261109.md` for the mobile flow a
 See `docs/RELEASE-1.1.0.md` before deployment: four-digit codes require migration
 `20261110033858_CodigosCuatroDigitos` and an updated mobile client. Production
 requires a private `Jwt__Key` and does not create demo accounts automatically.
+The next reliability batch is documented in `docs/CONFIABILIDAD-1.2.0.md`.
+It requires migration `20261111222204_ConfiabilidadOrdenesSnapshot` and adds
+store-scoped requests, durable create-operation IDs and immutable delivery data.
+Upgrade the backend/database before distributing the matching mobile client.
 
 ## Database
 

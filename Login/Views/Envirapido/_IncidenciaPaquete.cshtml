@@ -1,0 +1,48 @@
+@model Login.ViewModels.Envirapido.OperationsPageVm
+@using Microsoft.AspNetCore.WebUtilities
+@{
+    var casos = Model.Tab == "Escalaciones" ? Model.Datos.Incidencias.Where(i => i.Estado == "Escalada")
+        : Model.Tab == "Historial" ? Model.Datos.Incidencias.Where(i => i.Estado == "Resuelta") : Model.Datos.Incidencias.AsEnumerable();
+    var caso = Model.Datos.Incidencias.FirstOrDefault(i => i.Id == Model.Id)
+        ?? casos.OrderByDescending(i => i.FueraPlazo).ThenByDescending(i => i.Prioridad).ThenBy(i => i.VenceAt).FirstOrDefault();
+    var pedido = Model.Operacion.Pedidos.FirstOrDefault(p => p.Id == caso?.OrdenId);
+    var gestiones = Model.GestionesRetiro.Where(g => g.IncidenciaId == caso?.Id).ToList();
+    string Gestion(string? accion = null) => QueryHelpers.AddQueryString("/Operaciones/Reasignaciones", new Dictionary<string, string?>
+    { ["ordenId"] = caso?.OrdenId?.ToString(), ["incidenciaId"] = caso?.Id.ToString(), ["paradaId"] = caso?.ParadaId?.ToString(), ["accion"] = accion });
+    string Estado(string estado) => estado switch { "Solicitada" => "Retiro pendiente de aprobación", "PorReasignar" => "Retirada · por reasignar", "PendienteRecepcion" => "Recepción física pendiente", "Reasignada" => "Reasignada", "Recibida" => "Paquete recibido", "Cancelada" => "Entrega cancelada", _ => estado };
+}
+@if (caso?.OrdenId.HasValue == true)
+{
+    <section class="ev-case-note" aria-label="Gestión del paquete">
+        <h3>Gestión del paquete</h3>
+
+        @foreach (var gestion in gestiones)
+        {
+            <p><a href="@Gestion()">RT-@gestion.Id.ToString("D4") · Parada ID @gestion.ParadaId</a> <span class="ev-badge @(gestion.Abierta ? "amber" : "green")">@Estado(gestion.Estado)</span></p>
+        }
+        @if (pedido is not null && !pedido.EsTerminal)
+        {
+            <div class="ev-actions ev-case-actions">
+                @if (gestiones.Any(g => g.Abierta && g.Estado == "Solicitada"))
+                { <a class="ev-btn primary" href="@Gestion()">Revisar y aprobar retiro</a> }
+                else if (gestiones.Any(g => g.Abierta && g.Estado == "PendienteRecepcion"))
+                { <a class="ev-btn primary" href="@Gestion()">Revisar recepción pendiente</a> }
+                else if (gestiones.Any(g => g.Abierta && g.Estado == "PorReasignar"))
+                {
+                    <a class="ev-btn primary" href="@Gestion("reasignar")">Reasignar paradas retiradas</a>
+                    <a class="ev-btn" href="@Gestion()">Elegir destino de retorno</a>
+                    <a class="ev-btn" href="@Gestion("cancelar-paradas")">Cancelar entregas retiradas</a>
+                }
+                else
+                {
+                    <a class="ev-btn primary" href="@Gestion("retiros")">Retirar del piloto</a>
+                    <a class="ev-btn" href="@Gestion("reasignar")">Reasignar paradas</a>
+                    <a class="ev-btn" href="@Gestion()">Gestionar devolución o recepción</a>
+                }
+            </div>
+            <p class="ev-hint">No exige B/C ni confirma entrega. El gestor elige paradas y motivo; la custodia se conserva hasta la recepción del paquete.</p>
+        }
+        else if (pedido?.EsTerminal == true)
+        { <a class="ev-btn" href="@Gestion()">Ver historial de retiros y recepciones</a> }
+    </section>
+}

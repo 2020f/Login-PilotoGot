@@ -23,7 +23,7 @@ namespace Login.Application.Services
         public string ApiKey => _apiKey;
 
         public string BrowserApiKey
-            => string.IsNullOrWhiteSpace(_browserApiKey) ? _apiKey : _browserApiKey;
+            => _browserApiKey;
 
         private bool HayKey()
             => !string.IsNullOrWhiteSpace(_apiKey)

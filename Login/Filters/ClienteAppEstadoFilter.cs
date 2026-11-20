@@ -40,7 +40,19 @@ namespace Login.Filters
             // 2) Evitar loop: permitir la pantalla de bloqueo
             var routeController = context.RouteData.Values["controller"]?.ToString() ?? "";
             var routeAction = context.RouteData.Values["action"]?.ToString() ?? "";
+            if (routeController.Equals("Home", StringComparison.OrdinalIgnoreCase) && routeAction.Equals("Error", StringComparison.OrdinalIgnoreCase))
+            {
+                await next();
+                return;
+            }
             if (routeController.Equals("Bloqueo", StringComparison.OrdinalIgnoreCase))
+            {
+                await next();
+                return;
+            }
+            // La empresa debe poder consultar su deuda y pedir renovación sin
+            // obtener acceso a otra empresa ni reactivar operaciones suspendidas.
+            if (routeController.Equals("Suscripcion", StringComparison.OrdinalIgnoreCase) && user.IsInRole("Gestor"))
             {
                 await next();
                 return;

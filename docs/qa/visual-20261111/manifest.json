@@ -1,0 +1,87 @@
+[
+  {
+    "file": "19-estadisticas-sqlserver.jpg",
+    "bytes": 91494,
+    "sha256": "370fa18f046857f8fdc8836001c5ec5ec2cbc1f41d775c278bd7e507bba12fef"
+  },
+  {
+    "file": "22-detalle-corregido.jpg",
+    "bytes": 68916,
+    "sha256": "9bbad89046fd090161fc93e1a61a78cada3602879333c6784a88d7d856244856"
+  },
+  {
+    "file": "23-admin-movil-corregido.jpg",
+    "bytes": 32503,
+    "sha256": "be5ac344f8e8158bf28f6bf7e19be29a000c2c2d747251db520844ff90f83d40"
+  },
+  {
+    "file": "25-empresas-movil.jpg",
+    "bytes": 28639,
+    "sha256": "8654e4e1c9e614cbf08cde4cbfe4b06cc395d644c96adbc16c671a63eb0bc5b7"
+  },
+  {
+    "file": "27-qr-manual-sqlserver.jpg",
+    "bytes": 40005,
+    "sha256": "e163790bfa86bfc42ef1c3b58891fdd3a303c5a2cd8a3d8364cf17336cdcd019"
+  },
+  {
+    "file": "30-piloto-destino-bloqueado.png",
+    "sha256": "9c2b80f7f7bf065d67c1e0407f69c183d6d36d6066ccd27ddb3a932b96e65c56",
+    "bytes": 52551
+  },
+  {
+    "file": "31-destino-desbloqueado.png",
+    "sha256": "960d817c4f64e990b4c13ca95ce7f6114192c22b473c4e90b6d88715eefd50c1",
+    "bytes": 47809
+  },
+  {
+    "file": "32-segunda-auto-misma-sesion.png",
+    "sha256": "32686f08be9ab5dd50cc33e773463f4f17fa6c1c199043b41d8a4224ace0891c",
+    "bytes": 44897
+  },
+  {
+    "file": "33-asignacion-manual-auto-off.jpg",
+    "sha256": "6455b7876185c49aba1d93e3539b502f841c8cf53da361dd176bc45916eebf5c",
+    "bytes": 76910
+  },
+  {
+    "file": "34-manual-misma-sesion-auto-off.png",
+    "sha256": "a6cbd5ba950efa133d8c706ddab0cbf061516134255f1b84f6fe8890a88e2b9c",
+    "bytes": 55265
+  },
+  {
+    "file": "35-gps-manual-auto-off.jpg",
+    "sha256": "84e51754301468d31cf4d4a01009cfc1443ef4e9321b716e70621c8f55929b85",
+    "bytes": 58636
+  },
+  {
+    "file": "37-manual-entregada.png",
+    "sha256": "0a9cd679ae922f11ae2047e1d8d40488ebdcc8ddba644fd42023b7c508bbcb15",
+    "bytes": 56764
+  },
+  {
+    "file": "38-comercio-manual-entregada.jpg",
+    "sha256": "4bd50724474aba474a11f599ebd513c77850d38ef1fb60f21803e6684722adc8",
+    "bytes": 41931
+  },
+  {
+    "file": "39-sesion-restaurada-reinicio.png",
+    "sha256": "bb2652d480286872a83c05888a19294da9c88ebe3200392ed35c1a0bd2afada7",
+    "bytes": 55064
+  },
+  {
+    "file": "40-acceso-recordado.png",
+    "sha256": "b4ce7952bb2cdbb8e60313a0226828f5edc3489128edabae5c356bb41ab91097",
+    "bytes": 28546
+  },
+  {
+    "sha256": "8496d644857c425291400ce53ca94f6586984dd64704aedc00994c80e5486ee5",
+    "file": "41-camera-vista-previa-virtual.png",
+    "bytes": 43539
+  },
+  {
+    "file": "42-samsung-comercio-fechas-corregidas.png",
+    "bytes": 45979,
+    "sha256": "5a4c7e9f4c81c9db3abd254754e6768e8aa4f19720430c7db7b395fbfe8fda8f"
+  }
+]

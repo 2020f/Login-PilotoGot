@@ -1,0 +1,56 @@
+{
+  "fecha": "2026-11-11",
+  "estado": "Analisis de requisitos; no implementacion",
+  "backendBase": "36d15c7696f1b0a8018251cbcdd6be9897ae7248",
+  "appBase": "8ca95af1ea7c2481be73e38d7abf3c0156ceaae9",
+  "imagenes": [
+    {
+      "id": "I1",
+      "archivo": "referencias/01-operaciones.png",
+      "original": "codex-clipboard-3f6dfce0-9ed8-4bda-9cde-280a4f8d4676.png",
+      "bytes": 1911541,
+      "sha256": "5fee5432f1397712801812da7f08032b4a7fdc07ed501812e8bd03b94b3aa1f1",
+      "confirmada": true
+    },
+    {
+      "id": "I2",
+      "archivo": "referencias/02-detalle-pedido.png",
+      "original": "codex-clipboard-9543aa58-36df-4a76-809b-d302858884bd.png",
+      "bytes": 1803515,
+      "sha256": "0428276f17c9bfbbc2e55e244b62e03db574b7365741a7fb591af50c24852de1",
+      "confirmada": true
+    },
+    {
+      "id": "I3",
+      "archivo": "referencias/03-pedidos.png",
+      "original": "codex-clipboard-2c6cb722-5863-4c88-8a9e-f1ae8226f6a8.png",
+      "bytes": 1758129,
+      "sha256": "4966e6461742d94874717034121b033c5b2cc67443ea35d74955d905cbeee335",
+      "confirmada": true
+    },
+    {
+      "id": "I4",
+      "archivo": "referencias/04-rutas-y-zonas.png",
+      "original": "codex-clipboard-a52196af-cd37-4818-93de-4c464bb60fb5.png",
+      "bytes": 1837297,
+      "sha256": "5a6508eb90b905b0c2e7a7206fc231c83504b81dd95c1418f282bcb27ad9c409",
+      "confirmada": true
+    },
+    {
+      "id": "I5",
+      "archivo": "referencias/05-incidencias.png",
+      "original": "codex-clipboard-f104d949-5657-4b68-8ed1-d22db5439299.png",
+      "bytes": 1800225,
+      "sha256": "c49baf24f8e2f0afb608ba7858b690e21682092a10150c08cc36072c96b36bc8",
+      "confirmada": true
+    },
+    {
+      "id": "I6",
+      "archivo": "referencias/06-liquidaciones.png",
+      "original": "codex-clipboard-2c2d42c9-50b2-4b80-90d2-219f168cc73c.png",
+      "bytes": 1830853,
+      "sha256": "a243b1a4f4d7f052c072c754f5776af4a0aee0c92d17dbd72fc09d04e17cbd25",
+      "confirmada": true
+    }
+  ]
+}

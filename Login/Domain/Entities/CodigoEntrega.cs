@@ -9,6 +9,8 @@ namespace Login.Domain.Entities
 
         public int OrdenEntregaId { get; set; }
         public OrdenEntrega OrdenEntrega { get; set; } = null!;
+        public int? ParadaEntregaId { get; set; }
+        public ParadaEntrega? ParadaEntrega { get; set; }
 
         public int ClienteAppId { get; set; }
         public ClienteApp ClienteApp { get; set; } = null!;

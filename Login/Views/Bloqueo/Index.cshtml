@@ -4,7 +4,17 @@
     var motivo = (ViewBag.Motivo as string) ?? "Suspendido";
 }
 
-<div style="max-width: 720px; margin: 40px auto;">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · Envirapido</title>
+    <partial name="_BrandHead" />
+</head>
+<body>
+<div style="max-width: 720px; margin: 40px auto; padding: 0 20px;">
+    <img class="envi-brand-logo envi-card-brand" src="~/branding/logo-original.png" asp-append-version="true" alt="Envirapido" width="190" height="65" />
     <h2 style="margin-bottom:10px;">Servicio no disponible</h2>
 
     <div style="border:1px solid #dc3545; padding:15px; border-radius:8px; background:#fff5f5;">
@@ -15,6 +25,7 @@
     </div>
 
     <div style="margin-top:15px;">
+        @if(User.IsInRole("Gestor")){<p><a href="/Suscripcion">Consultar suscripción y solicitar cambio de plan</a></p>}
         <!-- Logout por Identity (normal en proyectos con Identity UI) -->
         <form method="post" action="/Identity/Account/Logout">
             @Html.AntiForgeryToken()
@@ -24,3 +35,5 @@
         </form>
     </div>
 </div>
+</body>
+</html>

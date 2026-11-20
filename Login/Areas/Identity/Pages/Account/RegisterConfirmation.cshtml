@@ -1,0 +1,14 @@
+@page
+@inject Login.Services.IAccountEmailSender AccountMail
+@{
+    ViewData["Title"] = "Confirmación de cuenta";
+    Response.Headers.CacheControl = "no-store";
+}
+<link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+<main class="auth-main"><section class="auth-card">
+    <div class="auth-kicker">Envirapido</div><h1 class="auth-title">Confirma tu correo</h1>
+    @if (!AccountMail.IsConfigured) { <p class="auth-alert">El correo de cuenta no está disponible en este momento. Contacta al administrador para confirmar tu dirección de forma segura.</p> }
+    else { <p>Revisa el enlace de confirmación en tu correo. Si no lo recibes, contacta al administrador.</p> }
+    <p>Confirmar tu correo no concede acceso a empresas o comercios. El administrador debe autorizar esa pertenencia.</p>
+    <a class="auth-link" asp-page="./Login">Volver a iniciar sesión</a>
+</section></main>

@@ -1,0 +1,26 @@
+@model Login.ViewModels.Envirapido.OperationsPageVm
+@using System.Text.Json
+@using Login.Application.Interfaces
+@inject IGoogleMapsService GoogleMaps
+@functions{
+    string TabHref(Login.ViewModels.Envirapido.OperationsPageVm m,string tab,string basePath){
+        if(m.Seccion=="Pedidos")return "/Operaciones/"+(tab=="Listado"?"Pedidos":tab=="Reasignación y cancelación"?"Reasignaciones":tab);
+        return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString("/Operaciones/"+basePath,new Dictionary<string,string?>{["tab"]=tab,["desde"]=m.Desde?.ToString("yyyy-MM-dd"),["hasta"]=m.Hasta?.ToString("yyyy-MM-dd"),["fecha"]=m.Dia?.ToString("yyyy-MM-dd"),["todos"]=m.Seccion=="Rutas y zonas"&&!m.Dia.HasValue?"1":null});
+    }
+}
+@{
+    Layout="_LayoutEnvirapido";ViewData["Title"]=Model.Seccion;ViewData["Subtitulo"]=Model.Tab;
+    var tabs=Model.Seccion switch {"Rutas y zonas"=>new[]{"Vista general","Zonas de cobertura","Planificador","Rutas activas","Historial"},"Incidencias"=>new[]{"Bandeja","Escalaciones","Historial","Reglas de atención"},"Liquidaciones"=>new[]{"Repartidores","Comercios","Conciliación","Historial","Reglas de liquidación"},"Pedidos"=>new[]{"Listado","Programados","Importaciones","Devoluciones","Reasignación y cancelación"},_=>new[]{Model.Tab}};
+    var basePath=Model.Seccion switch{"Rutas y zonas"=>"Rutas","Incidencias"=>"Incidencias","Liquidaciones"=>"Liquidaciones",_=>""};
+}
+<div class="ev-page-heading"><div><h1>@(Model.Seccion=="Rutas y zonas"?"Rutas y zonas":Model.Seccion=="Operaciones"?"Automatización":Model.Seccion)</h1><p>@(Model.Seccion switch{"Rutas y zonas"=>"Gestiona la cobertura y planifica las rutas de tu operación","Incidencias"=>"Centraliza la atención y el seguimiento de tu operación","Liquidaciones"=>"Revisa, aprueba y concilia pagos realizados fuera de Envirapido",_=>"Información y controles de tu empresa"})</p></div><div class="ev-actions"><button class="ev-btn" type="button" data-ev-module-export><svg class="ev-icon"><use href="#ev-download"></use></svg>Exportar</button>
+@if(Model.Seccion=="Rutas y zonas"){<button class="ev-btn" type="button" data-ev-open="evZoneDialog">+ Crear zona</button><button class="ev-btn" type="button" data-ev-plan-route>Planificar ruta</button><button class="ev-btn primary" type="button" data-ev-open="evRouteDialog">+ Crear ruta</button>}
+@if(Model.Seccion=="Incidencias"){<a class="ev-btn" href="/Operaciones/Reasignaciones">Retiros y reasignaciones</a><button class="ev-btn primary" type="button" data-ev-open="evIncidentDialog">+ Registrar incidencia</button>}
+@if(Model.Seccion=="Liquidaciones"){<button class="ev-btn primary" type="button" data-ev-open="evSettlementDialog">+ Generar liquidación</button>}
+</div></div>
+@if(tabs.Length>1){<nav class="ev-tabs" aria-label="@Model.Seccion">@foreach(var tab in tabs){<a class="@(Model.Tab==tab?"active":"")" href="@TabHref(Model,tab,basePath)">@tab</a>}</nav>}
+@if(Model.Seccion is "Liquidaciones" or "Incidencias"){<form class="ev-page-period" method="get" action="/Operaciones/@basePath"><input name="tab" type="hidden" value="@Model.Tab"/><label>Desde <input class="ev-input" name="desde" type="date" value="@Model.Desde?.ToString("yyyy-MM-dd")"/></label><label>Hasta <input class="ev-input" name="hasta" type="date" value="@Model.Hasta?.ToString("yyyy-MM-dd")"/></label><button class="ev-btn small" type="submit">Aplicar período</button><span>@(Model.Desde.HasValue||Model.Hasta.HasValue?"Período seleccionado":"Todos los períodos")</span></form>}
+@if(Model.Seccion=="Rutas y zonas"){<form class="ev-page-period" method="get" action="/Operaciones/Rutas"><input name="tab" type="hidden" value="@Model.Tab"/><label>Fecha de rutas <input class="ev-input" name="fecha" type="date" value="@Model.Dia?.ToString("yyyy-MM-dd")"/></label><button class="ev-btn small" type="submit">Aplicar fecha</button><a class="ev-btn small" href="/Operaciones/Rutas?tab=@Uri.EscapeDataString(Model.Tab)&todos=1">Todas las fechas</a></form>}
+@Html.AntiForgeryToken()
+<div data-ev-module-content data-section="@Model.Seccion" data-tab="@Model.Tab" data-desde="@Model.Desde?.ToString("yyyy-MM-dd")" data-hasta="@Model.Hasta?.ToString("yyyy-MM-dd")" data-updated="@Model.Datos.ActualizadoAt.ToString("O")">@await Html.PartialAsync("_ModuloContenido",Model)</div>
+@section Scripts{<script src="~/js/envirapido-modulos.js" asp-append-version="true" defer></script>}

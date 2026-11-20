@@ -1,10 +1,14 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Login.Application.Interfaces;
 using Login.Data;
 using Login.Domain.Entities;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -13,6 +17,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace Login.Tests;
 
@@ -20,27 +25,96 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
 {
     private readonly string _database = Path.Combine(Path.GetTempPath(), $"pilotgo-tests-{Guid.NewGuid():N}.db");
     private readonly bool _useSqlServer = Environment.GetEnvironmentVariable("PILOTGO_TEST_SQLSERVER") == "1";
+    private readonly string _sqlInstance = Environment.GetEnvironmentVariable("PILOTGO_TEST_SQLSERVER_INSTANCE") ?? "PilotGoCodexQA_20261109";
     private readonly string _sqlDatabase = $"PilotGoTest_{Guid.NewGuid():N}";
+    private readonly bool _preserveExistingSqlDatabase;
     private bool _cleanupStarted;
     public const string Password = "Test-only-Password42!";
     public const string JwtKey = "PilotGo_Integration_Tests_Only_Key_12345678901234567890";
     public TestClock Clock { get; } = new();
     public int TenantA, TenantB, ShopA, ShopA2, ShopB, CustomerA, CustomerA2, CustomerB, PilotA, PilotA2, PilotB;
 
+    public PilotGoFactory(string? existingSqlDatabase = null)
+    {
+        // La suite exige las cookies Secure reales también en Testing.
+        ClientOptions.BaseAddress = new Uri("https://localhost");
+        if (existingSqlDatabase is null) return;
+        if (!_useSqlServer || !Regex.IsMatch(existingSqlDatabase, "^PilotGoTest_[a-f0-9]{32}$", RegexOptions.CultureInvariant))
+            throw new ArgumentException("Sólo se puede adjuntar una base SQL Server QA con nombre PilotGoTest_<GUID>.", nameof(existingSqlDatabase));
+        _sqlDatabase = existingSqlDatabase;
+        _preserveExistingSqlDatabase = true;
+    }
+
+    public bool PreservesExistingSqlDatabase => _preserveExistingSqlDatabase;
+
+    // Adjuntar nunca crea esquema, migra, crea usuarios ni ejecuta seeds. Los
+    // identificadores se leen de la base conservada y se valida su contexto QA.
+    public async Task LoadExistingQaAsync()
+    {
+        if (!_preserveExistingSqlDatabase)
+            throw new InvalidOperationException("Este factory no está adjunto a una base QA existente.");
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        if (db.Database.GetDbConnection().Database != _sqlDatabase || !await db.Database.CanConnectAsync())
+            throw new InvalidOperationException("La base QA solicitada no existe o no está disponible; no se creará otra.");
+        var expectedUsers = new[] { "shop-a", "shop-b", "multi", "pilot-a", "pilot-a2", "pilot-b", "manager-a" };
+        var users = await db.Users.AsNoTracking().Where(u => expectedUsers.Contains(u.Id))
+            .Select(u => new { u.Id, u.Email }).ToListAsync();
+        if (users.Count != expectedUsers.Length || users.Any(u => u.Email != $"{u.Id}@example.test"))
+            throw new InvalidOperationException("La base no contiene las identidades ficticias QA esperadas.");
+
+        TenantA = await db.ClientesApp.AsNoTracking().Where(t => t.GestorIdentityUserId == "manager-a").Select(t => t.Id).SingleAsync();
+        ShopA = await db.UsuariosTienda.AsNoTracking().Where(u => u.IdentityUserId == "shop-a" && u.Activo)
+            .Select(u => u.TiendaId).SingleAsync();
+        ShopB = await db.UsuariosTienda.AsNoTracking().Where(u => u.IdentityUserId == "shop-b" && u.Activo)
+            .Select(u => u.TiendaId).SingleAsync();
+        TenantB = await db.Tiendas.AsNoTracking().Where(t => t.Id == ShopB).Select(t => t.ClienteAppId).SingleAsync();
+        ShopA2 = await db.UsuariosTienda.AsNoTracking().Where(u => u.IdentityUserId == "multi" && u.Activo
+                && u.TiendaId != ShopA && u.Tienda.ClienteAppId == TenantA).Select(u => u.TiendaId).SingleAsync();
+        PilotA = await db.Pilotos.AsNoTracking().Where(p => p.IdentityUserId == "pilot-a" && p.ClienteAppId == TenantA).Select(p => p.Id).SingleAsync();
+        PilotA2 = await db.Pilotos.AsNoTracking().Where(p => p.IdentityUserId == "pilot-a2" && p.ClienteAppId == TenantA).Select(p => p.Id).SingleAsync();
+        PilotB = await db.Pilotos.AsNoTracking().Where(p => p.IdentityUserId == "pilot-b" && p.ClienteAppId == TenantB).Select(p => p.Id).SingleAsync();
+        if (TenantA == TenantB || !await db.Tiendas.AsNoTracking().AnyAsync(t => t.Id == ShopA && t.ClienteAppId == TenantA))
+            throw new InvalidOperationException("Las pertenencias de las empresas QA no coinciden.");
+        CustomerA = await db.UsuariosFinales.AsNoTracking().Where(c => c.TiendaId == ShopA).OrderBy(c => c.Id).Select(c => c.Id).FirstAsync();
+        CustomerA2 = await db.UsuariosFinales.AsNoTracking().Where(c => c.TiendaId == ShopA2).OrderBy(c => c.Id).Select(c => c.Id).FirstAsync();
+        CustomerB = await db.UsuariosFinales.AsNoTracking().Where(c => c.TiendaId == ShopB).OrderBy(c => c.Id).Select(c => c.Id).FirstAsync();
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        if (!Regex.IsMatch(_sqlInstance, "^[A-Za-z0-9_-]{1,64}$"))
+            throw new InvalidOperationException("Nombre de instancia LocalDB de pruebas inválido.");
         builder.UseEnvironment("Testing");
         builder.UseSetting("Jwt:Key", JwtKey);
         builder.ConfigureTestServices(services =>
         {
+            // Las pruebas no dependen del EventLog de Windows ni de permisos
+            // del sistema operativo para comprobar un error de base de datos.
+            services.AddLogging(logging => logging.ClearProviders());
+            // Cookies/CSRF reales con claves aisladas por host de pruebas;
+            // nunca escribir ni reutilizar las claves del usuario o producción.
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
+            services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+            {
+                // La emisión/refresh y la validación observan el mismo reloj
+                // controlado. Conserva expiración, not-before y tolerancia reales.
+                options.TokenValidationParameters.LifetimeValidator = (notBefore, expires, _, parameters) =>
+                {
+                    var now = Clock.GetUtcNow().UtcDateTime;
+                    return expires.HasValue && expires.Value >= now.Subtract(parameters.ClockSkew)
+                        && (!notBefore.HasValue || notBefore.Value <= now.Add(parameters.ClockSkew));
+                };
+            });
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<ApplicationDbContext>();
             services.AddDbContext<ApplicationDbContext>(options =>
             {
                 if (_useSqlServer)
-                    options.UseSqlServer($"Server=(localdb)\\PilotGoCodexQA_20261109;Database={_sqlDatabase};Integrated Security=true;TrustServerCertificate=true");
+                    options.UseSqlServer($"Server=(localdb)\\{_sqlInstance};Database={_sqlDatabase};Integrated Security=true;TrustServerCertificate=true",
+                        sql => sql.UseParameterizedCollectionMode(ParameterTranslationMode.Parameter));
                 else
-                    options.UseSqlite($"Data Source={_database};Default Timeout=30");
+                    options.UseSqlite($"Data Source={_database};Default Timeout=30;Pooling=False");
             });
             services.RemoveAll<IGoogleMapsService>();
             services.AddSingleton<IGoogleMapsService, NoMaps>();
@@ -51,6 +125,8 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
 
     public async Task SeedAsync(string? migration = null)
     {
+        if (_preserveExistingSqlDatabase)
+            throw new InvalidOperationException("No se permite ejecutar seed, EnsureCreated o migraciones en una base QA adjunta.");
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         if (migration is null) await db.Database.EnsureCreatedAsync();
@@ -98,6 +174,22 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
         return client;
     }
 
+    public async Task<HttpClient> LoginWebAsync(string id)
+    {
+        var client = CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+        var html = await client.GetStringAsync("/Identity/Account/Login");
+        var token = Regex.Match(html, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"");
+        Assert.True(token.Success, "El login web debe emitir un token CSRF.");
+        var response = await client.PostAsync("/Identity/Account/Login", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Input.Email"] = $"{id}@example.test", ["Input.Password"] = Password,
+            ["__RequestVerificationToken"] = WebUtility.HtmlDecode(token.Groups[1].Value)
+        }));
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.DoesNotContain("Login", response.Headers.Location?.OriginalString ?? "");
+        return client;
+    }
+
     public async Task InScopeAsync(Func<IServiceProvider, Task> action)
     {
         using var scope = Services.CreateScope();
@@ -106,7 +198,7 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing && _useSqlServer && !_cleanupStarted)
+        if (disposing && _useSqlServer && !_preserveExistingSqlDatabase && !_cleanupStarted)
         {
             _cleanupStarted = true;
             using var scope = Services.CreateScope();
@@ -119,7 +211,6 @@ public sealed class PilotGoFactory : WebApplicationFactory<Program>
         base.Dispose(disposing);
         if (disposing)
         {
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
             File.Delete(_database);
         }
     }

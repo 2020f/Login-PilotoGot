@@ -1,0 +1,90 @@
+@model Login.ViewModels.SuperAdmin.FacturacionVm
+@using Login.Application.Services
+@using System.Globalization
+@{ Layout = "_LayoutSuperAdmin"; ViewData["Title"] = "Facturación y pagos"; var money = CultureInfo.GetCultureInfo("es-DO"); }
+<div class="sa-page-head">
+<div>
+<h2>Facturación y pagos</h2>
+<p>Controla suscripciones, saldos y pagos externos de las empresas.</p>
+</div>
+<a class="sa-btn sa-btn-primary" asp-action="CrearFactura" asp-route-empresaId="@Model.EmpresaId">+ Crear factura</a>
+</div>
+@if(!string.IsNullOrWhiteSpace(Model.Ok)) { <div class="sa-notice" role="status">@Model.Ok</div> }@if(!string.IsNullOrWhiteSpace(Model.Error)) { <div class="sa-notice sa-notice-error" role="alert">@Model.Error</div> }
+<div class="sa-grid-3">
+<article class="sa-card sa-card-pad sa-kpi-warning">
+<div class="sa-kpi-label">Saldo pendiente</div>
+<div class="sa-kpi-value">RD$@Model.Pendiente.ToString("N2", money)</div>
+<div class="sa-kpi-foot">Facturas vigentes sin cubrir</div>
+</article>
+<article class="sa-card sa-card-pad sa-kpi-accent">
+<div class="sa-kpi-label">Cobros registrados</div>
+<div class="sa-kpi-value">RD$@Model.Cobrado.ToString("N2", money)</div>
+<div class="sa-kpi-foot">Pagos externos confirmados, sin anulaciones</div>
+</article>
+<article class="sa-card sa-card-pad sa-kpi-danger">
+<div class="sa-kpi-label">Facturas vencidas</div>
+<div class="sa-kpi-value">@Model.Vencidas</div>
+<div class="sa-kpi-foot">Saldo pendiente y plazo superado</div>
+</article>
+</div>
+<form class="sa-toolbar sa-section-gap" method="get" asp-action="Facturacion">
+<div class="sa-field sa-field-wide">
+<label for="empresaId">Empresa</label>
+<select name="empresaId" id="empresaId">
+<option value="">Todas las empresas</option>@foreach(var e in Model.Empresas) { <option value="@e.Id" selected="@(Model.EmpresaId == e.Id)">@e.NombreComercial</option> }</select>
+</div>
+<div class="sa-field">
+<label for="estado">Estado de factura</label>
+<select name="estado" id="estado">
+<option value="">Todos los estados</option>@foreach(var s in new[]{"Pendiente","Parcial","Pagada","Vencida","Anulada"}) { <option value="@s" selected="@(Model.Estado == s)">@s</option> }</select>
+</div>
+<button class="sa-btn" type="submit">Filtrar</button>
+<a class="sa-btn" asp-action="Facturacion">Limpiar</a>
+</form>
+<div class="sa-card">
+<div class="sa-table-scroll" role="region" aria-label="Facturas de las empresas" tabindex="0">
+<table class="sa-table">
+<thead>
+<tr>
+<th>Factura / empresa</th>
+<th>Período</th>
+<th>Vencimiento</th>
+<th>Total RD$</th>
+<th>Pagado RD$</th>
+<th>Saldo RD$</th>
+<th>Estado</th>
+<th>Acción</th>
+</tr>
+</thead>
+<tbody>@foreach(var f in Model.Facturas) { var status = SaasBillingService.Status(f,Model.Hoy); <tr>
+<td>
+<strong>FAC-@f.Id.ToString("D5")</strong>
+<div class="sa-sub">
+<a asp-action="DetalleCliente" asp-route-id="@f.ClienteAppId">@(f.ClienteApp?.NombreComercial ?? $"Empresa #{f.ClienteAppId}")</a>
+</div>
+</td>
+<td>@f.PeriodStart.ToString("dd/MM/yyyy") – @f.PeriodEnd.ToString("dd/MM/yyyy")</td>
+<td>@f.DueDate.ToString("dd/MM/yyyy")</td>
+<td class="sa-number">@f.Amount.ToString("N2",money)</td>
+<td class="sa-number">@SaasBillingService.Paid(f).ToString("N2",money)</td>
+<td class="sa-number">@(f.VoidedAt == null ? SaasBillingService.Balance(f).ToString("N2",money) : "—")</td>
+<td>
+<span class="sa-pill @(status == "Pagada" ? "sa-pill-ok" : status == "Vencida" ? "sa-pill-bad" : status == "Anulada" ? "" : "sa-pill-warn")">@status</span>
+</td>
+<td>
+<a class="sa-btn sa-btn-small" asp-action="Factura" asp-route-id="@f.Id">Ver factura</a>
+</td>
+</tr> }@if(Model.Facturas.Count == 0) { <tr>
+<td colspan="8">
+<div class="sa-empty">
+<strong>No hay facturas con estos filtros</strong>Crea una factura o cambia los filtros para consultar otros resultados.</div>
+</td>
+</tr> }</tbody>
+</table>
+</div>
+<div class="sa-pagination">
+<span>@Model.Total facturas · Página @Model.Pagina</span>
+<div class="sa-actions">@if(Model.Pagina > 1) { <a class="sa-btn sa-btn-small" asp-action="Facturacion" asp-route-empresaId="@Model.EmpresaId" asp-route-estado="@Model.Estado" asp-route-pagina="@(Model.Pagina-1)">← Anterior</a> }@if(Model.Pagina * 20 < Model.Total) { <a class="sa-btn sa-btn-small" asp-action="Facturacion" asp-route-empresaId="@Model.EmpresaId" asp-route-estado="@Model.Estado" asp-route-pagina="@(Model.Pagina+1)">Siguiente →</a> }</div>
+</div>
+</div>
+<div class="sa-notice sa-section-gap">Los pagos se realizan fuera de Envirapido. Este panel registra comprobaciones y conciliación; ninguna fecha convierte por sí sola una factura en pagada.</div>

@@ -1,0 +1,157 @@
+{
+  "checkedUtc": "2026-11-19T14:19:28.2007558+00:00",
+  "origin": "https://envirapido.com",
+  "passed": false,
+  "checks": {
+    "httpToHttpsSameHost443PreservesPathQuery": false,
+    "httpRedirectsPreserveMethod": false,
+    "spoofedForwardedProtoCannotBypassRedirect": false,
+    "rootMatchesExpectedMode": true,
+    "loginAvailable": true,
+    "antiforgerySecureHttpOnly": true,
+    "allNewCookiesSecureHttpOnly": true,
+    "anonymousApi401Json": true
+  },
+  "rootMode": "Marketing",
+  "rootStatus": 200,
+  "rootLocation": "",
+  "loginStatus": 200,
+  "cookies": [
+    {
+      "name": "Identity.External",
+      "secure": true,
+      "httpOnly": true
+    },
+    {
+      "name": ".AspNetCore.Antiforgery.VyLW6ORzMgk",
+      "secure": true,
+      "httpOnly": true
+    },
+    {
+      "name": ".AspNetCore.Mvc.CookieTempDataProvider",
+      "secure": true,
+      "httpOnly": true
+    }
+  ],
+  "anonymousApi": [
+    {
+      "path": "/api/auth/me",
+      "status": 401,
+      "json": true,
+      "redirected": false
+    },
+    {
+      "path": "/api/piloto/capacidades",
+      "status": 401,
+      "json": true,
+      "redirected": false
+    },
+    {
+      "path": "/api/tienda/capacidades",
+      "status": 401,
+      "json": true,
+      "redirected": false
+    }
+  ],
+  "httpRedirects": [
+    {
+      "path": "/",
+      "hasProbeQuery": false,
+      "spoofedForwardedProto": false,
+      "methodPreserving": false,
+      "status": 200,
+      "targetScheme": null,
+      "targetHost": null,
+      "targetPort": null,
+      "sameHost": false,
+      "https443": false,
+      "preservesPathAndQuery": false,
+      "passed": false
+    },
+    {
+      "path": "/",
+      "hasProbeQuery": true,
+      "spoofedForwardedProto": false,
+      "methodPreserving": false,
+      "status": 200,
+      "targetScheme": null,
+      "targetHost": null,
+      "targetPort": null,
+      "sameHost": false,
+      "https443": false,
+      "preservesPathAndQuery": false,
+      "passed": false
+    },
+    {
+      "path": "/planes",
+      "hasProbeQuery": true,
+      "spoofedForwardedProto": false,
+      "methodPreserving": false,
+      "status": 200,
+      "targetScheme": null,
+      "targetHost": null,
+      "targetPort": null,
+      "sameHost": false,
+      "https443": false,
+      "preservesPathAndQuery": false,
+      "passed": false
+    },
+    {
+      "path": "/funciones%2Fqa",
+      "hasProbeQuery": true,
+      "spoofedForwardedProto": false,
+      "methodPreserving": false,
+      "status": 404,
+      "targetScheme": null,
+      "targetHost": null,
+      "targetPort": null,
+      "sameHost": false,
+      "https443": false,
+      "preservesPathAndQuery": false,
+      "passed": false
+    },
+    {
+      "path": "/Identity/Account/Login",
+      "hasProbeQuery": true,
+      "spoofedForwardedProto": false,
+      "methodPreserving": true,
+      "status": 307,
+      "targetScheme": "https",
+      "targetHost": "envirapido.com",
+      "targetPort": 443,
+      "sameHost": true,
+      "https443": true,
+      "preservesPathAndQuery": true,
+      "passed": true
+    },
+    {
+      "path": "/api/piloto/capacidades",
+      "hasProbeQuery": true,
+      "spoofedForwardedProto": false,
+      "methodPreserving": true,
+      "status": 307,
+      "targetScheme": "https",
+      "targetHost": "envirapido.com",
+      "targetPort": 443,
+      "sameHost": true,
+      "https443": true,
+      "preservesPathAndQuery": true,
+      "passed": true
+    },
+    {
+      "path": "/",
+      "hasProbeQuery": false,
+      "spoofedForwardedProto": true,
+      "methodPreserving": false,
+      "status": 200,
+      "targetScheme": null,
+      "targetHost": null,
+      "targetPort": null,
+      "sameHost": false,
+      "https443": false,
+      "preservesPathAndQuery": false,
+      "passed": false
+    }
+  ],
+  "scope": "Anónimo: no acredita cookie autenticada, despliegue exacto, SQL ni flujo móvil."
+}

@@ -1,0 +1,9 @@
+import type { Metadata } from "next";
+import { MarketingLayout } from "@/components/site";
+import { Icon } from "@/components/icon";
+import { BoxMark } from "@/components/ui";
+import { CONTACT } from "@/lib/config";
+export const metadata: Metadata = { title: "Hablemos de tu negocio", description: "Contacta a Envirapido para conocer el software de última milla y solicitar una demo para tu operación.", alternates: { canonical: "/contacto" } };
+export default function ContactPage() {
+  return <MarketingLayout><section className="section page-intro"><div className="container contact-grid"><div><span className="eyebrow">HABLEMOS DE TU OPERACIÓN</span><h1>Estamos para<br />acompañarte.</h1><p className="lead">Cuéntanos cómo organizas tus comercios, pilotos y entregas. Te ayudamos a conocer Envirapido y el siguiente paso para tu negocio.</p><div className="contact-brand-art"><BoxMark /><span>Cada entrega,<br /><strong>bajo control.</strong></span></div></div><div className="contact-options"><a className="contact-option" href={CONTACT.whatsappHref} target="_blank" rel="noopener noreferrer"><span className="icon-tile"><Icon name="phone" /></span><div><h2>Conversemos por WhatsApp</h2><p>{CONTACT.phone}</p><span className="text-link">Abrir conversación <Icon name="external" /></span></div></a><a className="contact-option" href={CONTACT.phoneHref}><span className="icon-tile"><Icon name="phone" /></span><div><h2>Prefieres una llamada</h2><p>{CONTACT.phone}</p><span className="text-link">Llamar <Icon name="arrow" /></span></div></a><a className="contact-option" href={`mailto:${CONTACT.email}?subject=Consulta%20sobre%20Envirapido`}><span className="icon-tile"><Icon name="mail" /></span><div><h2>Escríbenos</h2><p className="email-wrap">{CONTACT.email}</p><span className="text-link">Enviar correo <Icon name="arrow" /></span></div></a></div></div></section></MarketingLayout>;
+}

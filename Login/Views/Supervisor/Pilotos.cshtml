@@ -1,4 +1,4 @@
-@model List<Login.Domain.Entities.Piloto>
+@model List<Login.ViewModels.Supervisor.PilotOperationsVm>
 @using Login.Domain.Enums
 @{
     ViewData["Title"] = "Flota de Pilotos";
@@ -36,11 +36,9 @@
 <div class="pg-grid">
     @foreach (var p in Model)
     {
-        var statusClass = p.Estado == EstadoPiloto.Disponible ? "ok"
-            : p.Estado == EstadoPiloto.Ocupado ? "busy"
-            : "";
+        var statusClass = !p.Activo ? "" : p.OrdenesActivas > 0 ? "busy" : "ok";
 
-        var nombreSafe = (p?.Nombre ?? "").Trim();
+        var nombreSafe = (p.Nombre ?? "").Trim();
         var inicial    = !string.IsNullOrEmpty(nombreSafe) ? nombreSafe.Substring(0, 1).ToUpper() : "?";
 
         <div class="pg-card pg-pilotbox">
@@ -56,7 +54,7 @@
             </div>
 
             <div class="pg-pilotbox-mid">
-                <div>Órdenes activas: <b>0</b></div>
+                <div>Órdenes activas: <b>@p.OrdenesActivas</b><br /><span>@p.Disponibilidad</span></div>
                 <a class="pg-link" asp-action="EditarPiloto" asp-route-id="@p.Id">
                     Editar
                 </a>

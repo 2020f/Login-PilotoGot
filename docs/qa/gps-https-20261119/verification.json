@@ -1,0 +1,73 @@
+{
+  "recordedAt": "2026-11-19T10:22:21.5112318-04:00",
+  "baseCommit": "b637fae5ff05b52161cee032016342556675c4c6",
+  "backendSourceFiles": [
+    {
+      "path": "Login/Application/Operations/EnvirapidoOperationsService.Datos.cs",
+      "sha256": "eabd4c1cf7ffda46dab0e20f6524e229a120f7f99af23b05fe6a110b367a5934",
+      "gitBlobWithRepositoryLineEndings": "aa0a28b773a2d0f5cfc3f3fd82460641a902447f"
+    },
+    {
+      "path": "Login/Application/Operations/EnvirapidoOperationsService.cs",
+      "sha256": "941a694d2bb1ab1b3b6743485e9e2b82cab6c7b828fdecf472721a8e5b1e98db",
+      "gitBlobWithRepositoryLineEndings": "b76f4e356a99c7df6922229701cd864e36c4c128"
+    },
+    {
+      "path": "Login.Tests/ManagedGpsAuthorizationTests.cs",
+      "sha256": "93bf97995da870de511be1bbcb94e68f489f3bbe583be0a5aba7c041737716c2",
+      "gitBlobWithRepositoryLineEndings": "cc553deeb8d00c8acd49d25b3409bd0afe868c78"
+    }
+  ],
+  "sql": {
+    "provider": "SQL Server LocalDB",
+    "instance": "PilotGoGpsFixQA_20261118",
+    "dotnetRuntime": "10.0.15",
+    "suites": [
+      {
+        "receipt": "artifacts\\gps-https-fix-20261118\\gps-red-confirmed.trx",
+        "sha256": "51c6a9f6af8e8e885fee0e2393e3ff10cd9a68e015b9089cdef041eff7ab9768",
+        "total": 6,
+        "passed": 2,
+        "failed": 4,
+        "notExecuted": 0,
+        "started": "2026-11-18T18:14:30.9360169-04:00",
+        "finished": "2026-11-18T18:14:50.953071-04:00"
+      },
+      {
+        "receipt": "artifacts\\gps-https-fix-20261118\\gps-green-sql.trx",
+        "sha256": "cb12638b0ca66fe559d5d6181e297a1f930173de5e0922d98e69831ce6c030d6",
+        "total": 6,
+        "passed": 6,
+        "failed": 0,
+        "notExecuted": 0,
+        "started": "2026-11-18T18:17:50.710514-04:00",
+        "finished": "2026-11-18T18:18:17.9192705-04:00"
+      },
+      {
+        "receipt": "artifacts\\gps-https-fix-20261118\\full-sql.trx",
+        "sha256": "799dc6b91b9630ed46f9e9d57a5f4be4d089f577eaea6da987e7b4afa5284f80",
+        "total": 346,
+        "passed": 346,
+        "failed": 0,
+        "notExecuted": 0,
+        "started": "2026-11-19T00:41:31.2282161-04:00",
+        "finished": "2026-11-19T00:50:49.3726118-04:00"
+      }
+    ]
+  },
+  "httpsDecisionPolicyTests": {
+    "failed": 0,
+    "networkRequests": 0,
+    "scope": "Decision policy only; does not attest Cloudflare deployment.",
+    "passed": 8
+  },
+  "publicHttpsReceipt": "public-anonymous-before-deployment.json",
+  "mobileSourceCommit": "8c91f42dbe97d4fd9ec74514cb71595ec9f9280e",
+  "mobileSourceChanged": false,
+  "requiresNewMigration": false,
+  "requiresApkRebuild": false,
+  "productionDataMutations": 0,
+  "productionEdgeRuleApplied": false,
+  "productionGpsRetestPending": true,
+  "committedOrPushedAtVerification": false
+}

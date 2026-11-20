@@ -1,0 +1,57 @@
+@model Login.ViewModels.SuperAdmin.AuditoriaVm
+@{ Layout = "_LayoutSuperAdmin"; ViewData["Title"] = "Auditoría administrativa"; }
+<div class="sa-page-head">
+<div>
+<h2>Auditoría administrativa</h2>
+<p>Historial de acciones sobre empresas, suscripciones, planes y cobros.</p>
+</div>
+<span class="sa-pill sa-pill-info">Consulta de solo lectura</span>
+</div>
+<form class="sa-toolbar" asp-action="Auditoria" method="get">
+<div class="sa-field sa-field-wide">
+<label for="auditQ">Buscar acción, usuario o detalle</label>
+<input id="auditQ" name="q" value="@Model.Q" maxlength="150" type="search" placeholder="Pago, cambio de plan, correo del administrador…" />
+</div>
+<div class="sa-field">
+<label for="auditEmpresa">ID de empresa</label>
+<input id="auditEmpresa" name="empresaId" value="@Model.EmpresaId" type="number" min="1" placeholder="Todas las empresas" />
+</div>
+<button class="sa-btn" type="submit">Filtrar</button>
+<a class="sa-btn" asp-action="Auditoria">Limpiar</a>
+</form>
+<div class="sa-card">
+<div class="sa-table-scroll" role="region" aria-label="Eventos de auditoría" tabindex="0">
+<table class="sa-table">
+<thead>
+<tr>
+<th>Fecha / ID</th>
+<th>Acción</th>
+<th>Empresa</th>
+<th>Actor</th>
+<th>Detalle</th>
+</tr>
+</thead>
+<tbody>@foreach(var a in Model.Registros) { <tr>
+<td>@a.CreatedAt.AddHours(-4).ToString("dd/MM/yyyy HH:mm:ss")<div class="sa-sub">Evento #@a.Id · Santo Domingo</div>
+</td>
+<td>
+<strong>@a.Action</strong>
+<div class="sa-sub">@a.Entity #@a.EntityId</div>
+</td>
+<td>@if(a.ClienteAppId.HasValue) { <a asp-action="DetalleCliente" asp-route-id="@a.ClienteAppId">@(a.ClienteApp?.NombreComercial ?? $"Empresa #{a.ClienteAppId}")</a> } else { <span class="sa-pill">Plataforma</span> }</td>
+<td>@a.Actor</td>
+<td style="min-width:280px;max-width:500px;overflow-wrap:anywhere">@a.Detail @if(!string.IsNullOrWhiteSpace(a.Before) || !string.IsNullOrWhiteSpace(a.After)) { <details class="sa-section-gap"><summary>Ver cambio registrado</summary><dl class="sa-definition"><dt>Antes</dt><dd>@(a.Before ?? "No registrado")</dd><dt>Después</dt><dd>@(a.After ?? "No registrado")</dd></dl></details> }</td>
+</tr> }@if(Model.Registros.Count == 0) { <tr>
+<td colspan="5">
+<div class="sa-empty">
+<strong>Sin eventos con estos filtros</strong>Las nuevas acciones administrativas aparecerán aquí.</div>
+</td>
+</tr> }</tbody>
+</table>
+</div>
+<div class="sa-pagination">
+<span>@Model.Total eventos · Página @Model.Pagina</span>
+<div class="sa-actions">@if(Model.Pagina > 1) { <a class="sa-btn sa-btn-small" asp-action="Auditoria" asp-route-empresaId="@Model.EmpresaId" asp-route-q="@Model.Q" asp-route-pagina="@(Model.Pagina-1)">← Anterior</a> }@if(Model.Pagina * 30 < Model.Total) { <a class="sa-btn sa-btn-small" asp-action="Auditoria" asp-route-empresaId="@Model.EmpresaId" asp-route-q="@Model.Q" asp-route-pagina="@(Model.Pagina+1)">Siguiente →</a> }</div>
+</div>
+</div>
+<div class="sa-notice sa-section-gap">Los eventos administrativos nuevos se conservan con su actor y hora. El historial anterior a este módulo no se reconstruye automáticamente.</div>

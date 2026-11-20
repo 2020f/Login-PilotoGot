@@ -1,0 +1,19 @@
+@model Login.ViewModels.Envirapido.PanelVm
+@{Layout="_LayoutEnvirapido";ViewData["Title"]="Etiquetas de envío";}
+<div class="ev-page-heading"><div><h1>Etiquetas de envío</h1><p>@Model.Pedidos.Count pedidos autorizados · sin códigos C de cierre</p></div><button class="ev-btn primary" type="button" data-ev-print>Imprimir</button></div>
+<div class="ev-label-grid">
+@foreach(var p in Model.Pedidos)
+{
+    @foreach(var s in p.Paradas)
+    {
+        <article class="ev-shipping-label">
+            <img class="envi-brand-logo envi-label-brand" src="~/branding/logo-original.png" asp-append-version="true" alt="Envirapido" width="132" height="45" />
+            <strong>Envirapido · EV-@p.Codigo</strong>
+            <p>Parada @s.Posicion · #@s.Id</p><hr/>
+            <small>RECOGIDA</small><h3>@p.Comercio</h3><p>@p.RecogidaDireccion</p><hr/>
+            <small>ENTREGA</small><h3>@s.Nombre</h3><p>@s.Direccion</p><p>@s.Telefono</p>
+            @if(s.Instrucciones!=null){<p>@s.Instrucciones</p>}
+        </article>
+    }
+}
+</div>

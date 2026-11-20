@@ -3,6 +3,9 @@
 ###############################################################################
 * text=auto
 
+# Keep the reviewed migration script byte-identical to its SHA256 handoff.
+docs/envirapido/20261117-reasignacion-paradas.sql -text diff whitespace=cr-at-eol,-blank-at-eof
+
 ###############################################################################
 # Set default behavior for command prompt diff.
 #

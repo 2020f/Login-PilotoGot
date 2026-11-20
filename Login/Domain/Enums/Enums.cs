@@ -13,7 +13,10 @@
         Asignada = 2,
         Recolectada = 3,
         Entregada = 4,
-        Incidente = 5
+        Incidente = 5,
+        Devuelta = 6,
+        FinalizadaConDevoluciones = 7,
+        Cancelada = 8
     }
 
     public enum TipoCodigo

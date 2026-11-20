@@ -136,7 +136,7 @@ public sealed class OrderFlowTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task One_pilot_cannot_accept_two_auto_orders_concurrently()
+    public async Task One_pilot_can_accept_distinct_auto_orders_concurrently_without_duplicate_assignments()
     {
         using var shop = await _app.LoginAsync("shop-a");
         using var pilot = await _app.LoginAsync("pilot-a");
@@ -144,9 +144,19 @@ public sealed class OrderFlowTests : IAsyncLifetime
         var second = await CreateAsync(shop, _app.CustomerA);
         var responses = await Task.WhenAll(new[] { first, second }.Select(o =>
             pilot.PostAsync($"/api/piloto/ordenes-auto/{o.GetProperty("ordenId")}/aceptar", null)));
-        Assert.Single(responses, r => r.IsSuccessStatusCode);
-        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.BadRequest);
-        Assert.Single((await pilot.GetFromJsonAsync<JsonElement>("/api/piloto/mis-ordenes")).EnumerateArray());
+        Assert.All(responses, r => r.EnsureSuccessStatusCode());
+        Assert.Equal(2, (await pilot.GetFromJsonAsync<JsonElement>("/api/piloto/mis-ordenes")).GetArrayLength());
+        await _app.InScopeAsync(async sp =>
+        {
+            var db = sp.GetRequiredService<ApplicationDbContext>();
+            var orders = await db.OrdenesEntrega.ToListAsync();
+            Assert.Equal(2, orders.Count);
+            Assert.All(orders, o => { Assert.Equal(_app.PilotA, o.PilotoId); Assert.Equal(EstadoOrden.Asignada, o.Estado); });
+            foreach (var order in orders)
+                Assert.Equal(1, await db.HistorialOrdenes.CountAsync(h => h.OrdenEntregaId == order.Id && h.TipoEvento == TipoEventoOrden.Asignada));
+            Assert.Equal(4, await db.CodigosEntrega.CountAsync());
+            Assert.False(await db.CodigosEntrega.AnyAsync(c => c.Usado));
+        });
     }
 
     [Fact]
