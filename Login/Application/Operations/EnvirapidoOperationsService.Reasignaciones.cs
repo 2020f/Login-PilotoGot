@@ -15,7 +15,7 @@ public sealed partial class EnvirapidoOperationsService
         if (tenant == 0) throw new OperationsException(403, "Comercio receptor no autorizado.");
         return new(tenant, userId, TiendaReceptoraId: tiendaId);
     }
-    public async Task<ReasignacionSnapshot> ReasignacionesAsync(OperationsActor a, int? ordenId = null)
+    public async Task<ReasignacionSnapshot> ReasignacionesAsync(OperationsActor a, int? ordenId = null, bool incluirActivas = false)
     {
         await EnsureActorAsync(a);
         var requests = await db.RetirosParadas.AsNoTracking().Include(x => x.ParadaEntrega).Include(x => x.OrdenEntrega)
@@ -27,8 +27,13 @@ public sealed partial class EnvirapidoOperationsService
             .Where(x => x.ClienteAppId == a.TenantId && (!ordenId.HasValue || x.OrdenEntregaId == ordenId));
         query = a.TiendaReceptoraId.HasValue ? query.Where(p => false)
             : a.EsPiloto ? query.Where(p => p.OrdenEntrega.GestionPorParadas && p.PilotoAsignadoId == a.PilotoId && !p.EnReasignacion)
-            : query.Where(p => ordenId.HasValue || p.EnReasignacion);
+            : query.Where(p => ordenId.HasValue || p.EnReasignacion || incluirActivas && !EstadosEntrega.ParadasTerminales.Contains(p.Estado));
         var stops = await query.OrderBy(p => p.OrdenEntregaId).ThenBy(p => p.Posicion).Take(1000).ToListAsync();
+        var returns = !a.EsPiloto && !a.TiendaReceptoraId.HasValue
+            ? await db.DevolucionesOperativas.AsNoTracking().Include(x => x.OrdenEntrega).Include(x => x.ParadaEntrega)
+                .Where(x => x.ClienteAppId == a.TenantId && x.Abierta && (!ordenId.HasValue || x.OrdenEntregaId == ordenId))
+                .OrderBy(x => x.Id).Take(1000).ToListAsync()
+            : [];
         var contactIds = requests.SelectMany(x => new[] { x.PilotoOrigenId, x.PilotoDestinoId }).Where(x => x.HasValue).Select(x => x!.Value).Distinct().ToArray();
         var contacts = await db.Pilotos.AsNoTracking().Where(p => p.ClienteAppId == a.TenantId && contactIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id, p => new { p.Nombre, p.Telefono });
@@ -42,7 +47,7 @@ public sealed partial class EnvirapidoOperationsService
                 PilotoOrigenTelefono = x.PilotoOrigenId.HasValue ? contacts.GetValueOrDefault(x.PilotoOrigenId.Value)?.Telefono : null,
                 PilotoDestinoNombre = x.PilotoDestinoId.HasValue ? contacts.GetValueOrDefault(x.PilotoDestinoId.Value)?.Nombre : null,
                 PilotoDestinoTelefono = x.PilotoDestinoId.HasValue ? contacts.GetValueOrDefault(x.PilotoDestinoId.Value)?.Telefono : null
-            }).ToList());
+            }).ToList(), returns.Select(DevolucionDto).ToList());
     }
 
     public async Task<object> SolicitarRetiroParadasAsync(OperationsActor a, SolicitarRetiroParadasRequest r)
@@ -55,19 +60,20 @@ public sealed partial class EnvirapidoOperationsService
             foreach (var p in stops)
                 if (a.EsPiloto && (order.GestionPorParadas ? p.PilotoAsignadoId : order.PilotoId) != a.PilotoId)
                     throw new OperationsException(404, "Parada no disponible para este piloto.");
-            if (r.IncidenciaId.HasValue && !await db.IncidenciasOperativas.AnyAsync(i => i.Id == r.IncidenciaId
-                && i.ClienteAppId == a.TenantId && i.OrdenEntregaId == order.Id
-                && (!i.ParadaEntregaId.HasValue || stops.Select(p => p.Id).Contains(i.ParadaEntregaId.Value))))
-                throw new OperationsException(404, "Incidencia no disponible para estas paradas.");
+            if (r.CrearIncidencia && r.IncidenciaId.HasValue) throw new OperationsException(400, "Selecciona una incidencia existente o registra una nueva, no ambas.");
+            var incident = await ReassignmentIncidentAsync(a, order.Id, stops, r.IncidenciaId);
             await AssertNoOpenRetiroAsync(a.TenantId, stops.Select(p => p.Id).ToArray());
             await PrepareManagedOrderAsync(order);
+            if (r.CrearIncidencia) incident = await CreateRetirementIncidentAsync(a, order.Id, stops, reason);
             var items = new List<RetiroParadaOperativa>();
             foreach (var p in stops)
             {
                 var item = NewRetiro(a, order, p, reason);
-                item.IncidenciaId = r.IncidenciaId;
+                item.IncidenciaId = incident?.Id;
                 if (!a.EsPiloto) { item.Estado = "PorReasignar"; item.DecididaPor = a.UserId; RetireAssignment(p); }
                 db.RetirosParadas.Add(item); items.Add(item);
+                await RetirementIncidentActivityAsync(a, item, a.EsPiloto ? "RetiroSolicitado" : "RetiroAplicado",
+                    a.EsPiloto ? "El piloto solicita retirar esta entrega; requiere decisión del gestor." : "El gestor retiró la entrega para reasignar o cancelar; se conserva la custodia física.");
             }
             if (!a.EsPiloto) await ReleaseManagedRouteStopsAsync(a.TenantId, order.Id, stops.Select(p => p.Id).ToArray());
             ReconcileManagedOrder(order, Now);
@@ -96,6 +102,7 @@ public sealed partial class EnvirapidoOperationsService
             }
             else throw new OperationsException(400, "Selecciona Aprobar o Rechazar.");
             Touch(item); HistoryReassignment(a, item.OrdenEntrega, $"{r.Accion} retiro de parada {item.ParadaEntregaId}. {item.NotaDecision}");
+            await RetirementIncidentActivityAsync(a, item, r.Accion == "Aprobar" ? "RetiroAprobado" : "RetiroRechazado", item.NotaDecision);
             return RetiroDto(item, a);
         });
     }
@@ -108,6 +115,7 @@ public sealed partial class EnvirapidoOperationsService
             var order = await LoadReassignmentOrderAsync(a, r.OrdenId);
             var stops = SelectReassignmentStops(order, r.Paradas);
             var reason = Required(r.Motivo, 1000, "Motivo de asignación");
+            await ReassignmentIncidentAsync(a, order.Id, stops, r.IncidenciaId);
             var target = await db.Pilotos.AsNoTracking().SingleOrDefaultAsync(p => p.Id == r.PilotoId && p.ClienteAppId == a.TenantId && p.Activo)
                 ?? throw new OperationsException(404, "El piloto receptor no está activo en esta empresa.");
             if (stops.Any(p => (order.GestionPorParadas ? p.PilotoAsignadoId : order.PilotoId) == target.Id && !p.EnReasignacion))
@@ -119,6 +127,7 @@ public sealed partial class EnvirapidoOperationsService
                 var open = await db.RetirosParadas.SingleOrDefaultAsync(x => x.ClienteAppId == a.TenantId && x.ParadaEntregaId == p.Id && x.Abierta);
                 if (open is not null && open.Estado != "PorReasignar") throw new OperationsException(409, "Decide la solicitud o termina la recepción pendiente antes de reasignar.");
                 var item = open ?? NewRetiro(a, order, p, reason);
+                LinkRetirementIncident(item, r.IncidenciaId);
                 if (open is null) db.RetirosParadas.Add(item);
                 item.PilotoDestinoId = target.Id; item.TipoDestino = "Piloto";
                 item.DestinoNombre = target.Nombre; item.DestinoDireccion = "Coordina la recepción con el custodio y el gestor.";
@@ -129,6 +138,8 @@ public sealed partial class EnvirapidoOperationsService
                 p.EnReasignacion = receiptRequired;
                 item.Estado = receiptRequired ? "PendienteRecepcion" : "Reasignada";
                 item.Abierta = receiptRequired; Touch(item); items.Add(item);
+                await RetirementIncidentActivityAsync(a, item, "Reasignacion", receiptRequired
+                    ? "Asignada a otro piloto; pendiente de recepción física por el receptor." : "Asignada a otro piloto antes de recoger el paquete.");
             }
             await ReleaseManagedRouteStopsAsync(a.TenantId, order.Id, stops.Select(p => p.Id).ToArray());
             foreach (var p in stops)
@@ -167,6 +178,7 @@ public sealed partial class EnvirapidoOperationsService
                 item.DestinoLatitud = r.Latitud; item.DestinoLongitud = r.Longitud;
             }
             item.Estado = "PendienteRecepcion"; item.PilotoDestinoId = null; item.DecididaPor = a.UserId; Touch(item);
+            await RetirementIncidentActivityAsync(a, item, "RetornoProgramado", "Retorno autorizado a " + item.DestinoNombre + "; se conserva la custodia hasta recepción.");
             HistoryReassignment(a, item.OrdenEntrega, $"Retorno de parada {item.ParadaEntregaId} a {item.DestinoNombre} autorizado; el piloto conserva la custodia hasta recepción.");
             return RetiroDto(item, a);
         });
@@ -201,6 +213,7 @@ public sealed partial class EnvirapidoOperationsService
             }
             p.RevisionAsignacion = Guid.NewGuid().ToString("N");
             item.Estado = "Recibida"; item.Abierta = false; item.RecibidaPor = a.UserId; item.RecibidaAt = Now; Touch(item);
+            await RetirementIncidentActivityAsync(a, item, "RecepcionPaquete", "Recepción física registrada. " + observation);
             ReconcileManagedOrder(item.OrdenEntrega, Now);
             HistoryReassignment(a, item.OrdenEntrega, $"Recepción física de parada {p.Id}: {observation}. No equivale a entrega C.");
             return RetiroDto(item, a);
@@ -214,12 +227,14 @@ public sealed partial class EnvirapidoOperationsService
             var order = await LoadReassignmentOrderAsync(a, r.OrdenId);
             var stops = SelectReassignmentStops(order, r.Paradas);
             var reason = Required(r.Motivo, 1000, "Motivo de cancelación");
+            await ReassignmentIncidentAsync(a, order.Id, stops, r.IncidenciaId);
             await PrepareManagedOrderAsync(order);
             foreach (var p in stops)
             {
                 var open = await db.RetirosParadas.SingleOrDefaultAsync(x => x.ClienteAppId == a.TenantId && x.ParadaEntregaId == p.Id && x.Abierta);
                 if (open is not null && open.Estado == "Solicitada") throw new OperationsException(409, "Primero decide la solicitud de retiro pendiente.");
                 var item = open ?? NewRetiro(a, order, p, reason);
+                LinkRetirementIncident(item, r.IncidenciaId);
                 if (open is null) db.RetirosParadas.Add(item);
                 p.Estado = EstadoParadaEntrega.Cancelada; p.PilotoAsignadoId = null; p.EnReasignacion = false;
                 p.RevisionAsignacion = Guid.NewGuid().ToString("N");
@@ -233,6 +248,7 @@ public sealed partial class EnvirapidoOperationsService
                 }
                 else { item.Estado = "Cancelada"; item.Abierta = false; }
                 Touch(item);
+                await RetirementIncidentActivityAsync(a, item, "EntregaCancelada", "Cancelada la entrega; cualquier paquete en custodia sigue pendiente de retorno. " + reason);
                 foreach (var code in await db.CodigosEntrega.Where(c => c.ClienteAppId == a.TenantId && c.OrdenEntregaId == order.Id && c.ParadaEntregaId == p.Id).ToListAsync()) code.Reservado = false;
             }
             await ReleaseManagedRouteStopsAsync(a.TenantId, order.Id, stops.Select(p => p.Id).ToArray());
@@ -259,7 +275,10 @@ public sealed partial class EnvirapidoOperationsService
             var p = order.Paradas.SingleOrDefault(x => x.Id == input.ParadaId)
                 ?? throw new OperationsException(404, "Una parada no pertenece al pedido.");
             if (EstadosEntrega.EsTerminal(p.Estado)) throw new OperationsException(409, "Las paradas finalizadas conservan su historial y no pueden reasignarse.");
-            if (input.RevisionAsignacion != p.RevisionAsignacion) throw new OperationsException(409, "La asignación cambió; actualiza las paradas.");
+            // Las órdenes clásicas no emitían revisión en el detalle móvil.
+            // Sólo antes de convertirlas se admite esa ausencia como revisión vacía.
+            var revision = !order.GestionPorParadas ? input.RevisionAsignacion ?? "" : input.RevisionAsignacion;
+            if (revision != p.RevisionAsignacion) throw new OperationsException(409, "La asignación cambió; actualiza las paradas.");
             items.Add(p);
         }
         return items;
@@ -268,7 +287,7 @@ public sealed partial class EnvirapidoOperationsService
     {
         if (order.GestionPorParadas) return;
         if (await db.DevolucionesOperativas.AnyAsync(d => d.ClienteAppId == order.ClienteAppId && d.OrdenEntregaId == order.Id && d.Abierta))
-            throw new OperationsException(409, "Termina o rechaza primero la devolución definitiva pendiente.");
+            throw new OperationsException(409, "El gestor debe pasar las devoluciones pendientes a reasignación desde Pedidos o Devoluciones, conservando la custodia y sin usar códigos de entrega.");
         foreach (var p in order.Paradas)
         {
             p.PilotoAsignadoId = order.PilotoId;
@@ -305,7 +324,7 @@ public sealed partial class EnvirapidoOperationsService
             x.CreatedAt, x.RecibidaAt, x.Abierta && x.Estado == "PendienteRecepcion"
                 && (x.TipoDestino == "Piloto" ? a.EsPiloto && x.PilotoDestinoId == a.PilotoId
                     : !a.EsPiloto && (!a.TiendaReceptoraId.HasValue || x.TipoDestino == "Comercio" && x.TiendaDestinoId == a.TiendaReceptoraId)),
-            x.ParadaEntrega.RevisionAsignacion, x.Version, x.Abierta);
+            x.ParadaEntrega.RevisionAsignacion, x.Version, x.Abierta, IncidenciaId: x.IncidenciaId);
     private void HistoryReassignment(OperationsActor a, OrdenEntrega order, string text)
     {
         db.HistorialOrdenes.Add(new() { OrdenEntregaId = order.Id, ActorIdentityUserId = a.UserId,

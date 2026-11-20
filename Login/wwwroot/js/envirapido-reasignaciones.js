@@ -9,6 +9,8 @@
   const value = (form, name) => field(form, name)?.value.trim() || '';
   const error = (form, message) => { const box = one('[data-reassign-error]', form); box.className = 'ev-alert red'; box.textContent = message; };
   const record = id => cases.find(item => item.id === Number(id));
+  const contextKeys = ['orderId', 'incidenceId', 'stopId', 'view'];
+  const linkedIncident = () => holder.dataset.incidenceId ? Number(holder.dataset.incidenceId) : null;
   let refreshing = false, mutations = 0, pollTimer = null, refreshController = null;
   const refreshState = one('[data-reassignment-refresh-state]');
   function editing() {
@@ -26,17 +28,21 @@
     try {
       const url = new URL('/Operaciones/ReasignacionesFragmento', location.origin);
       if (holder.dataset.orderId) url.searchParams.set('ordenId', holder.dataset.orderId);
+      if (holder.dataset.incidenceId) url.searchParams.set('incidenciaId', holder.dataset.incidenceId);
+      if (holder.dataset.stopId) url.searchParams.set('paradaId', holder.dataset.stopId);
+      url.searchParams.set('vista', holder.dataset.view || 'activas');
       const response = await fetch(url, { credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: controller.signal, headers: { Accept: 'text/html' } });
       if (!response.ok) throw new Error('No se pudo actualizar la bandeja. La sesión y los intentos pendientes se conservan.');
       const parsed = new DOMParser().parseFromString(await response.text(), 'text/html');
       const fragment = one('[data-reassignment-snapshot]', parsed), payload = fragment && one('#evReassignmentData', fragment);
-      if (!fragment || !payload || (fragment.dataset.orderId || '') !== (holder.dataset.orderId || '') || !Number.isFinite(Date.parse(fragment.dataset.updated || '')))
+      if (!fragment || !payload || contextKeys.some(key => (fragment.dataset[key] || '') !== (holder.dataset[key] || '')) || !Number.isFinite(Date.parse(fragment.dataset.updated || '')))
         throw new Error('La actualización recibida no corresponde a esta bandeja.');
       const next = JSON.parse(payload.textContent);
-      if (!Array.isArray(next.paradas) || !Array.isArray(next.gestiones)) throw new Error('La actualización de la bandeja no es válida.');
+      if (!Array.isArray(next.paradas) || !Array.isArray(next.gestiones) || next.devolucionesPendientes != null && !Array.isArray(next.devolucionesPendientes)) throw new Error('La actualización de la bandeja no es válida.');
       // Never replace a selection made while this read was in flight.
       if (editing() || !holder.isConnected) return false;
       holder.replaceChildren(document.importNode(fragment, true)); data = next; cases = data.gestiones;
+      E.associateLabels?.(holder);
       refreshState.textContent = 'Bandeja actualizada. Se consulta cada 5 segundos mientras no haya edición o selección.';
       announceSnapshot(fragment.dataset.updated); return true;
     } catch (problem) {
@@ -79,6 +85,14 @@
     if (id === 'evStopDecision') one('[data-reassign-title]', form).textContent = action === 'Aprobar' ? 'Aprobar retiro de entrega' : 'Rechazar retiro de entrega';
     if (id === 'evStopReceive') one('[data-reassign-receipt-destination]', form).textContent = `Destino: ${item.destinoNombre || ''} · ${item.destinoDireccion || ''}`;
     if (id === 'evRetiroAdjustment') one('[data-reassign-adjustment-pilot]', form).textContent = `Trabajo previo de ${item.pilotoOrigenNombre || `piloto ID ${item.pilotoOrigenId}`} · pedido #${item.codigoA} · parada ID ${item.paradaId}`;
+    if (id === 'evReassignmentChange' && action) field(form, 'accion').value = action;
+    if (id === 'evMigrateReturns') {
+      const requests = (data.devolucionesPendientes || []).filter(row => row.ordenId === Number(item.ordenId)).sort((a, b) => a.id - b.id);
+      form._reassignment = { item: { ordenId: Number(item.ordenId), devoluciones: requests.map(row => ({ id: row.id, version: row.version })) } };
+      one('[data-reassign-migration-order]', form).textContent = `Pedido · ID interno #${item.ordenId}. Se trasladarán ${requests.length} devoluciones pendientes.`;
+      const list = one('[data-reassign-migration-cases]', form); list.replaceChildren();
+      for (const row of requests) { const entry = document.createElement('li'); entry.textContent = `DV-${String(row.id).padStart(4, '0')} · Parada ID ${row.paradaId} · ${row.estado} · ${row.motivo}`; list.append(entry); }
+    }
     update(form); dialog.showModal();
   }
   function update(form) {
@@ -92,7 +106,7 @@
     }
   }
   function selection() {
-    const selected = all('[data-reassign-stop]:checked');
+    const selected = all('[data-reassign-stop]:checked:not(:disabled)');
     if (!selected.length) throw new Error('Selecciona al menos una parada disponible.');
     const parents = new Set(selected.map(input => input.dataset.orderId));
     if (parents.size !== 1) throw new Error('Gestiona una selección de paradas del mismo pedido.');
@@ -115,8 +129,16 @@
     const kind = form.dataset.reassignmentForm, context = form._reassignment || {}, item = context.item;
     if (kind === 'selection') {
       const action = value(form, 'accion'), body = { ...selection(), motivo: value(form, 'motivo') };
+      if (!['retiros', 'reasignar', 'cancelar-paradas'].includes(action)) throw new Error('Selecciona una acción de gestión válida.');
+      if (linkedIncident()) body.incidenciaId = linkedIncident();
       if (action === 'reasignar') body.pilotoId = Number(value(form, 'pilotoId'));
       return { path: action, body };
+    }
+    if (kind === 'migrate') {
+      if (!field(form, 'confirmarTraslado').checked || !item?.devoluciones?.length) throw new Error('Revisa y autoriza expresamente todas las devoluciones mostradas.');
+      const body = { ordenId: item.ordenId, devoluciones: item.devoluciones, motivo: value(form, 'motivo') };
+      if (linkedIncident()) body.incidenciaId = linkedIncident();
+      return { path: 'devoluciones-a-reasignacion', body };
     }
     if (kind === 'decision') return { path: `retiros/${item.id}/decidir`, body: { accion: context.action, nota: value(form, 'nota'), version: item.version } };
     if (kind === 'return') {
@@ -139,6 +161,13 @@
     const target = event.target;
     const refresh = target.closest('[data-reassign-refresh]'); if (refresh) { await refreshSnapshot(true); return; }
     const opening = target.closest('[data-reassign-open]'); if (opening) open(opening.dataset.reassignOpen);
+    const single = target.closest('[data-reassign-one]');
+    if (single) {
+      const choice = all('[data-reassign-stop]').find(input => input.dataset.reassignStop === single.dataset.reassignOne);
+      if (choice && !choice.disabled) { for (const input of all('[data-reassign-stop]')) input.checked = input === choice; open('evReassignmentChange', null, single.dataset.action); }
+    }
+    const migration = target.closest('[data-reassign-migrate-order]');
+    if (migration) open('evMigrateReturns', { ordenId: Number(migration.dataset.reassignMigrateOrder) });
     const close = target.closest('[data-reassign-close]'); if (close) close.closest('dialog').close();
     const decision = target.closest('[data-reassign-decision]'); if (decision) open('evStopDecision', record(decision.dataset.caseId), decision.dataset.reassignDecision);
     const returning = target.closest('[data-reassign-return]'); if (returning) open('evStopReturn', record(returning.dataset.reassignReturn));
@@ -173,5 +202,21 @@
   window.addEventListener('pageshow', startPolling);
   const initial = one('[data-reassignment-snapshot]', holder);
   if (initial) announceSnapshot(initial.dataset.updated);
+  // A contextual GET only prepares a choice. It must never send a command.
+  const initialAction = holder.dataset.initialAction, initialOrder = Number(holder.dataset.orderId);
+  if (initialAction && initialOrder) {
+    const pendingReturns = (data.devolucionesPendientes || []).some(row => row.ordenId === initialOrder);
+    const pendingRequest = cases.some(item => item.ordenId === initialOrder && item.abierta && ['Solicitada', 'PendienteRecepcion'].includes(item.estado)
+      && (!holder.dataset.stopId || item.paradaId === Number(holder.dataset.stopId)));
+    if (pendingReturns || pendingRequest) {
+      const status = one('[data-reassignment-status]'); status.className = 'ev-alert neutral';
+      status.textContent = pendingReturns ? 'Este pedido tiene devoluciones pendientes. Revisa y autoriza su traslado antes de retirar o cambiar de piloto.'
+        : 'Ya hay una solicitud o recepción pendiente para estas paradas. Revisa la gestión existente en la bandeja de atención.';
+    } else {
+      const choices = all('[data-reassign-stop]').filter(input => Number(input.dataset.orderId) === initialOrder && !input.disabled);
+      for (const input of choices) input.checked = true;
+      if (choices.length) open('evReassignmentChange', null, initialAction);
+    }
+  }
   startPolling();
 })();

@@ -16,6 +16,7 @@ public sealed class OperationsPageVm
     public OperationsSnapshot Datos { get; set; } = null!;
     public PanelVm Operacion { get; set; } = new();
     public List<DevolucionOperativaDto> Devoluciones { get; set; } = [];
+    public List<RetiroParadaDto> GestionesRetiro { get; set; } = [];
     public DateOnly? Desde { get; set; }
     public DateOnly? Hasta { get; set; }
     public List<PanelOrderVm> CandidatasRuta { get; set; } = [];

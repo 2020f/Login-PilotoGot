@@ -21,6 +21,8 @@ public sealed partial class OperationsApiController
     public Task<IActionResult> Recepcion(int id, ConfirmarRecepcionParadaRequest r) => Run(a => service.ConfirmarRecepcionParadaAsync(a, id, r));
     [HttpPost("cancelar-paradas")]
     public Task<IActionResult> CancelarParadas(CancelarParadasRequest r) => Run(a => service.CancelarParadasAsync(a, r));
+    [HttpPost("devoluciones-a-reasignacion")]
+    public Task<IActionResult> TrasladarDevoluciones(TrasladarDevolucionesRequest r) => Run(a => service.TrasladarDevolucionesAReasignacionAsync(a, r));
 }
 
 public sealed partial class PilotOperationsApiController

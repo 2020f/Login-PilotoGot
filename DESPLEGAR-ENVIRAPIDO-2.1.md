@@ -1,5 +1,9 @@
 # Desplegar Envirapido 2.1 — entrega del 18/11/2026
 
+> Para la actualización de retiros desde incidencias del 20/11/2026, seguir
+> [DESPLEGAR-ENVIRAPIDO-2.1.1.md](DESPLEGAR-ENVIRAPIDO-2.1.1.md).
+> Este documento conserva la migración previa y el recibo histórico del APK10.
+
 Esta es la guía vigente para este lote. Reemplaza las indicaciones históricas de
 «sin migración» o «sólo portada» para esta entrega. El propietario autorizó subir
 las fuentes; otro agente realiza el despliegue. GitHub no acredita producción.

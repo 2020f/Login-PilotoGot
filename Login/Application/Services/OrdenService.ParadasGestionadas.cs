@@ -125,7 +125,7 @@ public partial class OrdenService
                 .SetProperty(o => o.RecolectadaAt, o => o.RecolectadaAt ?? now));
         await RefrescarOrdenLocalAsync(orden.Id);
         var result = new RecogidaParadasResult(orden.Id, EstadoOrden.Recolectada.ToString(), now,
-            requested.Select(p => new RecogidaParadaConfirmadaDto(p.ParadaId, p.RevisionAsignacion, now)).ToArray());
+            requested.Select(p => new RecogidaParadaConfirmadaDto(p.ParadaId, p.RevisionAsignacion!, now)).ToArray());
         GuardarConfirmacion(orden.ClienteAppId, orden.Id, actorIdentityUserId, "RecogerParadas", clave, hash, result);
         await _db.SaveChangesAsync(); await tx.CommitAsync(); return result;
         }

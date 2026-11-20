@@ -1,0 +1,498 @@
+{
+  "schemaVersion": 1,
+  "preparedAtUtc": "2026-11-20T19:22:47.92142Z",
+  "status": "SIGNED_RELEASE_PREPARED_SERVER_DEPLOYMENT_AND_PUBLIC_FUNCTIONAL_QA_PENDING",
+  "fileName": "Envirapido-2.1.1-11-release.apk",
+  "bytes": 75427589,
+  "sha256": "47acc45e7f7c4340683d12464f79579c3103bfbefdf8accac4bfabbb19f40e0d",
+  "package": "com.pilotgo.app",
+  "versionName": "2.1.1",
+  "versionCode": 11,
+  "apiBaseUrl": "https://envirapido.com",
+  "certificateSha256": "773d72ba127d16a95f032d520d37162708ea8676bf2f7e3e48168f751724e487",
+  "signatureV2Verified": true,
+  "zipalign16KVerified": true,
+  "debuggable": false,
+  "abi": [
+    {
+      "abi": "armeabi-v7a",
+      "publicOriginEmbedded": true,
+      "legacyStorageScopeEmbedded": true,
+      "qaOriginEmbedded": false
+    },
+    {
+      "abi": "arm64-v8a",
+      "publicOriginEmbedded": true,
+      "legacyStorageScopeEmbedded": true,
+      "qaOriginEmbedded": false
+    },
+    {
+      "abi": "x86_64",
+      "publicOriginEmbedded": true,
+      "legacyStorageScopeEmbedded": true,
+      "qaOriginEmbedded": false
+    }
+  ],
+  "sourceRepository": "https://github.com/2020f/pilotgo-app",
+  "sourceCommit": "ba9411c461da82d137a6fc6121daf8b0c50f4b21",
+  "sourceTree": "575637546683a73d906f9b941a49879b9a090cfa",
+  "cleanTrackedCheckoutAtBuild": true,
+  "backendRequiredRef": "refs/tags/envirapido-web-2.1.1-11",
+  "backendRequiredCapability": "retiroVinculadoAIncidencia",
+  "qa": {
+    "localSqlPassed": 371,
+    "localFlutterPassed": 129,
+    "analyzer": "No issues found",
+    "sourceQa": "Retained: functional inputs match the validated source hashes; only version and release documentation changed.",
+    "releaseNativeSmoke": "Passed: exact signed APK installed in a fresh emulator; box launcher and login observed. No production login or order flow executed.",
+    "publicFunctionalQaPassed": false,
+    "productionDataModified": false,
+    "physicalDeviceModified": false,
+    "releaseNativeSmokeInstalledSha256": "47acc45e7f7c4340683d12464f79579c3103bfbefdf8accac4bfabbb19f40e0d",
+    "releaseNativeSmokeAtUtc": "2026-11-20T19:39:33.8168633Z"
+  },
+  "distribution": {
+    "channel": "Protected SuperAdmin Android versions",
+    "publicGithubApkAsset": false,
+    "historicalPublicLinkPreserved": true
+  },
+  "sources": [
+    {
+      "path": "android/.gitignore",
+      "buildRawSha256": "c9af75dbc2c8aa867476a09426c80b178c4aeed8b9393ae48503eedfa3273d71",
+      "committedGitBlobSha1": "be3943c96d8eed92e2a329ce8327616d5e7dc440"
+    },
+    {
+      "path": "android/app/build.gradle.kts",
+      "buildRawSha256": "5268106f2269ddc12920fa9b5356ea671b9b4c47ee0b589c421ad4092d88b8a4",
+      "committedGitBlobSha1": "fddd1de79cd4fef4d43939b823e54547446a2868"
+    },
+    {
+      "path": "android/app/src/debug/AndroidManifest.xml",
+      "buildRawSha256": "b01a4541a8144c15bc617bab7eb267c99fa1476368fbbda5a12cdbf4e316a34c",
+      "committedGitBlobSha1": "399f6981d5d35475eb18e6068ae67cdd7c731978"
+    },
+    {
+      "path": "android/app/src/main/AndroidManifest.xml",
+      "buildRawSha256": "a8cd896cb4ebc058c8fe11e086f358f8775e0fa21a3ebcfc08a68a7dc24b2b5c",
+      "committedGitBlobSha1": "fa7c5308f9f2f993cdf5a3f2a5b342e350ef811a"
+    },
+    {
+      "path": "android/app/src/main/kotlin/com/pilotgo/app/MainActivity.kt",
+      "buildRawSha256": "e79f14dca41accf18c4f8f4e2d738747bc37c23f281246abbc0876d7dba644f3",
+      "committedGitBlobSha1": "5fc9b4ab2ef57719863849716c887d9025d31bdc"
+    },
+    {
+      "path": "android/app/src/main/kotlin/com/pilotgo/app/PilotTrackingService.kt",
+      "buildRawSha256": "20924104eefd173854b0a582c782b2b216fb084610a3ce45ce72070c7cb43c96",
+      "committedGitBlobSha1": "c58ebf930bac0fc042507368788fe5b3f28d4c65"
+    },
+    {
+      "path": "android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png",
+      "buildRawSha256": "8a330d3c380d471681b0768c595b8810b5addba8816f08b098f6460c3cf48f8c",
+      "committedGitBlobSha1": "2361521a4056fab330b2f99bd621ca145b762904"
+    },
+    {
+      "path": "android/app/src/main/res/drawable-v21/launch_background.xml",
+      "buildRawSha256": "dca312ec77de83e43ef70a825c299b51451247286c29167d62f19165750b8793",
+      "committedGitBlobSha1": "f74085f3f6a2b995f8ad1f9ff7b2c46dc118a9e0"
+    },
+    {
+      "path": "android/app/src/main/res/drawable/ic_tracking.xml",
+      "buildRawSha256": "9cc421172ba020564f94b443f13abf3d28228a63a22c3d27eb3e03ac1224d9c6",
+      "committedGitBlobSha1": "305da56ee5160883c0a1ba6a90e3c7b73b6bcd71"
+    },
+    {
+      "path": "android/app/src/main/res/drawable/launch_background.xml",
+      "buildRawSha256": "2df60e2cfbee873ce2858088cf003e6b93498f2f568476da437610467ea1a9d7",
+      "committedGitBlobSha1": "304732f8842013497e14bd02f67a55f2614fb8f7"
+    },
+    {
+      "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+      "buildRawSha256": "32715ff646f6b9fef7c321138e4a14556c4a1f98a87b06070b56f41643dad718",
+      "committedGitBlobSha1": "a8a8fa5518fcdb2db0385028800968b2667af71e"
+    },
+    {
+      "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "buildRawSha256": "ae23b371e7ba184829f81b083af033b81f140acf9bbfdc2f6ae75eae1dcd4cd9",
+      "committedGitBlobSha1": "5fda87707f6c23a8fadac361641acb4499e72d91"
+    },
+    {
+      "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+      "buildRawSha256": "961888b1b8eaeb7a8af1ce21fd837582d444d37f17772fb2574bb83330d93e25",
+      "committedGitBlobSha1": "8e8c80a2d2e81276070c1200ca4e765772a69c45"
+    },
+    {
+      "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+      "buildRawSha256": "3419764dbc092c941210a382a54988dd5e75e8a828379d6a31c56b1d1dc7a15f",
+      "committedGitBlobSha1": "7f93697d8b3510c07c3579fed3ebdb2614a7de26"
+    },
+    {
+      "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+      "buildRawSha256": "be314940dc03853ccca37ce8628cc3597aa02de22fec0aef6dc45b9892f27d82",
+      "committedGitBlobSha1": "045ff74f8d6dd75e5a60e159f6157da08744b94a"
+    },
+    {
+      "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+      "buildRawSha256": "1e1b12f36207fc2f9b8284efced73f2f0475bd3bda6b69dd6cf8c7e333cc6cf4",
+      "committedGitBlobSha1": "4c24245f9d7b1a1124208116a3376d677fe05fbf"
+    },
+    {
+      "path": "android/app/src/main/res/values-night/styles.xml",
+      "buildRawSha256": "ea763597dc1a84c8034251caee98d7753e0fbf57340ffc94677427de4b537516",
+      "committedGitBlobSha1": "06952be745f9fa6fa75196e830d9578eb2ee631d"
+    },
+    {
+      "path": "android/app/src/main/res/values/colors.xml",
+      "buildRawSha256": "1a6ef6f600f0402961cbe2c4c4e298f4a90221f2ae823e6b8e0f1d13a09f5ee3",
+      "committedGitBlobSha1": "c2d51d56de0efd25dcc39d80063cde99d27f5ccb"
+    },
+    {
+      "path": "android/app/src/main/res/values/styles.xml",
+      "buildRawSha256": "cca15a99b59380a548bf6a890f7ca5380ee509b1f9bbb2f5f9ec3589fa25c2f7",
+      "committedGitBlobSha1": "cb1ef88056edd1caf99a935e434e7ff6943a0ef6"
+    },
+    {
+      "path": "android/app/src/profile/AndroidManifest.xml",
+      "buildRawSha256": "b01a4541a8144c15bc617bab7eb267c99fa1476368fbbda5a12cdbf4e316a34c",
+      "committedGitBlobSha1": "399f6981d5d35475eb18e6068ae67cdd7c731978"
+    },
+    {
+      "path": "android/build.gradle.kts",
+      "buildRawSha256": "218f400e3fff31c9c986a2535dfb974560e1b4d33cc27b7c1fee96a2b7e44454",
+      "committedGitBlobSha1": "dbee657bb5b9158516486b3a1b47ef8b6fc72a2a"
+    },
+    {
+      "path": "android/gradle.properties",
+      "buildRawSha256": "4922e39cd2ea910bd97156fd4320b0be9217df262fc45435ce408bad534a20d0",
+      "committedGitBlobSha1": "d5da7278a40014e65942e5d8878a8f30eb56b3a0"
+    },
+    {
+      "path": "android/gradle/wrapper/gradle-wrapper.properties",
+      "buildRawSha256": "1220fdd333a881e47441de07b23f9dd1ebd35459730543ae429cf249847d91bf",
+      "committedGitBlobSha1": "e4ef43fb98df49e4a065ae4c2777f54463bf65b7"
+    },
+    {
+      "path": "android/key.properties.example",
+      "buildRawSha256": "ba910b9949dc015629c9c1618dfc358d66517f0506d7d445f10d3060b5c1d6fd",
+      "committedGitBlobSha1": "eef627010e2eed031f667eb6fecb97637fffec7a"
+    },
+    {
+      "path": "android/settings.gradle.kts",
+      "buildRawSha256": "4d438e37bd80ccc48ded4892c9026994cabe8cfb9c20d2947a609248495c869b",
+      "committedGitBlobSha1": "ca7fe065c167b304c620950482ab6349d0ab124a"
+    },
+    {
+      "path": "assets/branding/simbolo-caja.png",
+      "buildRawSha256": "2c44c43a78cba4c654a7ca187c7bd9f92bbc7b869cca6d4c8e028d13dd714dd1",
+      "committedGitBlobSha1": "a9c23213735ece7ad4ed3b798b212f88cf25f598"
+    },
+    {
+      "path": "lib/core/config/api_config.dart",
+      "buildRawSha256": "6d75dc929acb612fafe5593faf28758f1f2fae5a205e60d94e78454f112e1239",
+      "committedGitBlobSha1": "995f0c3f2d04475104446d32d50911e45528fc2b"
+    },
+    {
+      "path": "lib/core/location/location_access.dart",
+      "buildRawSha256": "f1cc7ae1adb495deddce28a5001f1b182e1f413661a37d48709e652ac316ed7f",
+      "committedGitBlobSha1": "6c2a4fd6bdb2877144486d544784d28e2b0ab2b3"
+    },
+    {
+      "path": "lib/core/location/native_pilot_tracking.dart",
+      "buildRawSha256": "a0610483c50998927197ee253d4f247d2516d67d68fc03bb57e69c50fc1a5d96",
+      "committedGitBlobSha1": "cc474a76e48feab40564ddcbeb1e285aa2825bc1"
+    },
+    {
+      "path": "lib/core/network/api_client.dart",
+      "buildRawSha256": "55e619c9a51e42184f7624533b4e975d37e8897792a9ac2776f81a97d027fca9",
+      "committedGitBlobSha1": "0d5d7b7382f48d4512443921e6bbb4a2ee2b4735"
+    },
+    {
+      "path": "lib/core/storage/session_store.dart",
+      "buildRawSha256": "00c8e9b300288afe084cec5de521dc8d3f9f4117332a0631fd720888929b5ffa",
+      "committedGitBlobSha1": "59110560c00cc6e09df044cc1b79c5ecb79fb3b6"
+    },
+    {
+      "path": "lib/core/theme/app_theme.dart",
+      "buildRawSha256": "c9ce755f36e8ca45099d13400856d2461ba635ec16710e9bb28e7287123c73d6",
+      "committedGitBlobSha1": "882f7fc21d654cf72c1f3018264ec74a82c1f6d1"
+    },
+    {
+      "path": "lib/core/utils/app_toast.dart",
+      "buildRawSha256": "8c711eaeb2058c3d20922ed9378281efffe86f0f13849c570f2581dfe54b7692",
+      "committedGitBlobSha1": "ebce44eab93a6a8634947e7c2916e345ca5305e0"
+    },
+    {
+      "path": "lib/core/utils/format.dart",
+      "buildRawSha256": "4cd80672018edc2a41765fa4e7e10350a36c533fcb4cfade15d18d64527b2be3",
+      "committedGitBlobSha1": "3f273e24d2962387cb48eafce50f59e4ae0a96fd"
+    },
+    {
+      "path": "lib/core/utils/maps.dart",
+      "buildRawSha256": "e06f081e36d71bd48e7802c48e83e5a228f9414e20061a9650bcc9878e2d9fbf",
+      "committedGitBlobSha1": "f5ee09a2089f7755708f0067a82774368cbdb0c3"
+    },
+    {
+      "path": "lib/core/widgets/app_actions.dart",
+      "buildRawSha256": "48d84384805939b40d7286d95cb6b583752548ffb1de86e2ce38eeb3928dacd0",
+      "committedGitBlobSha1": "1fc89a80c421b71c636290418cd5ce0bcb0a2af8"
+    },
+    {
+      "path": "lib/core/widgets/app_brand.dart",
+      "buildRawSha256": "66027ef0692800db8a274c45500755a7b74e736f66d0a55dc92544931e69e561",
+      "committedGitBlobSha1": "c4a7ec0dfa7125021705e774ce5573f8eed3e59d"
+    },
+    {
+      "path": "lib/core/widgets/app_contact.dart",
+      "buildRawSha256": "6bf74b6877b1b8e7edb7a0972e6136cefe8811eeff53dbad8e6789828e610b93",
+      "committedGitBlobSha1": "4f6ebef894987bf573e5764c6bd826001c02db72"
+    },
+    {
+      "path": "lib/features/auth/data/auth_repository.dart",
+      "buildRawSha256": "23d0f538c2e0f347bcb2bd50acf7c0d73f81a289c2190e1a1a2e56072f93eb85",
+      "committedGitBlobSha1": "0b0ec9dc1b0bb827a20d501f9912c5737c3cec80"
+    },
+    {
+      "path": "lib/features/auth/models/auth_models.dart",
+      "buildRawSha256": "32397a68ad1ee86f9dd9d7415383cef0608f6684fab770c0d0cd04ebcc40d588",
+      "committedGitBlobSha1": "99ad63a65f47121d0e983c8c0cf85d821fb4e688"
+    },
+    {
+      "path": "lib/features/auth/presentation/login_screen.dart",
+      "buildRawSha256": "62d911c2f46a49b3eb772ac14cdfa3a89318610b80838086acceef64ffa9d854",
+      "committedGitBlobSha1": "30c3ebdd021449d0c3439f6cad18d73f68cf6047"
+    },
+    {
+      "path": "lib/features/auth/session_controller.dart",
+      "buildRawSha256": "6f9b2e11e6a7fe6a8ef23dd8948613f9ca40d69c99724a924e18192ccacb5018",
+      "committedGitBlobSha1": "d018b4be26a16b35f33a637202f4c6d3daea8cf8"
+    },
+    {
+      "path": "lib/features/piloto/data/cash_amount.dart",
+      "buildRawSha256": "67b5c726129366c2f2877fa892ad24e84d4542ec9b69c1077e86922d68c55a5d",
+      "committedGitBlobSha1": "a314552403472f363d2656680c861a4c01ba8f31"
+    },
+    {
+      "path": "lib/features/piloto/data/pilot_action_store.dart",
+      "buildRawSha256": "2a73a5735ca754ffebb6d698b7bfc4fac06fd63bd6ed3c38c13229f2fa9714a0",
+      "committedGitBlobSha1": "bd199ed225f2cda4fecb4b539da7718e2a7adff6"
+    },
+    {
+      "path": "lib/features/piloto/data/piloto_repository.dart",
+      "buildRawSha256": "c4843cf15a7a81c674432a06a1eb67f2c984b92af3cc15114cc4b59f5d9715d5",
+      "committedGitBlobSha1": "8062d1a8726bfe2724860cee058c0c621b9df2c1"
+    },
+    {
+      "path": "lib/features/piloto/models/operations_models.dart",
+      "buildRawSha256": "2b267e5b0ecd706e5b48f4dd7e24e3569ac54aecc70052fcdfa81f52bacca1ba",
+      "committedGitBlobSha1": "45e69d6681fd8166d17501028bb2dae815682c97"
+    },
+    {
+      "path": "lib/features/piloto/models/piloto_models.dart",
+      "buildRawSha256": "d4a0ee6584a6b52ca50f6a46169d5fae611dd6f2341f07db3c2478e05c8a1c15",
+      "committedGitBlobSha1": "d26818de45c7102419fb3c35f7d36c4245145075"
+    },
+    {
+      "path": "lib/features/piloto/pilot_operations_controller.dart",
+      "buildRawSha256": "fe00867cba202dad9a037a3b90abbd5e22d57993368a62c9aef1da9b26b8dcc5",
+      "committedGitBlobSha1": "f4d7230da48dbc5a2d10fcce0d44e228360d8405"
+    },
+    {
+      "path": "lib/features/piloto/pilot_orders_controller.dart",
+      "buildRawSha256": "932000e10a8d3c805ad39d9fe1ed3d3ef6e1a3ffc798803609d14ad960e111ba",
+      "committedGitBlobSha1": "96eeb8a98c6aa677c3d855104b1411014fb9d3a3"
+    },
+    {
+      "path": "lib/features/piloto/pilot_tracking_controller.dart",
+      "buildRawSha256": "f097c623f48efb29e913daf846b34e998cd4965e404f02c1af24c29ad8975564",
+      "committedGitBlobSha1": "03844c5d99dd338082235f54542d9b39ddffba98"
+    },
+    {
+      "path": "lib/features/piloto/presentation/cash_report_sheet.dart",
+      "buildRawSha256": "b726252da61208779771225d77ea9f9b717dafa66c28de583d3103600acb95b4",
+      "committedGitBlobSha1": "3e30abaa80ab967501ffe4c4a4896871206430c6"
+    },
+    {
+      "path": "lib/features/piloto/presentation/deliveries_page.dart",
+      "buildRawSha256": "9aa7368993bc64c41a97b9cc0f783816b38ecab84e21bf1e4feacdd86585432e",
+      "committedGitBlobSha1": "4037dfd363b8e0ac4ebe70fde563fa98bfc28630"
+    },
+    {
+      "path": "lib/features/piloto/presentation/nav_chooser.dart",
+      "buildRawSha256": "6c22524742b44ca5df05d6b3a87e411db137b3def844feefeaf02049377ce8ff",
+      "committedGitBlobSha1": "c7200685d372510b522319b86b749576b7ffbbfc"
+    },
+    {
+      "path": "lib/features/piloto/presentation/operations_views.dart",
+      "buildRawSha256": "24329c32a4613e2a61933b4916901654f844e869cafdce3e9ab81d16be011b04",
+      "committedGitBlobSha1": "4fe466be9b130fd6ebde6081f210cb146953900d"
+    },
+    {
+      "path": "lib/features/piloto/presentation/piloto_detalle_screen.dart",
+      "buildRawSha256": "bb0d182aaa3cd4dd419647f93b3439011275049f8895fc8ea6e2734e262e4dca",
+      "committedGitBlobSha1": "ce96af787c549fc4f8903d98bb38eac99eee04c4"
+    },
+    {
+      "path": "lib/features/piloto/presentation/piloto_home_screen.dart",
+      "buildRawSha256": "e05ea3303a3f533572603a495efc211c91988418e4364114f8e4186c0b622704",
+      "committedGitBlobSha1": "8e3d92b0b358e6c9e2af6a4a1f5917d682f87810"
+    },
+    {
+      "path": "lib/features/piloto/presentation/qr_scanner_sheet.dart",
+      "buildRawSha256": "ee1f7d3b7417cae0599488546345c5e9b043971765b3fe05b482f456e076efb4",
+      "committedGitBlobSha1": "177d2ac5729773b02d47374d14ce8ac2c807a177"
+    },
+    {
+      "path": "lib/features/piloto/presentation/returns_views.dart",
+      "buildRawSha256": "508a4e51d4dfbd38a855efb485eacf6dddf279fe23b226122ebf4e43654a6aec",
+      "committedGitBlobSha1": "6d52ee89384aa8b70c6763b61bd6a46f4dd6656e"
+    },
+    {
+      "path": "lib/features/piloto/presentation/shipment_info.dart",
+      "buildRawSha256": "625a4fa929cd38322edfd771058cb54a19e8b232aa90d61370a574f590fb4ac1",
+      "committedGitBlobSha1": "333e8954831e4e8e670800bb6b4e133cb868b761"
+    },
+    {
+      "path": "lib/features/piloto/presentation/transfers_views.dart",
+      "buildRawSha256": "97a1ffb63397389c6bb893959d4b8ee5198dd3864e0dfc173d33f6527aff0d2f",
+      "committedGitBlobSha1": "98dbd5e1b79add10faebe79ea7bc76215e2f0b2e"
+    },
+    {
+      "path": "lib/features/piloto/presentation/widgets/availability_button.dart",
+      "buildRawSha256": "1947688cea342bad9a2c3e8492a254aec145800d05b5607856ace6ea2a0ac23d",
+      "committedGitBlobSha1": "578da0b54e6685bc22519ef69e9ac1b2643afcce"
+    },
+    {
+      "path": "lib/features/piloto/presentation/widgets/bottom_sheet_base.dart",
+      "buildRawSha256": "dde85344f987da9bac9a4a0a71d24aa5af7e0a310da3caf847ab8563f294dc82",
+      "committedGitBlobSha1": "0dc5d8caab8b8a6f3fd5e610a89aef66f0ab4a5f"
+    },
+    {
+      "path": "lib/features/piloto/presentation/widgets/live_map.dart",
+      "buildRawSha256": "da2c62e755d311bc62d8394342f45baead57d8c96e973335bb44a4796335e5a7",
+      "committedGitBlobSha1": "17227e91d807f2329c6bfbeb2084c1f5c4b97739"
+    },
+    {
+      "path": "lib/features/piloto/presentation/widgets/pilotgo_top_bar.dart",
+      "buildRawSha256": "1cc9fda242b4e6da7d0ee97c4b52ce9615b490d4cbc04f5c8dc8407efc21462a",
+      "committedGitBlobSha1": "22efb06f43987d06065c76156ec314c93607f575"
+    },
+    {
+      "path": "lib/features/piloto/presentation/widgets/state_views.dart",
+      "buildRawSha256": "d5cb9de6b704ab2846b70657dc12e9b878094a799d683a4b1570ac324fe5ca63",
+      "committedGitBlobSha1": "c3b79b12cae5ae147751454c51b005505fb6f400"
+    },
+    {
+      "path": "lib/features/piloto/presentation/widgets/status_chip.dart",
+      "buildRawSha256": "6bf002dcd96ecc15db63200b0bb99592d9a0d9f3695b7769cea4f43ccc9d6569",
+      "committedGitBlobSha1": "c869040aeb9f7b30868b2a1970c199679b0fc96a"
+    },
+    {
+      "path": "lib/features/piloto/reassignment_controller.dart",
+      "buildRawSha256": "d6ad882eea7a535eb10a6354cc7ba6b9418e3695adf5e56f5cecb67dedc49d3a",
+      "committedGitBlobSha1": "748cca2708db6a5f7ca49836175b955af8207ee8"
+    },
+    {
+      "path": "lib/features/tienda/data/pending_order_store.dart",
+      "buildRawSha256": "2f23af1a567040715915bcfddfb291f99df9450d8def124a726fa85a28a60793",
+      "committedGitBlobSha1": "6bbb4bf25264fcbe99f4cde6740ba162f1f44a60"
+    },
+    {
+      "path": "lib/features/tienda/data/tienda_repository.dart",
+      "buildRawSha256": "814e416122b61118d99f9e3a624aa510e5e814ab3b66f6a579cc36032594d425",
+      "committedGitBlobSha1": "87f9530553f7ad1e06c6b6fc6f85380426100c56"
+    },
+    {
+      "path": "lib/features/tienda/models/history_model.dart",
+      "buildRawSha256": "14bb7f50eee0545cc5bd2a3c10e645a3b0db7019eb07edd13c7312ba5b0c4319",
+      "committedGitBlobSha1": "8f16091924f55a7b135aa97d44f299d87dd30845"
+    },
+    {
+      "path": "lib/features/tienda/models/tienda_models.dart",
+      "buildRawSha256": "a077476e66869abdafe210376b604c4d2697682cd2b894ba8f0a27d906dc4376",
+      "committedGitBlobSha1": "08002bd43aec699440beed59440a5584d309b388"
+    },
+    {
+      "path": "lib/features/tienda/presentation/crear_orden_screen.dart",
+      "buildRawSha256": "f2756b99396c1758dbea5b244b586583f808ffd0436619c1672091ed8c7475f0",
+      "committedGitBlobSha1": "c9b7df915e80a70256ed7be391fdf81e7c757f63"
+    },
+    {
+      "path": "lib/features/tienda/presentation/destinatarios_screen.dart",
+      "buildRawSha256": "d79fa10f89cbf7685f25af224b595f77bdd5332928869a308d5d8dab218278d1",
+      "committedGitBlobSha1": "fa4d6f6ec2f8629b35bb27b5fb86facee83affe6"
+    },
+    {
+      "path": "lib/features/tienda/presentation/historial_ordenes_screen.dart",
+      "buildRawSha256": "23277200d1e69edebf48cd3e1c839e68b963ee6dea1be688c2b711843eba52d0",
+      "committedGitBlobSha1": "3bec3507104ab2da67e2a64373581432003d1159"
+    },
+    {
+      "path": "lib/features/tienda/presentation/orden_qr_dialog.dart",
+      "buildRawSha256": "942311a411ca76d476f9d1785d1916b34f836d39475bc6c0214cb2126747c965",
+      "committedGitBlobSha1": "387cd2135729ee10d000259a6435ed67ca6b76ad"
+    },
+    {
+      "path": "lib/features/tienda/presentation/ordenes_screen.dart",
+      "buildRawSha256": "bee5019e31d0cbf05d07d5bb75737219d69abea02910f27935ae7ffdb8ac15d6",
+      "committedGitBlobSha1": "4671652dc6bf65dfe4c55699ab23f3055b5c5da0"
+    },
+    {
+      "path": "lib/features/tienda/presentation/recepciones_screen.dart",
+      "buildRawSha256": "439ef5d38a94125b7322af1802a7521950d676b6bd6c2e4b56388fa90c0f9e3b",
+      "committedGitBlobSha1": "4be7dea615b404844a14d19eaf359973900dfa91"
+    },
+    {
+      "path": "lib/features/tienda/presentation/tienda_shell.dart",
+      "buildRawSha256": "89453b05a7b3b10fdb74aa20e8eee5bcd8f7989a8472a1f68fb89afd6796935e",
+      "committedGitBlobSha1": "1ad12aec91b9b547f95e99b63686869c3562d360"
+    },
+    {
+      "path": "lib/features/tienda/presentation/usuario_final_form_sheet.dart",
+      "buildRawSha256": "27b21a5f6b33783cff32197b74d9589870915d6417f209854680b1deb2faa939",
+      "committedGitBlobSha1": "ab00af1b19e3eeaa0630ac64393ec374df484405"
+    },
+    {
+      "path": "lib/features/tienda/tienda_orders_controller.dart",
+      "buildRawSha256": "7bcb2b61f00bdea6d38438897f3fb5b0f23149e9ff9399050a7ab35c43682c9f",
+      "committedGitBlobSha1": "c03eb3582d23ee0211cc857c8a1bc714d4b32dcc"
+    },
+    {
+      "path": "lib/main.dart",
+      "buildRawSha256": "7335ae157f37faefa2776d7d04019f67b2e771691da3bce80e4a4f23c4f271d3",
+      "committedGitBlobSha1": "a08a7f0ce71ff158eba91b08ab75995704bfd47e"
+    },
+    {
+      "path": "pubspec.lock",
+      "buildRawSha256": "776228cd7ec260e21cfd34cebe603efce4934d6433d3e4b87011ab6a06aaffd8",
+      "committedGitBlobSha1": "d17d28c6cdb1f1c578288dbcc0ea78c3b1173a6b"
+    },
+    {
+      "path": "pubspec.yaml",
+      "buildRawSha256": "30f89361f8bfd0ab38da79fb4cd0b8b01671fb2c9df9e6fca3d03ad6a2f41547",
+      "committedGitBlobSha1": "0ed249ed7c769b9d88673854003f2567367791d1"
+    }
+  ],
+  "featureVerification": [
+    {
+      "abi": "armeabi-v7a",
+      "linkedCapability": true,
+      "atomicIncident": true,
+      "originalIncidentContext": true
+    },
+    {
+      "abi": "arm64-v8a",
+      "linkedCapability": true,
+      "atomicIncident": true,
+      "originalIncidentContext": true
+    },
+    {
+      "abi": "x86_64",
+      "linkedCapability": true,
+      "atomicIncident": true,
+      "originalIncidentContext": true
+    }
+  ],
+  "minSdk": 24,
+  "targetSdk": 36
+}

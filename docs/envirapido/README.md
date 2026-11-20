@@ -1,6 +1,15 @@
 # Envirapido: análisis consolidado y plan de integración
 
-> **Entrega actual del 18/11/2026:** seguir
+El [lote de retiros desde incidencias — 20/11/2026](RETIROS-INCIDENCIAS-20261120.md)
+conecta solicitud, aprobación, reasignación y recepción por paradas. La publicación
+de fuentes y el APK 2.1.1 (11) están autorizados; el despliegue y la QA pública
+se completan por separado.
+
+> **Entrega actual del 20/11/2026:** seguir
+> [DESPLEGAR-ENVIRAPIDO-2.1.1.md](../../DESPLEGAR-ENVIRAPIDO-2.1.1.md).
+> Es un delta sin nueva migración si ya existe el esquema de reasignación 2.1.
+
+> **Antecedente del 18/11/2026:** seguir
 > [DESPLEGAR-ENVIRAPIDO-2.1.md](../../DESPLEGAR-ENVIRAPIDO-2.1.md), con la migración
 > del CRM y el APK 2.1.0 (10). El resto de este documento conserva el análisis y
 > los recibos históricos; no identifica por sí solo el estado de producción.

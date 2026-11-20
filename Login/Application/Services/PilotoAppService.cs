@@ -267,7 +267,7 @@ namespace Login.Application.Services
                     (o.RecolectadaAt.HasValue || o.Estado == EstadoOrden.Entregada || o.Estado == EstadoOrden.Devuelta || o.Estado == EstadoOrden.FinalizadaConDevoluciones) ? p.Latitud : null,
                     (o.RecolectadaAt.HasValue || o.Estado == EstadoOrden.Entregada || o.Estado == EstadoOrden.Devuelta || o.Estado == EstadoOrden.FinalizadaConDevoluciones) ? p.Longitud : null,
                     (o.RecolectadaAt.HasValue || o.Estado == EstadoOrden.Entregada || o.Estado == EstadoOrden.Devuelta || o.Estado == EstadoOrden.FinalizadaConDevoluciones) ? p.Instrucciones : null) {
-                        DevueltaAt = p.DevueltaAt,
+                        DevueltaAt = p.DevueltaAt, RevisionAsignacion = p.RevisionAsignacion,
                         PuedeVerDestino = puedeVerDestino, RecogidaAt = o.RecolectadaAt,
                         PuedeConfirmarEntrega = policy is not null && o.Estado == EstadoOrden.Recolectada
                             && o.RecolectadaAt.HasValue && p.Estado == EstadoParadaEntrega.Pendiente

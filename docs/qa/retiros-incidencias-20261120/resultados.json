@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "scope": "LOCAL_QA_NOT_PRODUCTION",
+  "backendBaseCommit": "552431b9c9196017454b105a3e4c49b8c0bd655f",
+  "backendDeliveryRef": "refs/tags/envirapido-web-2.1.1-11",
+  "mobileBuildCommit": "ba9411c461da82d137a6fc6121daf8b0c50f4b21",
+  "sql": {
+    "total": 371,
+    "passed": 371,
+    "failed": 0
+  },
+  "newSql": {
+    "total": 25,
+    "passed": 25,
+    "failed": 0
+  },
+  "flutterPassed": 129,
+  "flutterFailed": 0,
+  "analyzer": "No issues found",
+  "functionalSourcesMatchValidatedHashes": true,
+  "productionFunctionalQaPassed": false,
+  "productionDataModified": false,
+  "evidenceHashes": [
+    {
+      "evidence": "SQL371TRX",
+      "sha256": "e4c59913a4713e6c691f8f7bc51d4e5b5eb597c72e65df7390d0d4b2c7642056"
+    },
+    {
+      "evidence": "SQL25TRX",
+      "sha256": "d49a2615491dd5e8ad7c4226f26d200ae63ea8174cf2b7ce2ecc0c67fdcb16cc"
+    },
+    {
+      "evidence": "Flutter129Log",
+      "sha256": "7345994c980950b9da44a016efeada52d11b03bcc437d388d8f6c0a6e9689689"
+    },
+    {
+      "evidence": "FlutterAnalyzeLog",
+      "sha256": "d56c93a0da077d4497305926645b7f0a6c524603afae958c8a409fdc0bc062de"
+    }
+  ],
+  "productionConfigurationPublishBuild": "Passed: dotnet publish -c Release, no deployment performed.",
+  "releaseNativeSmoke": "Passed: installed APK hash matches; launcher box and login observed. No authenticated production test.",
+  "releaseSha256": "47acc45e7f7c4340683d12464f79579c3103bfbefdf8accac4bfabbb19f40e0d"
+}

@@ -197,8 +197,15 @@ public sealed partial class EnvirapidoController(ApplicationDbContext db, IOrden
         vm.Desde=desde;vm.Hasta=hasta;
         vm.Dia=dia;
         if(section=="Rutas y zonas"){vm.CandidatasRuta=await Project(CandidateOrders(tenant.Id,null).OrderByDescending(o=>o.Id).Take(100)).ToListAsync();await AttachOrderDataAsync(vm.CandidatasRuta,tenant.Id);}
-        var selectedOrder=ordenId??snapshot.Incidencias.FirstOrDefault(i=>i.Id==id)?.OrdenId;
+        var incidentCases = tab == "Escalaciones" ? snapshot.Incidencias.Where(i => i.Estado == "Escalada")
+            : tab == "Historial" ? snapshot.Incidencias.Where(i => i.Estado == "Resuelta") : snapshot.Incidencias.AsEnumerable();
+        var selectedIncident = section == "Incidencias" ? snapshot.Incidencias.FirstOrDefault(i => i.Id == id)
+            ?? incidentCases.OrderByDescending(i => i.FueraPlazo).ThenByDescending(i => i.Prioridad).ThenBy(i => i.VenceAt).FirstOrDefault() : null;
+        var selectedOrder=ordenId??selectedIncident?.OrdenId;
         if(selectedOrder.HasValue&&!vm.Operacion.Pedidos.Any(p=>p.Id==selectedOrder)) {var extra=await Project(db.OrdenesEntrega.AsNoTracking().Where(o=>o.ClienteAppId==tenant.Id&&o.Id==selectedOrder)).SingleOrDefaultAsync();if(extra!=null)vm.Operacion.Pedidos.Add(extra);}
+        if (selectedIncident?.OrdenId is int incidentOrder && tab != "Reglas de atención")
+            vm.GestionesRetiro = (await operations.ReasignacionesAsync(actor, incidentOrder)).Gestiones
+                .Where(g => g.IncidenciaId == selectedIncident.Id).ToList();
         ViewData["Empresa"]=vm.Empresa;ViewData["Seccion"]=section;
         return fragment?PartialView("_ModuloContenido",vm):View("Modulo",vm);
     }

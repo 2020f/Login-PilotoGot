@@ -40,7 +40,7 @@ namespace Login.Controllers.Api
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Capacidades() => Ok(new { versionContrato = 4, multiparada = true,
             cierreSoloC = true, confirmacionParadaIdempotente = true, gestionPorParadas = true,
-            recogidaPorLoteIdempotente = true, revisionAsignacion = true });
+            recogidaPorLoteIdempotente = true, revisionAsignacion = true, retiroVinculadoAIncidencia = true });
 
         [HttpPost("ordenes/{ordenId:int}/paradas/{paradaId:int}/confirmar-entrega")]
         [EnableRateLimiting("CodigosEntrega")]

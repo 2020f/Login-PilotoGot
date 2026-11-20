@@ -5,7 +5,7 @@ using Login.Domain.Enums;
 namespace Login.Domain.Operations;
 
 public enum TipoGestionFalla { Reintento = 1, Devolucion = 2 }
-public enum EstadoDevolucionOperativa { Solicitada = 1, Autorizada = 2, EnRetorno = 3, Recibida = 4, Rechazada = 5, ReintentoAutorizado = 6 }
+public enum EstadoDevolucionOperativa { Solicitada = 1, Autorizada = 2, EnRetorno = 3, Recibida = 4, Rechazada = 5, ReintentoAutorizado = 6, TrasladadaAReasignacion = 7 }
 
 public class DevolucionOperativa : OperativoTenant
 {

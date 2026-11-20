@@ -8,6 +8,11 @@ public sealed class ReasignacionesPanelVm
     public string Empresa { get; init; } = "";
     public int? OrdenId { get; init; }
     public string? Pedido { get; init; }
+    public string? CodigoPedido { get; init; }
+    public int? IncidenciaId { get; init; }
+    public int? ParadaId { get; init; }
+    public string? AccionInicial { get; init; }
+    public string Vista { get; init; } = "activas";
     public DateTime ActualizadoAt { get; init; }
     public ReasignacionSnapshot Datos { get; init; } = new([], []);
     public List<SelectListItem> Pilotos { get; init; } = [];

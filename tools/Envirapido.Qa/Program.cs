@@ -21,6 +21,8 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 // Entorno efímero, exclusivamente loopback, TestServer/SQL Server y cuentas ficticias.
 var useBrowserMaps = args.Contains("--mapas");
 var verifySeed = args.Contains("--verify-seed");
+var seedRetiroScenarios = args.Contains("--retiros");
+var traceRetiroResponses = args.Contains("--trace-retiros");
 var qaPort = 5019;
 var portIndex = Array.IndexOf(args, "--port");
 if (portIndex >= 0 && (portIndex + 1 >= args.Length || !int.TryParse(args[portIndex + 1], out qaPort) || qaPort is < 1024 or > 65535))
@@ -41,9 +43,12 @@ if (existingDatabase is null)
 {
     await factory.SeedAsync();
     manifest = await QaSeed.CreateAsync(factory);
+    if (seedRetiroScenarios)
+        manifest = new { baseFixture = manifest, retiros = await RetiroQaSeed.CreateAsync(factory) };
 }
 else
 {
+    if (seedRetiroScenarios) throw new ArgumentException("--retiros crea fixtures sólo en una base QA nueva; no se admite en modo adjunto.");
     await factory.LoadExistingQaAsync();
     // Sólo metadatos ya existentes. No se reinicia ninguna orden ni se emiten
     // credenciales o códigos nuevos al conectar al entorno usado por el usuario.
@@ -68,6 +73,8 @@ var browserKey = useBrowserMaps ? factory.Services.GetRequiredService<IConfigura
 var noMaps = factory.Services.GetRequiredService<IGoogleMapsService>();
 using var visual = factory.WithWebHostBuilder(web => web.ConfigureTestServices(services =>
 {
+    if (traceRetiroResponses)
+        services.AddLogging(logging => logging.AddConsole().SetMinimumLevel(LogLevel.Error));
     // Cookies no distinguen puertos. Dos hosts QA deben conservar sus sesiones
     // y tokens CSRF separados, aun al probarlos en el mismo navegador.
     services.ConfigureApplicationCookie(options => options.Cookie.Name = $".EnvirapidoQA.{qaPort}.Identity");
@@ -148,6 +155,10 @@ app.Run(async context =>
             request.Content?.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
     request.Headers.Host = context.Request.Host.Value;
     using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
+    if (traceRetiroResponses && (context.Request.Path == "/api/operaciones/devoluciones-a-reasignacion"
+        || context.Request.Path == "/api/piloto/operaciones/retiros"))
+        Console.WriteLine("QA_RETIRO_RESPONSE " + JsonSerializer.Serialize(new
+        { status = (int)response.StatusCode, body = await response.Content.ReadAsStringAsync(context.RequestAborted) }));
     context.Response.StatusCode = (int)response.StatusCode;
     foreach (var header in response.Headers.Concat(response.Content.Headers))
         if (!header.Key.Equals("Transfer-Encoding", StringComparison.OrdinalIgnoreCase)) context.Response.Headers[header.Key] = header.Value.ToArray();

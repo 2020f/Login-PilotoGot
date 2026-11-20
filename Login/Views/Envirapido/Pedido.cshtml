@@ -18,7 +18,7 @@
     foreach(var stop in p.Paradas)pointMap["destino"+stop.Id]=new{lat=stop.Latitud,lng=stop.Longitud,nombre="Parada "+stop.Posicion+" · "+stop.Nombre};
     if(p.Paradas.Count==0)pointMap["destino"]=new{lat=p.DestinoLatitud,lng=p.DestinoLongitud,nombre=p.Destinatario};
 }
-<p><a class="ev-btn" href="/Operaciones/Reasignaciones?ordenId=@p.Id">Gestionar asignaciones, retiros y retornos por parada</a></p>
+<div class="ev-actions" style="margin-bottom:14px">@if(!p.EsTerminal){<a class="ev-btn primary" href="/Operaciones/Reasignaciones?ordenId=@p.Id&paradaId=@parada?.Id&accion=reasignar">Cambiar piloto de esta parada</a><a class="ev-btn" href="/Operaciones/Reasignaciones?ordenId=@p.Id&paradaId=@parada?.Id&accion=retiros">Retirar del piloto</a>}<a class="ev-btn" href="/Operaciones/Reasignaciones?ordenId=@p.Id">Gestionar todas las paradas y retornos</a></div>
 <div class="ev-page-heading ev-detail-header">
     <div><h1><a href="/Operaciones/Pedidos" aria-label="Volver a pedidos">‹</a> Pedido EV-@p.Codigo <span class="ev-badge @p.ClaseEstado">@p.EtiquetaEstado</span>@if(p.Demorada){<span class="ev-badge red">Demorada</span>}</h1>
         <div class="ev-detail-sub"><span>@p.Comercio</span><span>@(zona?.Nombre??"Sin zona asignada")</span><span>Creado @p.CreadoUtc.AddHours(-4).ToString("dd MMM yyyy, HH:mm")</span>@if(dato!=null){<span>Prioridad @(dato.Prioridad==4?"crítica":dato.Prioridad==3?"alta":dato.Prioridad==2?"media":"baja")</span>}</div>
@@ -30,7 +30,7 @@
     </div>
 </div>
 <nav class="ev-tabs" aria-label="Detalle de pedido">@foreach(var tab in new[]{"Resumen","Seguimiento","Historial","Evidencias","Costos"}){<a class="@(Model.Tab==tab?"active":"")" href="/Operaciones/Pedido/@p.Id?tab=@tab&paradaId=@parada?.Id">@tab</a>}</nav>
-@if(p.Estado is "Devuelta" or "FinalizadaConDevoluciones" or "Cancelada"){<div class="ev-alert neutral">@(p.Estado=="Cancelada"?"Orden cancelada antes de la recogida.":"Orden cerrada con devoluciones. Cada parada conserva su resultado; un retorno no se muestra como entrega al destinatario.")</div>}
+@if(p.Estado is "Devuelta" or "FinalizadaConDevoluciones" or "Cancelada"){<div class="ev-alert neutral">@(p.Estado=="Cancelada"?"Entrega cancelada. La custodia y los retornos pendientes se conservan hasta registrar su recepción.":"Orden cerrada con devoluciones. Cada parada conserva su resultado; un retorno no se muestra como entrega al destinatario.")</div>}
 @if(p.Paradas.Count>1){<section class="ev-card" style="margin-bottom:14px"><div class="ev-card-head"><h2>Destinatarios y escalas <span class="ev-count">@p.Paradas.Count</span></h2><span class="ev-hint">Una orden · C individual por parada</span></div><div class="ev-card-body ev-stop-selector">@foreach(var stop in p.Paradas){<a class="ev-stop-link @(parada?.Id==stop.Id?"active":"")" href="/Operaciones/Pedido/@p.Id?tab=@Model.Tab&paradaId=@stop.Id"><div><strong>Parada @stop.Posicion · @stop.Nombre</strong><small>@stop.Direccion</small></div><span class="ev-badge @(stop.Estado=="Entregada"?"green":stop.Estado is "Devuelta" or "EnRetorno"?"blue":"gray")">@(stop.Estado switch {"EnRetorno"=>"En retorno","DevolucionAutorizada"=>"Devolución autorizada","ReintentoAutorizado"=>"Reintento autorizado","EnRuta"=>"En ruta","FinalizadaConDevoluciones"=>"Cerrada con devoluciones",_=>stop.Estado})</span></a>}</div></section>}
 <div class="ev-detail-grid"><div class="ev-stack">
 @if(Model.Tab is "Resumen" or "Seguimiento")

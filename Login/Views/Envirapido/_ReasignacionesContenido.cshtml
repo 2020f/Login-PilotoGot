@@ -1,20 +1,36 @@
 @model Login.ViewModels.Envirapido.ReasignacionesPanelVm
 @using System.Text.Json
-@{ var abiertas = Model.Datos.Gestiones.Count(x => x.Abierta); }
+@{
+    var abiertas = Model.Datos.Gestiones.Count(x => x.Abierta);
+    var devoluciones = Model.Datos.DevolucionesPendientes ?? [];
+    var bloqueadas = devoluciones.Select(d => d.OrdenId).ToHashSet();
+}
 @functions {
     string EstadoGestion(string estado) => estado switch { "PorReasignar" => "Por reasignar", "PendienteRecepcion" => "Pendiente de recepción", "Reasignada" => "Reasignada", "Solicitada" => "Por revisar", _ => estado };
 }
-<div data-reassignment-snapshot data-order-id="@Model.OrdenId" data-updated="@Model.ActualizadoAt.ToString("O")">
-<section class="ev-card"><div class="ev-card-head"><h2>Paradas de la operación</h2><button class="ev-btn primary" type="button" data-reassign-open="evReassignmentChange">Gestionar selección</button></div><div class="ev-table-scroll"><table class="ev-table"><thead><tr><th>Seleccionar</th><th>Pedido / parada</th><th>Destinatario</th><th>Piloto asignado</th><th>Custodio físico</th><th>Estado</th></tr></thead><tbody>
+<div data-reassignment-snapshot data-order-id="@Model.OrdenId" data-incidence-id="@Model.IncidenciaId" data-stop-id="@Model.ParadaId" data-view="@Model.Vista" data-updated="@Model.ActualizadoAt.ToString("O")">
+@if(devoluciones.Count > 0)
+{
+    <section class="ev-card" style="margin-bottom:18px"><div class="ev-card-head"><h2>Devoluciones pendientes de decisión operativa</h2></div><div class="ev-card-body"><p>Estos pedidos siguen el proceso anterior de devolución. Para retirarlos o cambiar de piloto, autoriza primero el traslado de <strong>todas sus devoluciones pendientes</strong> a la bandeja de reasignación. No se requieren B/C ni se registra una entrega o recepción.</p>
+    @foreach(var grupo in devoluciones.GroupBy(d=>d.OrdenId))
+    {
+        <div class="ev-alert neutral"><strong>Pedido · ID interno #@grupo.Key</strong><ul>@foreach(var d in grupo){<li>DV-@d.Id.ToString("D4") · Parada ID @d.ParadaId · @d.Estado · @d.Motivo</li>}</ul><button type="button" class="ev-btn primary" data-reassign-migrate-order="@grupo.Key">Pasar devoluciones a reasignación</button></div>
+    }
+    </div></section>
+}
+<section class="ev-card"><div class="ev-card-head"><h2>@(Model.Vista=="porreasignar" ? "Paradas por reasignar" : "Paradas de órdenes activas")</h2><button class="ev-btn primary" type="button" data-reassign-open="evReassignmentChange">Gestionar selección</button></div><div class="ev-table-scroll"><table class="ev-table"><thead><tr><th>Seleccionar</th><th>Pedido / parada</th><th>Destinatario</th><th>Piloto asignado</th><th>Custodio físico</th><th>Estado</th><th>Gestión</th></tr></thead><tbody>
 @foreach (var p in Model.Datos.Paradas) {
     var terminal = p.Estado is "Entregada" or "Devuelta" or "Cancelada";
-    <tr><td><input type="checkbox" data-reassign-stop="@p.ParadaId" data-order-id="@p.OrdenId" data-revision="@p.RevisionAsignacion" disabled="@terminal" aria-label="Seleccionar parada @p.Posicion del pedido @p.CodigoA"/></td><td><a href="/Operaciones/Pedido/@p.OrdenId?paradaId=@p.ParadaId">#@p.CodigoA · Parada @p.Posicion</a></td><td>@p.Destinatario</td><td>@Model.Piloto(p.PilotoAsignadoId)</td><td>@Model.Piloto(p.PilotoCustodioId)</td><td><span class="ev-badge @(terminal ? "gray" : p.EnReasignacion ? "amber" : "green")">@(p.EnReasignacion ? "Retirada / en gestión" : p.Estado)</span></td></tr>
+    var pendiente = Model.Datos.Gestiones.FirstOrDefault(g => g.ParadaId == p.ParadaId && g.Abierta);
+    var bloqueada = bloqueadas.Contains(p.OrdenId);
+    var seleccionable = !terminal && !bloqueada && (pendiente is null || pendiente.Estado == "PorReasignar");
+    <tr><td><input type="checkbox" data-reassign-stop="@p.ParadaId" data-order-id="@p.OrdenId" data-revision="@p.RevisionAsignacion" disabled="@(!seleccionable)" aria-label="Seleccionar parada @p.Posicion del pedido @p.CodigoA"/></td><td><a href="/Operaciones/Pedido/@p.OrdenId?paradaId=@p.ParadaId">EV-@p.CodigoA · Parada @p.Posicion</a><span class="ev-secondary">ID interno #@p.OrdenId</span></td><td>@p.Destinatario</td><td>@Model.Piloto(p.PilotoAsignadoId)</td><td>@Model.Piloto(p.PilotoCustodioId)</td><td><span class="ev-badge @(terminal ? "gray" : p.EnReasignacion ? "amber" : "green")">@(bloqueada ? "Devolución pendiente" : pendiente is not null ? EstadoGestion(pendiente.Estado) : p.EnReasignacion ? "Por reasignar" : p.Estado)</span></td><td>@if(seleccionable){<div class="ev-actions"><button type="button" class="ev-btn small" data-reassign-one="@p.ParadaId" data-action="reasignar">Cambiar piloto</button>@if(pendiente is null){<button type="button" class="ev-btn small" data-reassign-one="@p.ParadaId" data-action="retiros">Retirar</button>}</div>}else if(pendiente?.Estado=="Solicitada"){<button type="button" class="ev-btn small primary" data-reassign-decision="Aprobar" data-case-id="@pendiente.Id">Revisar retiro</button>}else if(pendiente?.Estado=="PendienteRecepcion"){<span class="ev-hint">Revisa su recepción en la bandeja de atención.</span>}</td></tr>
 }
-@if (Model.Datos.Paradas.Count == 0) { <tr><td colspan="6" class="ev-empty">Sin paradas pendientes de reasignación. Consulta un código de pedido para revisar sus paradas y distribuirlas.</td></tr> }
+@if (Model.Datos.Paradas.Count == 0) { <tr><td colspan="7" class="ev-empty">@(Model.Vista=="porreasignar" ? "No hay paradas retiradas pendientes de reasignar. Abre Órdenes activas para cambiar un piloto." : "No hay paradas activas en esta consulta.")</td></tr> }
 </tbody></table></div></section>
 <section class="ev-card" style="margin-top:18px"><div class="ev-card-head"><h2>Bandeja de atención <span class="ev-badge amber">@abiertas abiertas</span></h2></div><div class="ev-table-scroll"><table class="ev-table"><thead><tr><th>Gestión</th><th>Pedido / parada</th><th>Motivo y decisión</th><th>Custodia / destino</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
 @foreach (var x in Model.Datos.Gestiones) {
-    <tr><td>RT-@x.Id.ToString("D4")<span class="ev-secondary">@x.CreatedAt.AddHours(-4).ToString("dd/MM HH:mm")</span></td><td><a href="/Operaciones/Reasignaciones?ordenId=@x.OrdenId">#@x.CodigoA · Parada ID @x.ParadaId</a></td><td>@x.Motivo<span class="ev-secondary">@(x.NotaDecision ?? "Pendiente de revisión")</span></td><td>@Model.Piloto(x.PilotoCustodioId)<span class="ev-secondary">@(x.DestinoNombre ?? "Destino pendiente") · @x.DestinoDireccion</span></td><td><span class="ev-badge @(x.Abierta ? "amber" : "gray")">@EstadoGestion(x.Estado)</span>@if(x.RecibidaAt.HasValue){<span class="ev-secondary">Recepción @x.RecibidaAt.Value.AddHours(-4).ToString("dd/MM HH:mm")</span>}</td><td><div class="ev-actions">
+    <tr><td>RT-@x.Id.ToString("D4")<span class="ev-secondary">@x.CreatedAt.AddHours(-4).ToString("dd/MM HH:mm")</span>@if(x.IncidenciaId.HasValue){<a href="/Operaciones/Incidencias?id=@x.IncidenciaId">INC-@x.IncidenciaId.Value.ToString("D4")</a>}</td><td><a href="/Operaciones/Reasignaciones?ordenId=@x.OrdenId&incidenciaId=@x.IncidenciaId&paradaId=@x.ParadaId">EV-@x.CodigoA · Parada ID @x.ParadaId</a></td><td>@x.Motivo<span class="ev-secondary">@(x.NotaDecision ?? "Pendiente de revisión")</span></td><td>@Model.Piloto(x.PilotoCustodioId)<span class="ev-secondary">@(x.DestinoNombre ?? "Destino pendiente") · @x.DestinoDireccion</span></td><td><span class="ev-badge @(x.Abierta ? "amber" : "gray")">@EstadoGestion(x.Estado)</span>@if(x.RecibidaAt.HasValue){<span class="ev-secondary">Recepción @x.RecibidaAt.Value.AddHours(-4).ToString("dd/MM HH:mm")</span>}</td><td><div class="ev-actions">
     @if(x.Estado == "Solicitada") { <button type="button" class="ev-btn small primary" data-reassign-decision="Aprobar" data-case-id="@x.Id">Aprobar retiro</button><button type="button" class="ev-btn small danger" data-reassign-decision="Rechazar" data-case-id="@x.Id">Rechazar</button> }
     @if(x.Estado == "PorReasignar" && x.Abierta) { <button type="button" class="ev-btn small" data-reassign-return="@x.Id">Elegir retorno</button><a href="/Operaciones/Reasignaciones?ordenId=@x.OrdenId">Asignar paradas</a> }
     @if(x.PuedeConfirmarRecepcion) { <button type="button" class="ev-btn small primary" data-reassign-receive="@x.Id">Registrar recepción física</button> }

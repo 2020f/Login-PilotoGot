@@ -4,18 +4,18 @@
 @inject IGoogleMapsService GoogleMaps
 @functions{
     string TabHref(Login.ViewModels.Envirapido.OperationsPageVm m,string tab,string basePath){
-        if(m.Seccion=="Pedidos")return "/Operaciones/"+(tab=="Listado"?"Pedidos":tab);
+        if(m.Seccion=="Pedidos")return "/Operaciones/"+(tab=="Listado"?"Pedidos":tab=="Reasignación y cancelación"?"Reasignaciones":tab);
         return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString("/Operaciones/"+basePath,new Dictionary<string,string?>{["tab"]=tab,["desde"]=m.Desde?.ToString("yyyy-MM-dd"),["hasta"]=m.Hasta?.ToString("yyyy-MM-dd"),["fecha"]=m.Dia?.ToString("yyyy-MM-dd"),["todos"]=m.Seccion=="Rutas y zonas"&&!m.Dia.HasValue?"1":null});
     }
 }
 @{
     Layout="_LayoutEnvirapido";ViewData["Title"]=Model.Seccion;ViewData["Subtitulo"]=Model.Tab;
-    var tabs=Model.Seccion switch {"Rutas y zonas"=>new[]{"Vista general","Zonas de cobertura","Planificador","Rutas activas","Historial"},"Incidencias"=>new[]{"Bandeja","Escalaciones","Historial","Reglas de atención"},"Liquidaciones"=>new[]{"Repartidores","Comercios","Conciliación","Historial","Reglas de liquidación"},"Pedidos"=>new[]{"Listado","Programados","Importaciones","Devoluciones"},_=>new[]{Model.Tab}};
+    var tabs=Model.Seccion switch {"Rutas y zonas"=>new[]{"Vista general","Zonas de cobertura","Planificador","Rutas activas","Historial"},"Incidencias"=>new[]{"Bandeja","Escalaciones","Historial","Reglas de atención"},"Liquidaciones"=>new[]{"Repartidores","Comercios","Conciliación","Historial","Reglas de liquidación"},"Pedidos"=>new[]{"Listado","Programados","Importaciones","Devoluciones","Reasignación y cancelación"},_=>new[]{Model.Tab}};
     var basePath=Model.Seccion switch{"Rutas y zonas"=>"Rutas","Incidencias"=>"Incidencias","Liquidaciones"=>"Liquidaciones",_=>""};
 }
 <div class="ev-page-heading"><div><h1>@(Model.Seccion=="Rutas y zonas"?"Rutas y zonas":Model.Seccion=="Operaciones"?"Automatización":Model.Seccion)</h1><p>@(Model.Seccion switch{"Rutas y zonas"=>"Gestiona la cobertura y planifica las rutas de tu operación","Incidencias"=>"Centraliza la atención y el seguimiento de tu operación","Liquidaciones"=>"Revisa, aprueba y concilia pagos realizados fuera de Envirapido",_=>"Información y controles de tu empresa"})</p></div><div class="ev-actions"><button class="ev-btn" type="button" data-ev-module-export><svg class="ev-icon"><use href="#ev-download"></use></svg>Exportar</button>
 @if(Model.Seccion=="Rutas y zonas"){<button class="ev-btn" type="button" data-ev-open="evZoneDialog">+ Crear zona</button><button class="ev-btn" type="button" data-ev-plan-route>Planificar ruta</button><button class="ev-btn primary" type="button" data-ev-open="evRouteDialog">+ Crear ruta</button>}
-@if(Model.Seccion=="Incidencias"){<button class="ev-btn primary" type="button" data-ev-open="evIncidentDialog">+ Registrar incidencia</button>}
+@if(Model.Seccion=="Incidencias"){<a class="ev-btn" href="/Operaciones/Reasignaciones">Retiros y reasignaciones</a><button class="ev-btn primary" type="button" data-ev-open="evIncidentDialog">+ Registrar incidencia</button>}
 @if(Model.Seccion=="Liquidaciones"){<button class="ev-btn primary" type="button" data-ev-open="evSettlementDialog">+ Generar liquidación</button>}
 </div></div>
 @if(tabs.Length>1){<nav class="ev-tabs" aria-label="@Model.Seccion">@foreach(var tab in tabs){<a class="@(Model.Tab==tab?"active":"")" href="@TabHref(Model,tab,basePath)">@tab</a>}</nav>}
