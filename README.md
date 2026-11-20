@@ -2,40 +2,38 @@
 
 ## Agente de despliegue: empezar aquí
 
-**Correccion posterior a la QA del APK 10: [GPS y HTTP/HTTPS](DESPLEGAR-GPS-HTTPS.md).**
-Aplicar sobre 2.1: corrige GPS por paradas y prepara la regla HTTPS de la portada;
-no requiere otra migracion ni recompilar el APK. El despliegue y la QA publica posterior estan pendientes.
-
-**Entrega base: [Envirapido 2.1, reasignación y logos](DESPLEGAR-ENVIRAPIDO-2.1.md).**
-La entrega base 2.1 actualizó el CRM, sus vistas y el cliente móvil de su repositorio
-separado. **Su instalación inicial requiere la migración operativa del SQL CRM**, conservando pedidos,
-rutas, códigos y tenants. No aplicar esa migración al SQL del portal.
-
-El APK firmado 2.1.0 (10) se entrega al propietario para subirlo al portal con
-descargas protegidas. Las fuentes en GitHub no equivalen a un despliegue ni a
-la publicación del APK. La guía identifica el archivo, su hash y el orden de QA.
-
-La [portada interactiva](DESPLEGAR-PORTADA.md) y el
-[registro manual sin SMTP](DESPLEGAR-REGISTRO-MANUAL.md) son entregas anteriores.
-Sus instrucciones de actualizar sólo Next o no migrar se limitan a esos cambios;
-no sustituyen el handoff de la entrega actual.
+**Entrega puntual del 20/11/2026: [HTTP a HTTPS de la portada](DESPLEGAR-HTTPS-PORTADA.md).**
+Aplicar únicamente la regla del borde público mediante el instalador y su verificador.
+Este lote no requiere compilar/reiniciar CRM, portal o app, ni ejecutar migraciones.
+La base operativa sigue en `59cd152`, [Envirapido 2.1.1 y APK 2.1.1 (11)](DESPLEGAR-ENVIRAPIDO-2.1.1.md).
 
 El portal comercial se entrega en la rama **`codex/confiabilidad-panel-app`**.
 Desplegar el **SHA completo comunicado por el propietario**, desde un checkout
 limpio. No sustituirlo por `master`, ni actualizar a ciegas el directorio en servicio.
 
-La [instalación inicial del portal](DESPLEGAR-PORTAL.md) queda como referencia.
-El registro vigente usa aprobación manual, sin exigir SMTP para registrar.
-
-| Componente | Destino |
+| Componente | Acción en este lote HTTPS |
 | --- | --- |
-| `Login/` | Publicar backend y vistas del CRM con la migración operativa revisada, conservando autenticación y datos |
-| `Envirapido.Portal.Api/` | Conservar el servicio y SQL independiente ya instalados; no hay migración comercial nueva en este lote |
-| `portal-web/` | Conservar React/Next ya desplegado; este lote no cambia sus fuentes |
-| App Flutter / APK | Cliente 2.1.0 (10), firma definitiva y API `https://envirapido.com`; usar el SHA móvil indicado en el handoff |
+| Borde Cloudflare | Aplicar sólo la regla HTTP→HTTPS; comprobarla con las herramientas nuevas |
+| `Login/` | Conservar backend, vistas, autenticación, pedidos, rutas y multitenant ya desplegados |
+| `Envirapido.Portal.Api/` | Conservar servicio, SQL, claves, almacenamiento y vigencias independientes |
+| `portal-web/` | Conservar React/Next y sus vistas; no recompilar ni cambiar puertos |
+| App Flutter / APK | Conservar 2.1.1 (11), firma definitiva y API `https://envirapido.com` |
 
 No aplicar las migraciones del portal sobre la base CRM. No crear otro CRM ni
 reemplazar sus claves JWT, sesiones, Data Protection, configuración SQL o datos.
+
+## Guías de entregas anteriores
+
+No repetir los pasos de estas entregas por el cambio HTTPS actual:
+
+- [Envirapido 2.1.1: retiros, incidencias y APK 11](DESPLEGAR-ENVIRAPIDO-2.1.1.md).
+- [GPS y primera preparación de la regla HTTPS](DESPLEGAR-GPS-HTTPS.md).
+- [Base 2.1: reasignación y logos](DESPLEGAR-ENVIRAPIDO-2.1.md). Su instalación inicial necesita la migración operativa indicada; no volver a ejecutarla para este lote ni aplicarla al SQL del portal.
+- [Instalación inicial del portal](DESPLEGAR-PORTAL.md), [portada interactiva](DESPLEGAR-PORTADA.md) y [registro manual sin SMTP](DESPLEGAR-REGISTRO-MANUAL.md). El registro vigente usa aprobación manual.
+
+Las fuentes en GitHub no equivalen a aplicar una regla de Cloudflare ni a publicar
+un APK. El agente del servidor debe conservar el recibo del despliegue y su
+comprobación pública.
 
 - [Arquitectura y configuración](docs/portal/DESPLIEGUE.md)
 - [QA local y sus límites](docs/portal/QA-20261117.md)

@@ -1,0 +1,26 @@
+{
+  "receiptKind": "sanitized-summary-of-actual-public-run",
+  "verifier": "tools/Verify-PortalHttps.mjs",
+  "exitCode": 1,
+  "passed": false,
+  "probesRun": 25,
+  "passedProbes": 14,
+  "failedProbes": 11,
+  "credentialsSent": false,
+  "redirectsFollowed": false,
+  "publicRuns": 1,
+  "scope": "Resumen real previo a desplegar la regla. No se conservo el stdout completo de las25sondas y no se repitieron solicitudes para reconstruirlo.",
+  "failed": [
+    { "id": "apex-http-root", "status": 200, "failedChecks": ["expectedStatus", "hasLocation", "httpsSameHost443", "noCredentialsOrFragment", "pathPreserved", "queryPreserved", "methodPreserving"] },
+    { "id": "apex-http-root-query", "status": 200, "failedChecks": ["expectedStatus", "hasLocation", "httpsSameHost443", "noCredentialsOrFragment", "pathPreserved", "queryPreserved", "methodPreserving"] },
+    { "id": "apex-http-plans", "status": 200, "failedChecks": ["expectedStatus", "hasLocation", "httpsSameHost443", "noCredentialsOrFragment", "pathPreserved", "queryPreserved", "methodPreserving"] },
+    { "id": "apex-http-encoded-path", "status": 404, "failedChecks": ["expectedStatus", "hasLocation", "httpsSameHost443", "noCredentialsOrFragment", "pathPreserved", "queryPreserved", "methodPreserving"] },
+    { "id": "apex-http-login", "status": 307, "failedChecks": ["expectedStatus"] },
+    { "id": "apex-http-api", "status": 307, "failedChecks": ["expectedStatus"] },
+    { "id": "apex-http-spoof", "status": 200, "failedChecks": ["expectedStatus", "hasLocation", "httpsSameHost443", "noCredentialsOrFragment", "pathPreserved", "queryPreserved", "methodPreserving"] },
+    { "id": "apex-http-empty-post", "status": 307, "failedChecks": ["expectedStatus"] },
+    { "id": "buyer-http-root", "status": 200, "failedChecks": ["expectedStatus", "hasLocation", "httpsSameHost443", "noCredentialsOrFragment", "pathPreserved", "queryPreserved", "methodPreserving"] },
+    { "id": "buyer-http-access-query", "status": 200, "failedChecks": ["expectedStatus", "hasLocation", "httpsSameHost443", "noCredentialsOrFragment", "pathPreserved", "queryPreserved", "methodPreserving"] },
+    { "id": "buyer-http-spoof", "status": 200, "failedChecks": ["expectedStatus", "hasLocation", "httpsSameHost443", "noCredentialsOrFragment", "pathPreserved", "queryPreserved", "methodPreserving"] }
+  ]
+}

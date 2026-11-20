@@ -1,5 +1,9 @@
 # Correcciones GPS y HTTP/HTTPS — 19/11/2026
 
+> Para aplicar únicamente la redirección de la portada después de Envirapido 2.1.1,
+> usar [DESPLEGAR-HTTPS-PORTADA.md](DESPLEGAR-HTTPS-PORTADA.md), con el instalador
+> acotado y su verificación pública. No repetir el despliegue GPS de esta guía.
+
 Este lote parte de `b637fae5ff05b52161cee032016342556675c4c6` y corrige los dos
 pendientes de la QA publica del APK 2.1.0 (10). El propietario autorizo su
 publicacion en GitHub el 19/11/2026. El despliegue y la QA publica posterior siguen
